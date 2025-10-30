@@ -8,10 +8,12 @@ defmodule AshBaml.Info do
       MyApp.BamlClient
   """
 
+  alias Spark.Dsl.Extension
+
   @doc """
   Returns the configured BAML client module for a resource.
   """
   def baml_client_module(resource) do
-    Spark.Dsl.Extension.get_opt(resource, [:baml], :client_module, nil)
+    Extension.get_opt(resource, [:baml], :client_module, nil)
   end
 end

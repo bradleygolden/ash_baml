@@ -1,11 +1,12 @@
 defmodule AshBaml.ToolCallingTest do
   use ExUnit.Case, async: true
 
+  alias Ash.Resource.Info
   alias AshBaml.Test.{BamlClient, ToolTestResource}
 
   describe "union return type actions" do
     test "action can declare union return type with tool constraints" do
-      action = Ash.Resource.Info.action(ToolTestResource, :select_tool)
+      action = Info.action(ToolTestResource, :select_tool)
 
       assert action.returns == Ash.Type.Union
       assert action.constraints[:types][:weather_tool]
@@ -13,7 +14,7 @@ defmodule AshBaml.ToolCallingTest do
     end
 
     test "union type uses struct with instance_of constraint" do
-      action = Ash.Resource.Info.action(ToolTestResource, :select_tool)
+      action = Info.action(ToolTestResource, :select_tool)
 
       weather_config = action.constraints[:types][:weather_tool]
       assert weather_config[:type] == Ash.Type.Struct
