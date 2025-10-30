@@ -16,3 +16,4 @@ This file contains configuration and preferences for Claude Code interactions wi
 ```
 Start with imperative verb: Add, Update, Fix, Remove, etc.
 - Never use @spec annotations unless absolutely necessary due to some bug in a client library or similar.
+- Always use the core:hex-docs-search skill whenever needing to understand hex dependencies or Elixir packages in this project, even if hex or hexdocs isn't explictly mentioned
