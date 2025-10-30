@@ -6,6 +6,7 @@
     "credo@elixir": true,
     "dialyzer@elixir": true,
     "ex_unit@elixir": true,
-    "ex_doc@elixir": false
+    "ex_doc@elixir": false,
+    "ash@elixir": true
   }
 }
