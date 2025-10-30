@@ -5,5 +5,6 @@ defmodule AshBaml.Test.TestDomain do
 
   resources do
     resource(AshBaml.Test.TestResource)
+    resource(AshBaml.Test.ToolTestResource)
   end
 end
