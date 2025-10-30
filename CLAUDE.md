@@ -15,3 +15,4 @@ This file contains configuration and preferences for Claude Code interactions wi
 <description>
 ```
 Start with imperative verb: Add, Update, Fix, Remove, etc.
+- Never use @spec annotations unless absolutely necessary due to some bug in a client library or similar.
