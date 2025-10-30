@@ -7,6 +7,7 @@
     "dialyzer@elixir": true,
     "ex_unit@elixir": true,
     "ex_doc@elixir": false,
-    "ash@elixir": true
+    "ash@elixir": true,
+    "sobelow@elixir": true
   }
 }
