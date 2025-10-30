@@ -32,6 +32,14 @@ AshBaml can generate explicit Ash type modules from your BAML schemas, providing
 - Native Ash type integration with validation
 - Clear separation between BAML schema and Elixir types
 
+> **Note on Type Generation Approaches**: There are two ways to work with BAML types in Elixir:
+>
+> 1. **BAML's native generation** (via `BamlElixir.Client`): Generates structs directly under your client module (e.g., `MyApp.BamlClient.WeatherTool`). These are created automatically when you call BAML functions.
+>
+> 2. **AshBaml's type generation** (via `mix ash_baml.gen.types`): Generates types in a `Types` submodule (e.g., `MyApp.BamlClient.Types.WeatherTool`) with full Ash integration. This is the recommended approach for Ash resources as it provides TypedStruct definitions with validation and IDE support.
+>
+> This guide focuses on the second approach using the mix task.
+
 ### Generating Types
 
 After defining your BAML schemas, generate Ash type modules:
@@ -56,7 +64,7 @@ end
 
 ### Using Generated Types
 
-Reference generated types directly in your Ash actions:
+Reference generated types in your Ash union actions:
 
 ```elixir
 defmodule MyApp.Assistant do
@@ -74,10 +82,12 @@ defmodule MyApp.Assistant do
       constraints [
         types: [
           weather_tool: [
-            type: MyApp.BamlClient.Types.WeatherTool
+            type: :struct,
+            constraints: [instance_of: MyApp.BamlClient.Types.WeatherTool]
           ],
           calculator_tool: [
-            type: MyApp.BamlClient.Types.CalculatorTool
+            type: :struct,
+            constraints: [instance_of: MyApp.BamlClient.Types.CalculatorTool]
           ]
         ]
       ]
@@ -87,6 +97,8 @@ defmodule MyApp.Assistant do
   end
 end
 ```
+
+> **Note**: For Ash union actions, you must use `type: :struct` with `constraints: [instance_of: YourModule]`. The direct type reference syntax is not supported for union constraints.
 
 ### Type Mapping
 
