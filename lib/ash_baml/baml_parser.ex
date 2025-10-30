@@ -55,9 +55,6 @@ defmodule AshBaml.BamlParser do
   - `{:error, reason}` if not found
   """
   def get_baml_path(client_module) do
-    # Client modules store their path in module attributes or config
-    # This needs to introspect the client module's configuration
-
     if function_exported?(client_module, :__baml_src_path__, 0) do
       {:ok, client_module.__baml_src_path__()}
     else

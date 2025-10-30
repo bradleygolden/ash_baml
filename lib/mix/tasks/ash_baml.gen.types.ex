@@ -80,19 +80,16 @@ defmodule Mix.Tasks.AshBaml.Gen.Types do
     verbose? = Keyword.get(opts, :verbose, false)
     output_dir = Keyword.get(opts, :output_dir, "lib")
 
-    # Step 1: Get BAML path from client module
     log(verbose?, "Loading BAML configuration from #{inspect(client_module)}")
 
     case AshBaml.BamlParser.get_baml_path(client_module) do
       {:ok, baml_path} ->
         log(verbose?, "BAML source path: #{baml_path}")
 
-        # Step 2: Parse BAML schema
         log(verbose?, "Parsing BAML schema...")
 
         case AshBaml.BamlParser.parse_schema(baml_path) do
           {:ok, schema} ->
-            # Step 3: Generate types
             generate_from_schema(client_module, schema, output_dir, opts)
 
           {:error, reason} ->
@@ -118,17 +115,13 @@ defmodule Mix.Tasks.AshBaml.Gen.Types do
     Mix.shell().info("  Enums: #{map_size(enums)}")
     Mix.shell().info("")
 
-    # Ensure types directory exists
     unless dry_run? do
-      # Get the directory where type modules will be generated
-      # We pick the first class to determine the path, then get its directory
       {first_class_name, _} = Enum.at(classes, 0) || {"Temp", %{}}
       sample_module = Module.concat(types_module, first_class_name)
       types_dir = AshBaml.CodeWriter.module_to_path(sample_module, output_dir) |> Path.dirname()
       AshBaml.CodeWriter.ensure_types_directory(types_dir)
     end
 
-    # Generate class types
     class_results =
       Enum.map(classes, fn {class_name, class_def} ->
         target_module = Module.concat(types_module, class_name)
@@ -162,7 +155,6 @@ defmodule Mix.Tasks.AshBaml.Gen.Types do
         write_or_preview(module_code, target_module, output_dir, dry_run?, verbose?)
       end)
 
-    # Summary
     Mix.shell().info("")
 
     if dry_run? do

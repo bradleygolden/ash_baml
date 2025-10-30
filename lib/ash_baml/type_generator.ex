@@ -22,18 +22,14 @@ defmodule AshBaml.TypeGenerator do
     fields = class_def["fields"] || %{}
     source_file = Keyword.get(opts, :source_file, "unknown")
 
-    # Extract the base types module from the target module
-    # e.g., TodoApp.BamlClient.Types.Task -> TodoApp.BamlClient.Types
     base_module = get_base_module(target_module)
 
-    # Convert BAML fields to typed_struct field definitions
     field_defs =
       fields
       |> Enum.map(fn {field_name, field_type} ->
         elixir_type = baml_type_to_elixir_type(field_type, base_module)
         snake_field = Macro.underscore(field_name)
 
-        # Extract description from field metadata if available
         description = get_field_description(field_type)
 
         field_opts =
@@ -46,7 +42,6 @@ defmodule AshBaml.TypeGenerator do
         {snake_field, elixir_type, field_opts}
       end)
 
-    # Build module definition string
     """
     defmodule #{inspect(target_module)} do
       use Ash.TypedStruct
@@ -81,10 +76,8 @@ defmodule AshBaml.TypeGenerator do
   def generate_enum(enum_name, variants, target_module, opts \\ []) do
     source_file = Keyword.get(opts, :source_file, "unknown")
 
-    # Convert PascalCase variants to snake_case atoms
     atom_variants = Enum.map(variants, &variant_to_atom/1)
 
-    # Build variant documentation
     variant_docs =
       variants
       |> Enum.zip(atom_variants)
@@ -109,8 +102,6 @@ defmodule AshBaml.TypeGenerator do
     end
     """
   end
-
-  # Private helpers
 
   defp generate_field_definitions(fields) do
     Enum.map_join(fields, "\n", fn {name, type, opts} ->
@@ -171,8 +162,6 @@ defmodule AshBaml.TypeGenerator do
   end
 
   defp get_base_module(target_module) do
-    # Extract the base module by removing the last segment
-    # e.g., TodoApp.BamlClient.Types.Task -> TodoApp.BamlClient.Types
     parts = Module.split(target_module)
     base_parts = Enum.slice(parts, 0..-2//1)
     Module.concat(base_parts)

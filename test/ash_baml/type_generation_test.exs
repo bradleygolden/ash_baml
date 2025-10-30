@@ -7,7 +7,6 @@ defmodule AshBaml.TypeGenerationTest do
   @tmp_output "tmp/test_generation"
 
   setup do
-    # Clean up before each test
     File.rm_rf!(@tmp_output)
     :ok
   end
@@ -28,14 +27,12 @@ defmodule AshBaml.TypeGenerationTest do
           source_file: "test.baml"
         )
 
-      # Verify code structure
       assert code =~ "defmodule Test.Types.WeatherTool"
       assert code =~ "use Ash.TypedStruct"
       assert code =~ "field :city, :string"
       assert code =~ "field :units, :string"
       assert code =~ "Generated from BAML class: WeatherTool"
 
-      # Verify code can be formatted
       assert is_list(Code.format_string!(code))
     end
 
