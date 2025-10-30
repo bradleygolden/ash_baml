@@ -24,10 +24,50 @@ defmodule AshBaml.Actions.CallBamlFunction do
     function_module = Module.concat(client_module, function_name)
 
     if Code.ensure_loaded?(function_module) do
-      function_module.call(input.arguments)
+      case function_module.call(input.arguments) do
+        {:ok, result} ->
+          {:ok, wrap_union_result(input, result)}
+
+        error ->
+          error
+      end
     else
       build_module_not_found_error(input.resource, function_name, client_module, function_module)
     end
+  end
+
+  defp wrap_union_result(input, result) do
+    action_name =
+      case input.action do
+        %{name: name} -> name
+        name when is_atom(name) -> name
+        _ -> nil
+      end
+
+    case action_name do
+      nil ->
+        result
+
+      name ->
+        action = Ash.Resource.Info.action(input.resource, name)
+
+        if action && action.returns == Ash.Type.Union do
+          union_type = find_matching_union_type(action.constraints[:types], result)
+          %Ash.Union{type: union_type, value: result}
+        else
+          result
+        end
+    end
+  end
+
+  defp find_matching_union_type(types, result) do
+    Enum.find_value(types, fn {type_name, config} ->
+      instance_of = get_in(config, [:constraints, :instance_of])
+
+      if instance_of && result.__struct__ == instance_of do
+        type_name
+      end
+    end)
   end
 
   defp build_module_not_found_error(resource, function_name, client_module, function_module) do
