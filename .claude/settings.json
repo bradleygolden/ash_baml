@@ -8,6 +8,7 @@
     "ex_unit@elixir": true,
     "ex_doc@elixir": false,
     "ash@elixir": true,
+    "mix_audit@elixir": true,
     "sobelow@elixir": true
   }
 }
