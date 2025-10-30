@@ -21,6 +21,108 @@ end
 - **Tool Calling Support**: Use union types to handle LLM tool selection
 - **Type Safety**: Compile-time validation of BAML function signatures
 - **Ash Integration**: Seamless integration with Ash resources and actions
+- **Type Generation**: Generate explicit Ash.TypedStruct modules from BAML schemas
+
+## Type Generation
+
+AshBaml can generate explicit Ash type modules from your BAML schemas, providing:
+
+- Full IDE support (autocomplete, go-to-definition, type checking)
+- Visible, version-controlled type definitions
+- Native Ash type integration with validation
+- Clear separation between BAML schema and Elixir types
+
+> **Note on Type Generation Approaches**: There are two ways to work with BAML types in Elixir:
+>
+> 1. **BAML's native generation** (via `BamlElixir.Client`): Generates structs directly under your client module (e.g., `MyApp.BamlClient.WeatherTool`). These are created automatically when you call BAML functions.
+>
+> 2. **AshBaml's type generation** (via `mix ash_baml.gen.types`): Generates types in a `Types` submodule (e.g., `MyApp.BamlClient.Types.WeatherTool`) with full Ash integration. This is the recommended approach for Ash resources as it provides TypedStruct definitions with validation and IDE support.
+>
+> This guide focuses on the second approach using the mix task.
+
+### Generating Types
+
+After defining your BAML schemas, generate Ash type modules:
+
+```bash
+mix ash_baml.gen.types MyApp.BamlClient
+```
+
+This creates explicit type modules in `lib/my_app/baml_client/types/`:
+
+```elixir
+# Generated from BAML
+defmodule MyApp.BamlClient.Types.WeatherTool do
+  use Ash.TypedStruct
+
+  typed_struct do
+    field :city, :string
+    field :units, :string
+  end
+end
+```
+
+### Using Generated Types
+
+Reference generated types in your Ash union actions:
+
+```elixir
+defmodule MyApp.Assistant do
+  use Ash.Resource,
+    extensions: [AshBaml.Resource]
+
+  baml do
+    client_module MyApp.BamlClient
+  end
+
+  actions do
+    action :select_tool, :union do
+      argument :message, :string
+
+      constraints [
+        types: [
+          weather_tool: [
+            type: :struct,
+            constraints: [instance_of: MyApp.BamlClient.Types.WeatherTool]
+          ],
+          calculator_tool: [
+            type: :struct,
+            constraints: [instance_of: MyApp.BamlClient.Types.CalculatorTool]
+          ]
+        ]
+      ]
+
+      run call_baml(:SelectTool)
+    end
+  end
+end
+```
+
+> **Note**: For Ash union actions, you must use `type: :struct` with `constraints: [instance_of: YourModule]`. The direct type reference syntax is not supported for union constraints.
+
+### Type Mapping
+
+| BAML Type | Ash Type | Example |
+|-----------|----------|---------|
+| `class` | `Ash.TypedStruct` | `class Person { name string }` → `field :name, :string` |
+| `enum` | `Ash.Type.Enum` | `enum Status { Active Inactive }` → `values: [:active, :inactive]` |
+| `string` | `:string` | Direct mapping |
+| `int` | `:integer` | Direct mapping |
+| `float` | `:float` | Direct mapping |
+| `bool` | `:boolean` | Direct mapping |
+| `T[]` | `{:array, T}` | Arrays |
+| `T?` | `allow_nil?: true` | Optional fields |
+
+### Regenerating Types
+
+When you modify your BAML schemas:
+
+1. Update the `.baml` files
+2. Run `mix ash_baml.gen.types YourClient`
+3. Review the changes in git diff
+4. Commit the updated type modules
+
+Generated files are checked into version control to ensure visibility and IDE support.
 
 ## Usage Examples
 
