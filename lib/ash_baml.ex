@@ -13,8 +13,6 @@ defmodule AshBaml do
           domain: MyApp.Domain,
           extensions: [AshBaml.Resource]
 
-        import AshBaml.Helpers
-
         baml do
           client_module MyApp.BamlClient
         end
@@ -43,8 +41,6 @@ defmodule AshBaml do
         use Ash.Resource,
           domain: MyApp.Domain,
           extensions: [AshBaml.Resource]
-
-        import AshBaml.Helpers
 
         baml do
           client_module MyApp.BamlClient

@@ -24,3 +24,5 @@ ash_baml-*.tar
 
 .thoughts
 .env
+.hex-docs
+.hex-packages

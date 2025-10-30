@@ -31,8 +31,6 @@ defmodule MyApp.ChatResource do
   use Ash.Resource,
     extensions: [AshBaml.Resource]
 
-  import AshBaml.Helpers
-
   baml do
     client_module MyApp.BamlClient
   end
@@ -55,8 +53,6 @@ into a struct, and you decide what to do with it.
 defmodule MyApp.AssistantResource do
   use Ash.Resource,
     extensions: [AshBaml.Resource]
-
-  import AshBaml.Helpers
 
   baml do
     client_module MyApp.BamlClient

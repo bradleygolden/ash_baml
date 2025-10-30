@@ -5,8 +5,6 @@ defmodule AshBaml.Test.TestResource do
     domain: AshBaml.Test.TestDomain,
     extensions: [AshBaml.Resource]
 
-  import AshBaml.Helpers
-
   baml do
     client_module(AshBaml.Test.BamlClient)
   end
