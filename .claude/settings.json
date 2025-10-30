@@ -4,6 +4,7 @@
     "meta@elixir": true,
     "git@elixir": true,
     "credo@elixir": true,
-    "dialyzer@elixir": true
+    "dialyzer@elixir": true,
+    "ex_unit@elixir": true
   }
 }
