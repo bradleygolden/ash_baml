@@ -8,7 +8,8 @@ defmodule AshBaml.MixProject do
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      elixirc_paths: elixirc_paths(Mix.env())
+      elixirc_paths: elixirc_paths(Mix.env()),
+      dialyzer: dialyzer()
     ]
   end
 
@@ -34,6 +35,15 @@ defmodule AshBaml.MixProject do
       {:ex_doc, "~> 0.34", only: :dev, runtime: false},
       {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false}
+    ]
+  end
+
+  defp dialyzer do
+    [
+      # Ignore Mix.Task and Mix.shell since they're runtime-only build tools
+      plt_add_apps: [:mix],
+      # Suppress warnings about Mix functions that Dialyzer can't find
+      flags: [:error_handling, :underspecs]
     ]
   end
 end
