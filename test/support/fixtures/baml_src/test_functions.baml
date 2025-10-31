@@ -71,3 +71,38 @@ function ArrayArgsFunction(tags: string[]) -> TagAnalysisResponse {
     {{ ctx.output_format }}
   "#
 }
+
+class Address {
+  street string
+  city string
+  country string
+  postal_code string?
+}
+
+class UserProfile {
+  name string
+  age int
+  address Address
+}
+
+class NestedObjectResponse {
+  formatted_address string
+  distance_category string
+  is_international bool
+}
+
+function NestedObjectFunction(user: UserProfile) -> NestedObjectResponse {
+  client TestClient
+  prompt #"
+    Format the user's information:
+    Name: {{ user.name }}, Age: {{ user.age }}
+    Address: {{ user.address.street }}, {{ user.address.city }}, {{ user.address.country }}
+    {% if user.address.postal_code %}
+    Postal Code: {{ user.address.postal_code }}
+    {% endif %}
+
+    Provide a nicely formatted address string, categorize as local/regional/international,
+    and indicate if it's outside the user's home country (assume US as home).
+    {{ ctx.output_format }}
+  "#
+}

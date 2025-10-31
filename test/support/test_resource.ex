@@ -33,5 +33,10 @@ defmodule AshBaml.Test.TestResource do
       argument(:tags, {:array, :string}, allow_nil?: false)
       run(call_baml(:ArrayArgsFunction))
     end
+
+    action :nested_object_action, :map do
+      argument(:user, :map, allow_nil?: false)
+      run(call_baml(:NestedObjectFunction))
+    end
   end
 end

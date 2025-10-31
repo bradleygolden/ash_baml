@@ -123,5 +123,42 @@ defmodule AshBaml.IntegrationTest do
       # most_common_tag is optional
       assert is_binary(result.most_common_tag) or is_nil(result.most_common_tag)
     end
+
+    test "can call BAML function with nested object arguments" do
+      # This test verifies that functions with nested object arguments work correctly
+      # - Nested map structure is passed to BAML function
+      # - Nested fields are properly accessed in BAML template
+      # - Response includes information based on nested data
+
+      user = %{
+        name: "Alice Johnson",
+        age: 32,
+        address: %{
+          street: "123 Main St",
+          city: "Toronto",
+          country: "Canada",
+          postal_code: "M5V 3A8"
+        }
+      }
+
+      {:ok, result} =
+        AshBaml.Test.TestResource
+        |> Ash.ActionInput.for_action(:nested_object_action, %{user: user})
+        |> Ash.run_action()
+
+      # Verify correct response structure
+      assert %AshBaml.Test.BamlClient.NestedObjectResponse{} = result
+
+      # Verify all fields are present and correct types
+      assert is_binary(result.formatted_address)
+      assert is_binary(result.distance_category)
+      assert is_boolean(result.is_international)
+
+      # Verify content makes sense
+      assert String.length(result.formatted_address) > 0
+      assert result.distance_category in ["local", "regional", "international"]
+      # Canada is international from US perspective
+      assert result.is_international == true
+    end
   end
 end

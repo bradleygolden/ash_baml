@@ -66,16 +66,16 @@ If ANY answer is "not sure" → **write more tests**
 ## Feature Areas to Cover
 
 ### 1. Basic BAML Function Calls ⚠️ PARTIAL
-**Current Confidence**: 75% - happy path + multi-arg + optional args + array args tested
+**Current Confidence**: 80% - happy path + multi-arg + optional args + array args + nested objects tested
 
 **Tested**:
 - [x] Simple function call returns struct
 - [x] Function with multiple arguments
 - [x] Function with optional arguments
 - [x] Function with array arguments
+- [x] Function with nested object arguments
 
 **Needs Testing**:
-- [ ] Function with nested object arguments
 - [ ] Function with empty string input
 - [ ] Function with very long input (>2000 chars)
 - [ ] Function with special characters
@@ -332,7 +332,7 @@ Streaming confidence reached 95%. Moving to next feature area with lowest confid
 
 **NEXT: FEATURE AREA #1 (Basic BAML Function Calls)**
 
-Currently at 60% confidence. Need to test various argument types, edge cases, and concurrency.
+Currently at 80% confidence. Need to test edge cases and concurrency.
 
 ## Instructions for Each Iteration
 
@@ -456,10 +456,10 @@ Following the "no skipped tests" policy, these tests were removed entirely and d
 
 ## Progress Tracking
 
-- **Tests implemented**: 28 (25 streaming + 4 basic calls)
+- **Tests implemented**: 29 (25 streaming + 5 basic calls)
 - **Feature areas complete**: 1 / 10 (Streaming ✅ COMPLETE)
-- **Overall confidence**: 48% → **Target: 95%+**
-- **Estimated cost so far**: ~$0.0029 (28 test runs)
+- **Overall confidence**: 49% → **Target: 95%+**
+- **Estimated cost so far**: ~$0.0030 (29 test runs)
 - **Time started**: 2025-10-31
 
 ## Next Steps After Each Test
@@ -518,32 +518,36 @@ Some features might need 20 tests (complex error handling + many edge cases).
 **ITERATION COMPLETE** ✅
 
 ### What was accomplished:
-1. ✅ Created new BAML function `ArrayArgsFunction` with array argument (tags: string[])
-2. ✅ Added corresponding action `array_args_action` to TestResource
-3. ✅ Implemented test: "can call BAML function with array arguments"
-4. ✅ Test PASSED on first run (1.9s, ~$0.0001)
-5. ✅ Verified array argument is properly serialized and sent to LLM
-6. ✅ Verified response includes correct tag count and analysis
-7. ✅ Updated RALPH_PROMPT.md progress tracking
+1. ✅ Created new BAML function `NestedObjectFunction` with nested object argument (UserProfile with Address)
+2. ✅ Added corresponding action `nested_object_action` to TestResource
+3. ✅ Implemented test: "can call BAML function with nested object arguments"
+4. ✅ Test PASSED on first run (1.6s, ~$0.0001)
+5. ✅ Verified nested map structure is properly serialized and sent to LLM
+6. ✅ Verified BAML template can access nested fields (user.address.city)
+7. ✅ Verified response includes correct formatted address and categorization
+8. ✅ Updated RALPH_PROMPT.md progress tracking
 
 ### Test Details:
-- **File**: `test/integration/baml_integration_test.exs:99`
-- **Function**: `ArrayArgsFunction(tags: string[]) -> TagAnalysisResponse`
+- **File**: `test/integration/baml_integration_test.exs:127`
+- **Function**: `NestedObjectFunction(user: UserProfile) -> NestedObjectResponse`
+- **Structure**:
+  - UserProfile: name (string), age (int), address (Address)
+  - Address: street (string), city (string), country (string), postal_code (optional string)
 - **Validation**:
-  - Array of 5 strings: ["elixir", "programming", "functional", "erlang", "beam"]
-  - Response: summary (string), tag_count (int, matches array length), most_common_tag (optional string)
+  - User: Alice Johnson, 32, Toronto, Canada (with postal code)
+  - Response: formatted_address (string), distance_category (enum), is_international (bool)
 - **Result**: ✅ PASS - All assertions passed
-- **Cost**: ~$0.0001 (89 tokens in, 82 tokens out)
-- **Duration**: 1.9s
+- **Cost**: ~$0.0001 (103 tokens in, 46 tokens out)
+- **Duration**: 1.6s
 
 ### Status:
-- **Feature Area #1 (Basic BAML Function Calls)**: 75% confident (4/10 tests)
-- Array arguments confirmed working correctly
+- **Feature Area #1 (Basic BAML Function Calls)**: 80% confident (5/9 tests)
+- Nested object arguments confirmed working correctly
 
 ### Next iteration should:
-**Next test**: "Function with nested object arguments"
+**Next test**: "Function with empty string input"
 File: `test/integration/baml_integration_test.exs`
 
 ---
 
-**Ready for next iteration**: Continue with Feature Area #1 - Nested Object Arguments
+**Ready for next iteration**: Continue with Feature Area #1 - Empty String Edge Case
