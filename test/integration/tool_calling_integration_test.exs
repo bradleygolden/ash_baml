@@ -92,6 +92,58 @@ defmodule AshBaml.ToolCallingIntegrationTest do
       IO.puts("Ambiguous prompt test: Consistently selected #{first.type} across 3 calls ✓")
     end
 
+    test "tool with all fields populated (weather)" do
+      {:ok, tool_call} =
+        ToolTestResource
+        |> Ash.ActionInput.for_action(:select_tool, %{
+          message: "What's the temperature in Seattle in celsius?"
+        })
+        |> Ash.run_action()
+
+      # Verify it's a union with weather_tool type
+      assert %Ash.Union{type: :weather_tool, value: weather_tool} = tool_call
+
+      # Verify ALL fields are populated (not nil, not empty)
+      assert weather_tool.city != nil
+      assert weather_tool.city != ""
+      assert String.contains?(String.downcase(weather_tool.city), "seattle")
+
+      assert weather_tool.units != nil
+      assert weather_tool.units != ""
+      assert weather_tool.units in ["celsius", "fahrenheit"]
+      assert weather_tool.units == "celsius"
+    end
+
+    test "tool with all fields populated (calculator)" do
+      {:ok, tool_call} =
+        ToolTestResource
+        |> Ash.ActionInput.for_action(:select_tool, %{
+          message: "Multiply 3.5 times 2.0 and 4.0"
+        })
+        |> Ash.run_action()
+
+      # Verify it's a union with calculator_tool type
+      assert %Ash.Union{type: :calculator_tool, value: calc_tool} = tool_call
+
+      # Verify ALL fields are populated (not nil, not empty)
+      assert calc_tool.operation != nil
+      assert calc_tool.operation in ["add", "subtract", "multiply", "divide"]
+      assert calc_tool.operation == "multiply"
+
+      assert calc_tool.numbers != nil
+      assert is_list(calc_tool.numbers)
+      assert length(calc_tool.numbers) > 0
+      # Check all numbers are floats
+      Enum.each(calc_tool.numbers, fn num ->
+        assert is_float(num)
+      end)
+
+      # Should include the numbers from the prompt
+      assert 3.5 in calc_tool.numbers
+      assert 2.0 in calc_tool.numbers
+      assert 4.0 in calc_tool.numbers
+    end
+
     defp dispatch_tool_union(tool_union) do
       case tool_union do
         %Ash.Union{type: :weather_tool, value: %BamlClient.WeatherTool{} = tool} ->
