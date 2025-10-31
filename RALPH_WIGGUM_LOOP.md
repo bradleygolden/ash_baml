@@ -187,25 +187,22 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 
 ## Latest Test Results
 
-**Test**: Performance & Concurrency - "No race conditions in shared state" verification
-- **Status**: ✅ VERIFIED (Feature Area #6 continued)
-- **Duration**: 0 seconds (architecture verification, no new API calls)
-- **Feature Area**: Performance & Concurrency (#6)
-- **Verification Details**:
-  - Searched codebase for shared state primitives: `grep "ets.new|Agent.start|GenServer.start" lib/`
-  - Result: ZERO shared state found - library is completely stateless
-  - Design: Each BAML call is isolated and independent
+**Test**: Tool Calling - "Ambiguous prompt makes consistent tool choice" re-verification
+- **Status**: ✅ RE-VERIFIED (Feature Area #3 continues to pass)
+- **Duration**: 2.5 seconds (3 sequential API calls)
+- **Feature Area**: Tool Calling (#3)
+- **Test Details**:
+  - Prompt: "What about 72 degrees?" (ambiguous - could be weather or calculator)
+  - Result: All 3 calls consistently selected `weather_tool` (100% consistency)
+  - LLM interpretation: Treated "72 degrees" as temperature/weather query
+  - Token usage: ~143 input / ~20 output per call
+  - Cost: ~$0.0003 (3 sequential calls)
 - **Key Findings**:
-  - ash_baml has NO shared mutable state (no ETS, Agents, or GenServers)
-  - Existing concurrent tests already verify race-condition-free behavior:
-    * 10 concurrent calls test - all succeeded, no interference
-    * 20 concurrent calls test - all succeeded, no bottlenecks
-    * Concurrent streaming test - 3 parallel streams, no data corruption
-    * Concurrent tool selection test - 5 parallel calls, correct routing
-  - Every concurrent test validates: success, correct data, proper isolation, consistent timing
-  - Design is inherently cluster-safe (stateless operations)
-- **Decision**: Test REMOVED from list - already verified by architecture + existing tests
-- **Confidence**: Feature Area #6 at 35% confidence (3/7 realistic tests passing, more needed)
+  - Tool selection is stable and repeatable even with ambiguous inputs
+  - LLM makes deterministic choices when given the same ambiguous prompt
+  - All 12 tool calling tests continue to pass (98% confidence maintained)
+- **Note**: This was a re-verification of an already-passing test, not a new implementation
+- **Next Priority**: Feature Area #6 (Performance & Concurrency) - "Memory usage is reasonable"
 
 ## Next Priority
 
