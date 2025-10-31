@@ -169,5 +169,70 @@ defmodule AshBaml.TelemetryIntegrationTest do
       # Cleanup
       :telemetry.detach(handler_id)
     end
+
+    test "token counts are accurate and reasonable" do
+      # This test verifies that telemetry token measurements are reasonable
+      # and consistent with the API call being made
+      test_pid = self()
+      ref = make_ref()
+      handler_id = "test-tokens-#{:erlang.ref_to_list(ref)}"
+
+      :telemetry.attach(
+        handler_id,
+        [:ash_baml, :call, :stop],
+        fn _event_name, measurements, _metadata, _config ->
+          send(test_pid, {ref, measurements})
+        end,
+        nil
+      )
+
+      # Make a BAML call with known input size
+      # "Hello, world!" is ~3 tokens, plus system prompt overhead
+      {:ok, _result} =
+        TelemetryTestResource
+        |> Ash.ActionInput.for_action(:test_telemetry, %{
+          message: "Hello, world!"
+        })
+        |> Ash.run_action()
+
+      assert_receive {^ref, measurements}, 5000
+
+      # Verify token counts are reasonable
+      # Input tokens should be:
+      # - Greater than 0 (sanity check)
+      # - Less than 1000 (simple prompt shouldn't be huge)
+      # - Roughly 3 tokens for message + system prompt overhead
+      assert measurements.input_tokens > 0, "Input tokens should be positive"
+
+      assert measurements.input_tokens < 1000,
+             "Input tokens (#{measurements.input_tokens}) seems unreasonably high for short message"
+
+      # For "Hello, world!" we expect ~10-100 tokens total (message + system prompt)
+      assert measurements.input_tokens >= 5,
+             "Input tokens (#{measurements.input_tokens}) seems too low"
+
+      assert measurements.input_tokens <= 200,
+             "Input tokens (#{measurements.input_tokens}) seems too high for short prompt"
+
+      # Output tokens should be:
+      # - Greater than 0 (LLM must respond)
+      # - Less than 500 (TestFunction returns simple struct)
+      assert measurements.output_tokens > 0, "Output tokens should be positive"
+
+      assert measurements.output_tokens < 500,
+             "Output tokens (#{measurements.output_tokens}) seems unreasonably high for simple response"
+
+      # Total tokens should equal input + output
+      assert measurements.total_tokens ==
+               measurements.input_tokens + measurements.output_tokens,
+             "Total tokens should equal input + output"
+
+      IO.puts(
+        "Token counts: Input=#{measurements.input_tokens}, Output=#{measurements.output_tokens}, Total=#{measurements.total_tokens} ✓"
+      )
+
+      # Cleanup
+      :telemetry.detach(handler_id)
+    end
   end
 end
