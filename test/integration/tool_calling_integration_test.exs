@@ -333,4 +333,56 @@ defmodule AshBaml.ToolCallingIntegrationTest do
       end
     end
   end
+
+  describe "enum constraints validation" do
+    test "LLM respects enum constraints in tool selection" do
+      # Test that the LLM correctly selects one of the allowed enum values
+      # for the calculator operation field: "add" | "subtract" | "multiply" | "divide"
+      {:ok, tool_call} =
+        ToolTestResource
+        |> Ash.ActionInput.for_action(:select_tool, %{
+          message: "What is 100 plus 50 plus 25?"
+        })
+        |> Ash.run_action()
+
+      # Verify it's a calculator tool
+      assert %Ash.Union{type: :calculator_tool, value: calc_tool} = tool_call
+
+      # Verify the operation is one of the allowed enum values
+      assert calc_tool.operation in ["add", "subtract", "multiply", "divide"]
+
+      # For this specific prompt, should be "add"
+      assert calc_tool.operation == "add"
+
+      # Verify numbers are extracted correctly
+      assert 100.0 in calc_tool.numbers
+      assert 50.0 in calc_tool.numbers
+      assert 25.0 in calc_tool.numbers
+    end
+
+    test "LLM correctly maps natural language to enum values" do
+      # Test various natural language expressions and verify they map to correct enum values
+      test_cases = [
+        {"Subtract 50 from 100", "subtract"},
+        {"Multiply 5 by 3 by 2", "multiply"},
+        {"Divide 100 by 4", "divide"},
+        {"Add 1 and 2 and 3", "add"}
+      ]
+
+      Enum.each(test_cases, fn {message, expected_operation} ->
+        {:ok, tool_call} =
+          ToolTestResource
+          |> Ash.ActionInput.for_action(:select_tool, %{message: message})
+          |> Ash.run_action()
+
+        assert %Ash.Union{type: :calculator_tool, value: calc_tool} = tool_call
+
+        assert calc_tool.operation == expected_operation,
+               "Expected #{expected_operation} for '#{message}', got #{calc_tool.operation}"
+
+        # Verify it's one of the allowed values
+        assert calc_tool.operation in ["add", "subtract", "multiply", "divide"]
+      end)
+    end
+  end
 end

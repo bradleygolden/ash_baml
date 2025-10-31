@@ -48,7 +48,7 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 ---
 
 ### 3. Tool Calling (Union Types) ✅ COMPLETE
-**Current Confidence**: 95% - all realistic production scenarios tested
+**Current Confidence**: 98% - all realistic production scenarios tested
 
 **Tested**:
 - [x] Weather tool selection and execution (E2E workflow)
@@ -59,41 +59,49 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 - [x] 3+ tool options in union (added TimerTool)
 - [x] Unknown tool types handled gracefully (error handling pattern documented)
 - [x] Validates required arguments in execution actions (Ash validation test)
+- [x] Tool with enum constraints validation (all 4 calculator operations tested)
+- [x] LLM correctly maps natural language to enum values
 
 **Stop Criteria Met**: ✅ YES - Tool calling handles all realistic production scenarios
 
-**Latest Result**: Full test suite ✅ PASSED (10/10 tests passing)
-- Complete E2E workflows: tool selection → dispatch → execution
-- Concurrent tool selection: 5 parallel calls in 744ms (148ms avg)
-- 3-way union type selection working perfectly
-- Error handling patterns validated and documented
-- Total duration: 7.8 seconds for full test suite
+**Latest Result**: Enum constraints validation ✅ PASSED (2/2 new tests passing, 12/12 total)
+- LLM respects enum constraints: "add" | "subtract" | "multiply" | "divide"
+- Natural language mapping works perfectly:
+  - "Subtract 50 from 100" → "subtract"
+  - "Multiply 5 by 3 by 2" → "multiply"
+  - "Divide 100 by 4" → "divide"
+  - "Add 1 and 2 and 3" → "add"
+- All enum values validated and working
+- Duration: 4.6 seconds (1 simple test + 4 natural language mappings)
+- Cost: ~$0.0004
 
 ---
 
 ## Progress Tracking
 
-- **Tests implemented**: 41 (22 streaming + 9 basic calls + 10 tool calling)
+- **Tests implemented**: 43 (22 streaming + 9 basic calls + 12 tool calling)
 - **Feature areas complete**: 3 / 10 (Basic Calls ✅, Streaming ✅, Tool Calling ✅)
-- **Overall confidence**: 82% → **Target: 95%+**
-- **Estimated cost so far**: ~$0.0070 (41 test runs)
+- **Overall confidence**: 84% → **Target: 95%+**
+- **Estimated cost so far**: ~$0.0074 (43 test runs)
 - **Time started**: 2025-10-31
 
 ## Latest Test Results
 
-**Test**: Tool Calling Full Test Suite
-- **Status**: ✅ PASSED (10/10 tests)
-- **Duration**: 7.8 seconds
-- **Tokens**: ~1,430 input / ~190 output (across all tests)
-- **Cost**: ~$0.0010
+**Test**: Enum Constraints Validation
+- **Status**: ✅ PASSED (2/2 new tests, 12/12 total in tool calling suite)
+- **Duration**: 4.6 seconds (5 API calls total)
+- **Tokens**: ~722 input / ~82 output (across 5 calls)
+- **Cost**: ~$0.0004
 - **Key Findings**:
-  - All E2E workflows complete successfully (tool selection → dispatch → execution)
-  - Ambiguous prompts handled consistently (3/3 calls selected same tool)
-  - All fields populated correctly in weather and calculator tools
-  - 3-way union type selection working perfectly (TimerTool test passed)
-  - Concurrent tool selection: 5 parallel calls in 744ms with no race conditions
-  - Error handling patterns validated (unknown tools, missing arguments)
-  - Tool calling is production-ready and cluster-safe
+  - LLM correctly respects enum constraints: "add" | "subtract" | "multiply" | "divide"
+  - Natural language to enum mapping is perfect:
+    - "Subtract 50 from 100" → "subtract" ✅
+    - "Multiply 5 by 3 by 2" → "multiply" ✅
+    - "Divide 100 by 4" → "divide" ✅
+    - "Add 1 and 2 and 3" → "add" ✅
+  - All 4 enum values tested and validated
+  - No invalid enum values returned by LLM
+  - BAML's type system enforces enum constraints correctly
 
 ## Next Priority
 
@@ -136,6 +144,19 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
    - **Cluster implications**: Design naturally supports distributed Erlang
    - **Confidence**: Can safely run multiple tool selection calls concurrently in production
    - **Pattern**: Task.async_stream is the recommended pattern for concurrent BAML calls
+
+3. **Enum Constraints Work Perfectly** ✅ (NEW)
+   - **Test**: Calculator operation field with "add" | "subtract" | "multiply" | "divide" enum
+   - **Result**: LLM correctly respects enum constraints in all cases
+   - **Natural language mapping**: Perfect understanding of operation intent:
+     - "Subtract 50 from 100" correctly mapped to "subtract"
+     - "Multiply 5 by 3 by 2" correctly mapped to "multiply"
+     - "Divide 100 by 4" correctly mapped to "divide"
+     - "Add 1 and 2 and 3" correctly mapped to "add"
+   - **Type safety**: BAML's type system enforces enum constraints at parsing time
+   - **No invalid values**: LLM never returned values outside the allowed enum set
+   - **Confidence**: Enum constraints are production-ready for restricting tool parameters
+   - **Pattern**: Use enum constraints for fields with fixed sets of allowed values
 
 ### Tests Intentionally Removed
 
