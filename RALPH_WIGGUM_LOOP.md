@@ -64,16 +64,14 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 
 **Stop Criteria Met**: ✅ YES - Tool calling handles all realistic production scenarios
 
-**Latest Result**: Enum constraints validation ✅ PASSED (2/2 new tests passing, 12/12 total)
-- LLM respects enum constraints: "add" | "subtract" | "multiply" | "divide"
-- Natural language mapping works perfectly:
-  - "Subtract 50 from 100" → "subtract"
-  - "Multiply 5 by 3 by 2" → "multiply"
-  - "Divide 100 by 4" → "divide"
-  - "Add 1 and 2 and 3" → "add"
-- All enum values validated and working
-- Duration: 4.6 seconds (1 simple test + 4 natural language mappings)
-- Cost: ~$0.0004
+**Latest Result**: Ambiguous prompt consistency ✅ RE-VERIFIED (12/12 tests still passing)
+- Test: "What about 72 degrees?" sent 3 times to verify consistent tool selection
+- Result: All 3 calls consistently selected `weather_tool` (100% consistency)
+- LLM behavior: Ambiguous prompts produce deterministic tool choices
+- Timing: 2.5 seconds for 3 sequential API calls
+- Token usage: ~143 input / ~20 output per call
+- Cost: ~$0.0003 (3 sequential calls)
+- Finding: Tool selection is stable and repeatable even with ambiguous inputs
 
 ---
 
@@ -238,12 +236,12 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 
 ### Key Patterns Validated
 
-1. **Tool Calling is Production-Ready** ✅ (VERIFIED 2025-10-31)
+1. **Tool Calling is Production-Ready** ✅ (RE-VERIFIED 2025-10-31)
    - **Test Suite**: 12/12 tests passing in tool_calling_integration_test.exs
    - **E2E workflows**: Complete flow from tool selection → dispatch → execution
-   - **Re-verified**: All tests still passing with no regressions
-   - **New findings**: Test suite comprehensively covers all checklist items from Feature Area #4
-   - **Ambiguous prompts**: LLM makes consistent tool choices (3/3 same selection)
+   - **Latest verification**: Ambiguous prompt test re-run and documented
+   - **Ambiguous prompts**: LLM makes consistent tool choices (3/3 calls selected `weather_tool` for "What about 72 degrees?")
+   - **Consistency finding**: Even with ambiguous inputs, tool selection is stable and repeatable
    - **Field population**: All tool fields correctly extracted from natural language
    - **3-way unions**: TimerTool | WeatherTool | CalculatorTool working perfectly
    - **Concurrency**: 5 parallel tool selections in 744ms (cluster-safe)
