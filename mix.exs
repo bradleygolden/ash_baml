@@ -1,15 +1,21 @@
 defmodule AshBaml.MixProject do
   use Mix.Project
 
+  @version "0.1.0"
+
   def project do
     [
       app: :ash_baml,
-      version: "0.1.0",
+      version: @version,
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       elixirc_paths: elixirc_paths(Mix.env()),
-      dialyzer: dialyzer()
+      dialyzer: dialyzer(),
+      docs: docs(),
+      package: package(),
+      description:
+        "Ash integration for BAML (Boundary ML) functions, enabling type-safe LLM interactions"
     ]
   end
 
@@ -46,4 +52,117 @@ defmodule AshBaml.MixProject do
       flags: [:error_handling, :underspecs]
     ]
   end
+
+  defp docs do
+    [
+      main: "readme",
+      source_ref: "v#{@version}",
+      source_url: "https://github.com/bradleygolden/ash_baml",
+      homepage_url: "https://github.com/bradleygolden/ash_baml",
+      extra_section: "GUIDES",
+      extras: [
+        {"README.md", title: "Home"},
+        "CHANGELOG.md",
+        # DSL Documentation (auto-generated)
+        {"documentation/dsls/DSL-AshBaml.Resource.md", title: "DSL: AshBaml.Resource"},
+        # Tutorials
+        "documentation/tutorials/01-get-started.md",
+        "documentation/tutorials/02-structured-output.md",
+        "documentation/tutorials/03-tool-calling.md",
+        "documentation/tutorials/04-building-an-agent.md",
+        # Topics
+        "documentation/topics/why-ash-baml.md",
+        "documentation/topics/type-generation.md",
+        "documentation/topics/actions.md",
+        "documentation/topics/telemetry.md",
+        "documentation/topics/patterns.md",
+        # How-to Guides
+        "documentation/how-to/call-baml-function.md",
+        "documentation/how-to/implement-tool-calling.md",
+        "documentation/how-to/add-streaming.md",
+        "documentation/how-to/configure-telemetry.md",
+        "documentation/how-to/build-agentic-loop.md",
+        "documentation/how-to/customize-actions.md"
+      ],
+      groups_for_extras: [
+        Tutorials: ~r/documentation\/tutorials\/.*/,
+        Topics: ~r/documentation\/topics\/.*/,
+        "How-to": ~r/documentation\/how-to\/.*/,
+        Reference: ~r/documentation\/dsls\/.*/
+      ],
+      groups_for_modules: [
+        Core: [
+          AshBaml,
+          AshBaml.Resource,
+          AshBaml.Helpers,
+          AshBaml.Dsl,
+          AshBaml.Info
+        ],
+        Actions: [
+          AshBaml.Actions.CallBamlFunction,
+          AshBaml.Actions.CallBamlStream
+        ],
+        Types: [
+          AshBaml.Type.Stream,
+          AshBaml.TypeGenerator
+        ],
+        Telemetry: [
+          AshBaml.Telemetry
+        ],
+        Utilities: [
+          AshBaml.BamlParser,
+          AshBaml.FunctionIntrospector,
+          AshBaml.CodeWriter
+        ],
+        Transformers: [
+          AshBaml.Transformers.ImportBamlFunctions
+        ],
+        "Mix Tasks": [
+          Mix.Tasks.AshBaml.Gen.Types
+        ]
+      ],
+      skip_undefined_reference_warnings_on: [
+        "CHANGELOG.md"
+      ],
+      before_closing_head_tag: fn
+        :html ->
+          """
+          <style>
+            .livebook-badge-container + pre { display: none; }
+          </style>
+          """
+
+        _ ->
+          ""
+      end
+    ]
+  end
+
+  defp package do
+    [
+      name: "ash_baml",
+      licenses: ["MIT"],
+      links: %{
+        "GitHub" => "https://github.com/bradleygolden/ash_baml",
+        "BAML Documentation" => "https://docs.boundaryml.com",
+        "Ash Framework" => "https://hexdocs.pm/ash"
+      },
+      files: ~w(lib .formatter.exs mix.exs README.md CHANGELOG.md LICENSE)
+    ]
+  end
+
+  # Note: To enable automatic DSL documentation generation:
+  # 1. Add {:igniter, "~> 0.3", only: [:dev, :test]} to deps
+  # 2. Add aliases: aliases() to project config
+  # 3. Uncomment the aliases/0 function below
+  #
+  # defp aliases do
+  #   [
+  #     docs: [
+  #       "spark.cheat_sheets --extensions AshBaml.Resource",
+  #       "docs",
+  #       "spark.replace_doc_links"
+  #     ]
+  #   ]
+  # end
 end
