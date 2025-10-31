@@ -246,8 +246,10 @@ defmodule AshBaml.Telemetry do
   end
 
   defp get_usage(collector) do
-    case BamlElixir.Collector.usage(collector) do
-      %{input_tokens: input, output_tokens: output} = usage when is_map(usage) ->
+    usage_result = BamlElixir.Collector.usage(collector)
+
+    case usage_result do
+      %{"input_tokens" => input, "output_tokens" => output} when is_map(usage_result) ->
         %{
           input_tokens: input || 0,
           output_tokens: output || 0,
@@ -286,9 +288,11 @@ defmodule AshBaml.Telemetry do
   defp collect_optional_metadata(input, config) do
     allowed = config[:metadata] || []
 
+    context = Map.get(input, :context, %{})
+
     available = %{
-      llm_client: get_in(input, [:context, :llm_client]),
-      stream: get_in(input, [:context, :stream]) || false
+      llm_client: Map.get(context, :llm_client),
+      stream: Map.get(context, :stream, false)
     }
 
     available
