@@ -356,5 +356,66 @@ defmodule AshBaml.IntegrationTest do
       # Verify that all tasks completed (none timed out or failed)
       assert length(results) == 5
     end
+
+    test "same function called multiple times returns consistent structure" do
+      # This test verifies that calling the same function multiple times
+      # with the same input produces consistent results:
+      # - Same response structure every time
+      # - All required fields present in all calls
+      # - Field types are consistent across calls
+      # - No random failures or nil responses
+      #
+      # Note: We don't expect identical content (LLM responses vary),
+      # but we DO expect consistent structure and field presence.
+
+      input_message = "Tell me about consistency in testing"
+
+      # Call the same function 3 times with same input
+      results =
+        Enum.map(1..3, fn i ->
+          {:ok, result} =
+            AshBaml.Test.TestResource
+            |> Ash.ActionInput.for_action(:test_action, %{message: input_message})
+            |> Ash.run_action()
+
+          IO.puts("Call #{i} completed: #{String.slice(result.content, 0..50)}...")
+          result
+        end)
+
+      # Verify we got exactly 3 results
+      assert length(results) == 3
+
+      # Verify each result has consistent structure
+      Enum.each(results, fn result ->
+        # Same struct type every time
+        assert %AshBaml.Test.BamlClient.Reply{} = result
+
+        # Required fields present every time
+        assert is_binary(result.content)
+        assert is_float(result.confidence)
+
+        # Fields have valid values
+        assert String.length(result.content) > 0
+        assert result.confidence >= 0.0 and result.confidence <= 1.0
+      end)
+
+      # Verify all results have same field structure (even if content varies)
+      [first | rest] = results
+
+      Enum.each(rest, fn result ->
+        # Same struct type
+        assert result.__struct__ == first.__struct__
+
+        # Same field types
+        assert is_binary(result.content) == is_binary(first.content)
+        assert is_float(result.confidence) == is_float(first.confidence)
+
+        # Both have non-empty content
+        assert String.length(result.content) > 0
+        assert String.length(first.content) > 0
+      end)
+
+      IO.puts("Consistency test: All 3 calls returned consistent structure ✓")
+    end
   end
 end
