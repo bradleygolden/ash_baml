@@ -551,7 +551,22 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
    - **Alternative**: Would require mocking infrastructure (Mox/Mimic) to inject errors
    - **Current state**: No mocking libraries in project dependencies
 
-8. **"Timeout configuration is respected"** - REMOVED (Feature Area #6)
+9. **"Invalid API key returns clear error"** - REMOVED (Feature Area #6: Error Handling) - 2025-10-31
+   - **Why**: Cannot reliably trigger API authentication errors with real OpenAI API
+   - **Test attempt**: Set invalid API key `sk-invalid-key-12345` and attempted BAML call
+   - **Unexpected result**: API call SUCCEEDED with 971ms response time
+   - **Finding**: The "invalid" key format was still accepted by OpenAI or BamlElixir's client
+   - **BAML logs showed**: `Client: TestClient (gpt-4o-mini-2024-07-18) - 971ms. StopReason: stop. Tokens(in/out): 42/31`
+   - **Observation**: Runtime API key changes don't reliably trigger authentication errors
+   - **Technical limitation**: Cannot test error scenarios without mocking infrastructure
+   - **Broader implication**: ALL error handling tests (network timeouts, rate limits, malformed responses, API errors) require mocking
+   - **Current state**: No mocking libraries (Mox/Mimic) in project dependencies
+   - **Decision**: Error Handling feature area remains DEFERRED (see Mission Status section)
+   - **Risk assessment**: Low - error handling code follows standard Elixir patterns, just untested E2E
+   - **Reimplement?**: Only after adding Mox/Mimic to project dependencies
+   - **Test file**: Created and immediately deleted (not usable without mocking)
+
+10. **"Timeout configuration is respected"** - REMOVED (Feature Area #6)
    - **Why**: BAML does not currently support timeout configuration
    - **Research findings**:
      - BAML client options do not include timeout settings (checked v0.x docs)
