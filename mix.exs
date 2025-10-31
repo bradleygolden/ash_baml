@@ -14,6 +14,7 @@ defmodule AshBaml.MixProject do
       dialyzer: dialyzer(),
       docs: docs(),
       package: package(),
+      aliases: aliases(),
       description:
         "Ash integration for BAML (Boundary ML) functions, enabling type-safe LLM interactions"
     ]
@@ -39,6 +40,7 @@ defmodule AshBaml.MixProject do
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false},
+      {:igniter, "~> 0.3", only: [:dev, :test], runtime: false},
       {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false}
     ]
@@ -151,18 +153,13 @@ defmodule AshBaml.MixProject do
     ]
   end
 
-  # Note: To enable automatic DSL documentation generation:
-  # 1. Add {:igniter, "~> 0.3", only: [:dev, :test]} to deps
-  # 2. Add aliases: aliases() to project config
-  # 3. Uncomment the aliases/0 function below
-  #
-  # defp aliases do
-  #   [
-  #     docs: [
-  #       "spark.cheat_sheets --extensions AshBaml.Resource",
-  #       "docs",
-  #       "spark.replace_doc_links"
-  #     ]
-  #   ]
-  # end
+  defp aliases do
+    [
+      docs: [
+        "spark.cheat_sheets --extensions AshBaml.Resource",
+        "docs",
+        "spark.replace_doc_links"
+      ]
+    ]
+  end
 end
