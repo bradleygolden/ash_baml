@@ -284,6 +284,78 @@ case tool_call do
 end
 ```
 
+### Agentic Loops
+
+For multi-turn interactions where the agent decides and executes actions iteratively, you can create reusable agentic loop patterns that work across different agent types.
+
+```elixir
+# Reusable loop implementation
+defmodule MyApp.Actions.AgentLoop do
+  use Ash.Resource.Actions.Implementation
+
+  def run(input, _opts, _context) do
+    loop(input.resource, input.arguments.message, [], input.arguments.max_turns)
+  end
+
+  defp loop(resource, message, history, iterations) when iterations > 0 do
+    # 1. Decide next action
+    {:ok, decision} = Ash.run_action(resource, :decide_next_action, %{
+      message: message,
+      history: history
+    })
+
+    case decision do
+      %Ash.Union{type: :done, value: result} ->
+        {:ok, %{history: history, result: result}}
+
+      %Ash.Union{type: tool_type, value: params} ->
+        # 2. Execute tool
+        {:ok, result} = Ash.run_action(resource, :"execute_#{tool_type}", params)
+
+        # 3. Continue loop
+        loop(resource, format_result(result), [result | history], iterations - 1)
+    end
+  end
+end
+
+# Use with any resource
+defmodule MyApp.CustomerSupportAgent do
+  use Ash.Resource, extensions: [AshBaml.Resource]
+
+  attributes do
+    attribute :customer_id, :string
+    attribute :support_tier, :string
+  end
+
+  actions do
+    # Implement interface
+    action :decide_next_action, :union do
+      # ... tool type constraints ...
+    end
+
+    action :execute_lookup_order, :map do
+      # Uses resource state: input.resource.customer_id
+    end
+
+    # Use reusable loop
+    action :handle_conversation, :map do
+      argument :message, :string
+      argument :max_turns, :integer, default: 10
+
+      run MyApp.Actions.AgentLoop
+    end
+  end
+end
+```
+
+**Key Benefits:**
+- ✅ Write loop logic once, reuse across all agents
+- ✅ Each resource provides its own state and context
+- ✅ Type-safe via Ash unions and BAML types
+- ✅ Easy to test and extend
+
+See the [Agentic Loop Patterns Guide](examples/agentic_loop_patterns.md) for detailed patterns using both plain Ash actions and Ash.Reactor, along with complete working examples.
+
 Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
 be found at <https://hexdocs.pm/ash_baml>.
