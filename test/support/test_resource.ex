@@ -48,5 +48,11 @@ defmodule AshBaml.Test.TestResource do
       argument(:text_with_special_chars, :string, allow_nil?: false)
       run(call_baml(:SpecialCharsFunction))
     end
+
+    action :test_action_stream, AshBaml.Type.Stream do
+      argument(:message, :string, allow_nil?: false)
+      constraints(element_type: :map)
+      run(call_baml_stream(:TestFunction))
+    end
   end
 end
