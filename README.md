@@ -17,11 +17,12 @@ end
 
 ## Features
 
-- **Regular BAML Functions**: Call LLM functions that return structured data
+- **Auto-Generated Actions**: Automatically generate Ash actions from BAML functions via `import_functions`
+- **Streaming Support**: Both regular and streaming action variants generated automatically
+- **Type Safety**: Compile-time validation of BAML function signatures and generated types
 - **Tool Calling Support**: Use union types to handle LLM tool selection
-- **Type Safety**: Compile-time validation of BAML function signatures
-- **Ash Integration**: Seamless integration with Ash resources and actions
 - **Type Generation**: Generate explicit Ash.TypedStruct modules from BAML schemas
+- **Ash Integration**: Seamless integration with Ash resources and actions
 
 ## Type Generation
 
@@ -126,7 +127,53 @@ Generated files are checked into version control to ensure visibility and IDE su
 
 ## Usage Examples
 
-### Regular BAML Functions
+### Auto-Generated Actions (Recommended)
+
+The simplest way to use ash_baml is to let it auto-generate actions from your BAML functions:
+
+```elixir
+defmodule MyApp.ChatResource do
+  use Ash.Resource,
+    extensions: [AshBaml.Resource]
+
+  baml do
+    client_module MyApp.BamlClient
+    import_functions [:ChatAgent, :ExtractTasks]
+  end
+
+  # Actions are auto-generated:
+  # - :chat_agent (regular)
+  # - :chat_agent_stream (streaming)
+  # - :extract_tasks (regular)
+  # - :extract_tasks_stream (streaming)
+end
+
+# Usage - Regular action
+{:ok, reply} = MyApp.ChatResource
+  |> Ash.ActionInput.for_action(:chat_agent, %{message: "Hello"})
+  |> Ash.run_action()
+
+# Usage - Streaming action
+{:ok, stream} = MyApp.ChatResource
+  |> Ash.ActionInput.for_action(:chat_agent_stream, %{message: "Hello"})
+  |> Ash.run_action()
+
+stream |> Stream.each(&IO.inspect/1) |> Stream.run()
+```
+
+#### Prerequisites for Auto-Generation
+
+Before using `import_functions`, you must:
+
+1. **Define BAML functions** in your `baml_src/` directory
+2. **Generate types** using `mix ash_baml.gen.types YourClient`
+3. **Import functions** in your resource
+
+The transformer validates at compile-time that functions exist and types are generated, providing helpful error messages if anything is missing.
+
+### Manual Actions (Advanced)
+
+For more control, you can still define actions manually:
 
 ```elixir
 defmodule MyApp.ChatResource do
@@ -138,13 +185,23 @@ defmodule MyApp.ChatResource do
   end
 
   actions do
-    action :chat, MyApp.BamlClient.Reply do
+    action :chat, MyApp.BamlClient.Types.Reply do
       argument :message, :string
+      argument :context, :string
+
+      prepare PrepareContext
+
       run call_baml(:ChatAgent)
     end
   end
 end
 ```
+
+Manual actions are useful when you need:
+- Custom preparations or changes
+- Authorization logic
+- Composition of multiple BAML calls
+- Post-processing of results
 
 ### Tool Calling
 
@@ -169,11 +226,11 @@ defmodule MyApp.AssistantResource do
         types: [
           weather_tool: [
             type: :struct,
-            constraints: [instance_of: MyApp.BamlClient.WeatherTool]
+            constraints: [instance_of: MyApp.BamlClient.Types.WeatherTool]
           ],
           calculator_tool: [
             type: :struct,
-            constraints: [instance_of: MyApp.BamlClient.CalculatorTool]
+            constraints: [instance_of: MyApp.BamlClient.Types.CalculatorTool]
           ]
         ]
       ]
@@ -187,6 +244,14 @@ defmodule MyApp.AssistantResource do
       argument :units, :string
       run fn input, _ctx ->
         # Execute weather API
+      end
+    end
+
+    action :execute_calculator, :map do
+      argument :operation, :string
+      argument :numbers, {:array, :float}
+      run fn input, _ctx ->
+        # Execute calculator logic
       end
     end
   end
