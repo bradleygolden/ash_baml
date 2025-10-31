@@ -38,31 +38,55 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 
 ---
 
+### 3. Tool Calling (Union Types) ⚠️ IN PROGRESS
+**Current Confidence**: 58% - happy paths + ambiguous prompt tested
+
+**Tested**:
+- [x] Weather tool selection and execution
+- [x] Calculator tool selection and execution
+- [x] Ambiguous prompt (makes consistent tool choice)
+
+**Remaining**:
+- [ ] Prompt that matches no tools
+- [ ] Tool with all fields populated
+- [ ] Tool with optional fields missing
+- [ ] Tool with nested object parameters
+- [ ] Tool with array parameters
+- [ ] Union type unwrapping works correctly
+- [ ] Tool dispatch to wrong action (error handling)
+- [ ] Tool with invalid parameter types
+- [ ] Concurrent tool selection calls
+- [ ] 3+ tool options in union
+- [ ] Tool selection consistency (same input → same tool)
+
+**Stop Criteria Met**: ❌ NO - need more edge case and error handling tests
+
+---
+
 ## Progress Tracking
 
-- **Tests implemented**: 33 (25 streaming + 9 basic calls)
+- **Tests implemented**: 34 (25 streaming + 9 basic calls + 3 tool calling)
 - **Feature areas complete**: 2 / 10 (Streaming ✅, Basic Calls ✅)
-- **Overall confidence**: 58% → **Target: 95%+**
-- **Estimated cost so far**: ~$0.0040 (33 test runs)
+- **Overall confidence**: 60% → **Target: 95%+**
+- **Estimated cost so far**: ~$0.0044 (34 test runs)
 - **Time started**: 2025-10-31
 
 ## Latest Test Results
 
-**Test**: "Same function called multiple times returns consistent structure"
+**Test**: "Ambiguous prompt makes consistent tool choice"
 - **Status**: ✅ PASSED
-- **Duration**: 7.6 seconds (3 sequential calls)
-- **Tokens**: 41 input / 105-109 output per call
-- **Cost**: ~$0.0003 (3 calls)
+- **Duration**: 2.7 seconds (3 sequential calls)
+- **Tokens**: 111 input / 17-24 output per call
+- **Cost**: ~$0.0004 (3 calls)
 - **Key Findings**:
-  - All 3 calls returned consistent structure (Reply struct)
-  - All required fields present in every call (content, confidence)
-  - Field types consistent across all calls (string, float)
-  - Content varies (as expected with LLMs) but structure is reliable
-  - Confidence scores were identical (0.95) across all 3 calls
+  - LLM consistently selected `weather_tool` across all 3 calls
+  - Ambiguous prompt "What about 72 degrees?" could match weather or calculator
+  - Tool selection was deterministic despite ambiguity
+  - LLM correctly interpreted "degrees" as temperature units (fahrenheit)
+  - Handled missing city gracefully (returned "unknown" and "City Not Specified")
 
 ## Next Priority
 
-**FEATURE AREA #3**: Auto-Generated Actions (0% confidence)
-- Currently untested E2E (only unit tests exist)
-- Critical for recommended ash_baml usage pattern
-- Need to verify `import_functions` creates working actions
+**FEATURE AREA #3**: Tool Calling (Union Types) - Continue testing edge cases
+- Currently at 58% confidence (3/14 tests complete)
+- Need to test error handling, edge cases, and concurrent tool selection

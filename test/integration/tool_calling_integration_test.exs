@@ -53,6 +53,45 @@ defmodule AshBaml.ToolCallingIntegrationTest do
       assert result == 60.0
     end
 
+    test "ambiguous prompt makes consistent tool choice" do
+      # This test verifies that when a prompt could match multiple tools,
+      # the LLM makes a deterministic choice and sticks to it.
+      # We don't prescribe WHICH tool it should choose, but it should be consistent.
+      #
+      # Ambiguous message: could be weather (numbers as temperature) or calculator (just numbers)
+      ambiguous_message = "What about 72 degrees?"
+
+      # Call it 3 times to verify consistency
+      results =
+        Enum.map(1..3, fn i ->
+          {:ok, tool_call} =
+            ToolTestResource
+            |> Ash.ActionInput.for_action(:select_tool, %{
+              message: ambiguous_message
+            })
+            |> Ash.run_action()
+
+          IO.puts("Call #{i}: Selected tool type: #{tool_call.type}")
+          tool_call
+        end)
+
+      # Verify all results are valid unions
+      Enum.each(results, fn result ->
+        assert %Ash.Union{} = result
+        assert result.type in [:weather_tool, :calculator_tool]
+      end)
+
+      # Verify consistency: all 3 calls should select the same tool type
+      [first | rest] = results
+
+      Enum.each(rest, fn result ->
+        assert result.type == first.type,
+               "Expected consistent tool selection, but got #{result.type} vs #{first.type}"
+      end)
+
+      IO.puts("Ambiguous prompt test: Consistently selected #{first.type} across 3 calls ✓")
+    end
+
     defp dispatch_tool_union(tool_union) do
       case tool_union do
         %Ash.Union{type: :weather_tool, value: %BamlClient.WeatherTool{} = tool} ->
