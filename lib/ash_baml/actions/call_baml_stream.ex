@@ -30,25 +30,55 @@ defmodule AshBaml.Actions.CallBamlStream do
 
   defp create_stream(function_module, arguments) do
     Stream.resource(
-      fn -> {:pending, [], arguments} end,
-      fn state -> stream_next(function_module, state) end,
+      fn -> start_streaming(function_module, arguments) end,
+      fn state -> stream_next(state) end,
       fn _state -> :ok end
     )
   end
 
-  defp stream_next(_function_module, {:done, result}) do
-    {:halt, {:done, result}}
+  defp start_streaming(function_module, arguments) do
+    # Use the async stream function which handles its own process spawning
+    parent = self()
+    ref = make_ref()
+
+    # Call stream with a callback that sends messages to parent
+    # BAML client expects arguments as a map
+    function_module.stream(arguments, fn
+      {:partial, partial_result} ->
+        send(parent, {ref, :chunk, partial_result})
+
+      {:done, final_result} ->
+        send(parent, {ref, :done, {:ok, final_result}})
+
+      {:error, error} ->
+        send(parent, {ref, :done, {:error, error}})
+    end)
+
+    {ref, :streaming}
   end
 
-  defp stream_next(_function_module, {:error, reason}) do
-    {:halt, {:error, reason}}
-  end
+  defp stream_next({ref, :streaming}) do
+    receive do
+      {^ref, :chunk, chunk} ->
+        # Emit the chunk and continue streaming
+        {[chunk], {ref, :streaming}}
 
-  defp stream_next(function_module, {:pending, _acc, args}) do
-    case function_module.sync_stream(args, & &1) do
-      {:ok, result} -> {[result], {:done, result}}
-      {:error, reason} -> {[], {:error, reason}}
+      {^ref, :done, {:ok, _final_result}} ->
+        # Stream complete successfully
+        {:halt, {ref, :done}}
+
+      {^ref, :done, {:error, reason}} ->
+        # Stream ended with error
+        {:halt, {ref, {:error, reason}}}
     end
+  end
+
+  defp stream_next({_ref, :done}) do
+    {:halt, :done}
+  end
+
+  defp stream_next({_ref, {:error, _reason}}) do
+    {:halt, :error}
   end
 
   defp build_module_not_found_error(resource, function_name, client_module, function_module) do

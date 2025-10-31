@@ -21,5 +21,12 @@ defmodule AshBaml.Test.TestResource do
       argument(:topic, :string, allow_nil?: false)
       run(call_baml(:MultiArgFunction))
     end
+
+    action :optional_args_action, :map do
+      argument(:name, :string, allow_nil?: false)
+      argument(:age, :integer, allow_nil?: false)
+      argument(:location, :string, allow_nil?: true)
+      run(call_baml(:OptionalArgsFunction))
+    end
   end
 end

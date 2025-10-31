@@ -60,5 +60,40 @@ defmodule AshBaml.IntegrationTest do
       assert result.age_category in ["child", "teen", "adult", "senior"]
       assert String.length(result.description) > 0
     end
+
+    test "can call BAML function with optional arguments" do
+      # Test with optional argument provided
+      {:ok, result_with_location} =
+        AshBaml.Test.TestResource
+        |> Ash.ActionInput.for_action(:optional_args_action, %{
+          name: "Bob",
+          age: 25,
+          location: "San Francisco"
+        })
+        |> Ash.run_action()
+
+      # Verify correct response structure
+      assert %AshBaml.Test.BamlClient.ProfileResponse{} = result_with_location
+      assert is_binary(result_with_location.bio)
+      assert is_list(result_with_location.interests)
+      assert is_binary(result_with_location.location)
+      assert result_with_location.location == "San Francisco"
+
+      # Test without optional argument
+      {:ok, result_without_location} =
+        AshBaml.Test.TestResource
+        |> Ash.ActionInput.for_action(:optional_args_action, %{
+          name: "Charlie",
+          age: 35
+        })
+        |> Ash.run_action()
+
+      # Verify correct response structure
+      assert %AshBaml.Test.BamlClient.ProfileResponse{} = result_without_location
+      assert is_binary(result_without_location.bio)
+      assert is_list(result_without_location.interests)
+      # Location should be nil when not provided
+      assert is_nil(result_without_location.location)
+    end
   end
 end

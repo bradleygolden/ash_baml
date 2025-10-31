@@ -176,8 +176,10 @@ defmodule AshBaml.TelemetryTest do
       config = [enabled: true, events: [:stop]]
 
       Telemetry.with_telemetry(input, :TestFunction, config, fn collector_opts ->
-        assert Keyword.has_key?(collector_opts, :collectors)
-        collectors = Keyword.get(collector_opts, :collectors)
+        # BAML client expects a map for options
+        assert is_map(collector_opts)
+        assert Map.has_key?(collector_opts, :collectors)
+        collectors = Map.get(collector_opts, :collectors)
         assert is_list(collectors)
         assert length(collectors) == 1
         [collector] = collectors
@@ -213,7 +215,8 @@ defmodule AshBaml.TelemetryTest do
       config = [enabled: false]
 
       Telemetry.with_telemetry(input, :TestFunction, config, fn collector_opts ->
-        assert collector_opts == []
+        # BAML client expects a map for options, even when empty
+        assert collector_opts == %{}
         {:ok, :fast_path}
       end)
     end

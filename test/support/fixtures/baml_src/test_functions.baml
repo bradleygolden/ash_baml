@@ -35,3 +35,23 @@ function MultiArgFunction(name: string, age: int, topic: string) -> MultiArgResp
     {{ ctx.output_format }}
   "#
 }
+
+class ProfileResponse {
+  bio string
+  interests string[]
+  location string?
+}
+
+function OptionalArgsFunction(name: string, age: int, location: string?) -> ProfileResponse {
+  client TestClient
+  prompt #"
+    Create a profile for {{ name }} who is {{ age }} years old.
+    {% if location %}
+    They are located in {{ location }}.
+    {% else %}
+    Location is not specified.
+    {% endif %}
+    Provide a brief bio, a list of potential interests, and include the location if provided.
+    {{ ctx.output_format }}
+  "#
+}

@@ -1,5 +1,5 @@
 defmodule AshBaml.TypeGenerationTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias AshBaml.{BamlParser, CodeWriter, TypeGenerator}
 
@@ -8,7 +8,14 @@ defmodule AshBaml.TypeGenerationTest do
 
   setup do
     File.rm_rf!(@tmp_output)
-    File.mkdir_p!(@tmp_output)
+
+    # Use mkdir_p which doesn't fail if directory exists
+    case File.mkdir_p(@tmp_output) do
+      :ok -> :ok
+      {:error, :eexist} -> :ok
+      {:error, reason} -> raise "Failed to create test directory: #{inspect(reason)}"
+    end
+
     :ok
   end
 
