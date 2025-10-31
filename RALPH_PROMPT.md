@@ -173,11 +173,13 @@ If ANY answer is "not sure" → **write more tests**
 
 ---
 
-### 5. Telemetry & Observability ❌ UNTESTED (E2E)
-**Current Confidence**: 30% - unit tests only, no real API verification
+### 5. Telemetry & Observability ⚠️ PARTIAL
+**Current Confidence**: 35% - 1 E2E test passing, needs more coverage
+
+**Tested**:
+- [x] Start/stop events emitted with real API call
 
 **Needs Testing**:
-- [ ] Start/stop events emitted with real API call
 - [ ] Token counts are accurate (vs OpenAI dashboard)
 - [ ] Duration timing is reasonable
 - [ ] Model name captured in metadata

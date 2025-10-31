@@ -171,6 +171,26 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
    - **Confidence**: When given ambiguous input, LLM makes consistent tool choice
    - **Pattern**: BAML provides deterministic tool selection despite LLM non-determinism
 
+5. **Telemetry Events Work Perfectly with Real API** ✅
+   - **Test**: Attached telemetry handler, made real BAML call, verified events
+   - **Result**: ✅ PASSED - All telemetry events emitted correctly
+   - **Timing**: 1.1 seconds (783ms API call duration)
+   - **Events verified**:
+     - `:start` event: Emitted before API call with `monotonic_time` and `system_time`
+     - `:stop` event: Emitted after API call with duration and token counts
+   - **Measurements validated**:
+     - `duration`: 783ms (matches BAML log output)
+     - `input_tokens`: 38 tokens (reasonable for "Hello, world!" prompt)
+     - `output_tokens`: 20 tokens (reasonable for simple response)
+     - `total_tokens`: 58 (correctly summed: 38 + 20)
+   - **Metadata validated**:
+     - `resource`: Correctly identified as TelemetryTestResource
+     - `action`: Correctly identified as :test_telemetry
+     - `function_name`: "TestFunction" (matches BAML function)
+   - **Consistency**: Both :start and :stop events have matching metadata
+   - **Confidence**: Telemetry integration works correctly with real API calls
+   - **Pattern**: Use `:telemetry.attach_many/4` to capture events for monitoring/logging
+
 ### Tests Intentionally Removed
 
 1. **"Tool with optional fields missing"** - REMOVED
