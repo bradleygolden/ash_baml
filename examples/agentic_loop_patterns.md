@@ -12,6 +12,31 @@ An **agentic loop** follows this pattern:
 
 The key insight: **the loop logic can be decoupled from the resource**, allowing the same loop to work with different agents (customer support, todo assistant, research agent, etc.), each with their own state and context.
 
+## The Idiomatic Ash Pattern: Module Delegates
+
+All approaches in this guide use **module delegates** for the `run` clause, which is the idiomatic and recommended Ash pattern:
+
+```elixir
+# ✅ Module delegate - idiomatic Ash
+action :handle_conversation, :map do
+  run MyApp.Actions.AgentLoop
+end
+
+# ❌ Inline function - not recommended for complex logic
+action :handle_conversation, :map do
+  run fn input, context -> ... end
+end
+```
+
+**Why module delegates?**
+- ✅ Fine-grained control over loop execution
+- ✅ Seamless state management via other Ash actions
+- ✅ Fully testable and reusable
+- ✅ Composable with preparations, changes, validations
+- ✅ Supports advanced patterns (streaming, nested loops)
+
+See [ARCHITECTURE.md](agentic_assistant/ARCHITECTURE.md) for deep dive into this pattern.
+
 ---
 
 ## Approach 1: Reactor with Map Step (Fixed Iterations)
@@ -374,9 +399,11 @@ todo_agent = %MyApp.TodoAssistant{
 
 ---
 
-## Approach 2: Action with Internal Loop (Simpler, More Flexible)
+## Approach 2: Action with Internal Loop (Recommended for Most Cases)
 
-This approach uses a plain Ash action with internal recursion. It's simpler and more flexible for dynamic loops.
+This approach uses a plain Ash action with internal recursion via a module delegate. It's simpler, more flexible, and the **recommended approach** for most agentic loops.
+
+**Key advantage:** This is the idiomatic Ash pattern using module delegates, giving you fine-grained control while staying composable with other Ash features.
 
 ### Reusable Action Implementation Module
 
@@ -384,6 +411,9 @@ This approach uses a plain Ash action with internal recursion. It's simpler and 
 defmodule MyApp.Actions.AgentLoop do
   @moduledoc """
   A reusable action implementation for agentic loops.
+
+  This is the IDIOMATIC ASH PATTERN using module delegates.
+  Ash automatically calls run/3 when the action executes.
 
   Any resource using this must implement:
   - :decide_next_action - returns union with tool calls or done
@@ -393,6 +423,8 @@ defmodule MyApp.Actions.AgentLoop do
   use Ash.Resource.Actions.Implementation
 
   @impl true
+  @spec run(Ash.ActionInput.t(), Keyword.t(), Ash.Resource.Context.t()) ::
+        {:ok, any()} | {:error, any()}
   def run(input, opts, _context) do
     max_iterations = input.arguments[:max_turns] || 5
     initial_message = input.arguments[:message]
@@ -687,32 +719,75 @@ end
 
 | Approach | Pros | Cons | Best For |
 |----------|------|------|----------|
-| **Reactor Map** | Declarative, transactional, automatic compensation | Complex, fixed iterations | Structured workflows with known bounds |
-| **Action Loop** | Simple, flexible, easy to debug | Less declarative, manual error handling | Dynamic loops, prototyping |
-| **Hybrid** | Best of both, complex iteration logic + flexible loop | More code to maintain | Production systems needing robustness |
+| **Reactor Map** | Declarative, transactional, automatic compensation | Complex, fixed iterations, less control | Structured workflows with known bounds |
+| **Action Loop** ⭐ | **Simple, flexible, idiomatic Ash, full control** | Manual error handling | **Most agentic loops (RECOMMENDED)** |
+| **Hybrid** | Best of both, complex iteration logic + flexible loop | More code to maintain | Production systems needing transaction semantics |
+
+**Recommendation:** Start with **Approach 2 (Action Loop)** - it uses the idiomatic module delegate pattern and provides the best balance of simplicity, control, and composability.
 
 ---
 
 ## Key Patterns for Reusability
 
-### 1. **Interface Contract**
+### 1. **Module Delegates (Idiomatic Ash)**
+
+Use module delegates instead of inline functions:
+
+```elixir
+# ✅ Idiomatic - module delegate
+actions do
+  action :handle_conversation, :map do
+    argument :message, :string
+    argument :max_turns, :integer, default: 10
+
+    # Ash calls YourModule.run(input, opts, context)
+    run MyApp.Actions.AgentLoop
+  end
+end
+
+# ❌ Not recommended for complex loops
+actions do
+  action :handle_conversation, :map do
+    run fn input, context ->
+      # Complex logic here is hard to test/reuse
+    end
+  end
+end
+```
+
+The delegate module implements:
+```elixir
+defmodule MyApp.Actions.AgentLoop do
+  use Ash.Resource.Actions.Implementation
+
+  @impl true
+  @spec run(Ash.ActionInput.t(), Keyword.t(), Ash.Resource.Context.t()) ::
+        {:ok, any()} | {:error, any()}
+  def run(input, opts, context) do
+    # Your loop logic with full control
+  end
+end
+```
+
+### 2. **Interface Contract**
 
 Any resource using these loops must implement:
 - `:decide_next_action` - returns union with tool types or done signal
 - `:execute_{tool_type}` - one action per tool type
 
-### 2. **Context Injection**
+### 3. **Context Injection**
 
 The resource instance provides context automatically:
 ```elixir
-run fn input, _context ->
+def run(input, _opts, _context) do
   # Access resource state
   customer_id = input.resource.customer_id
-  # ...
+  support_tier = input.resource.support_tier
+  # Use in loop logic
 end
 ```
 
-### 3. **History Management**
+### 4. **History Management**
 
 Track conversation history across iterations:
 ```elixir
@@ -725,13 +800,32 @@ new_history = [%{
 } | history]
 ```
 
-### 4. **Graceful Termination**
+### 5. **Graceful Termination**
 
 Support multiple stop conditions:
 - Max iterations reached
 - Agent signals done
 - Error threshold exceeded
 - External signal (user cancellation)
+
+### 6. **State Management via Actions**
+
+Module delegates can call other actions for state updates:
+
+```elixir
+defp loop(resource, message, history, iterations, opts, context) do
+  # Update state before each iteration (for persistent agents)
+  if persistent?(resource) do
+    {:ok, updated} = resource
+    |> Ash.Changeset.for_update(:increment_turn_count, %{})
+    |> Ash.update()
+
+    continue_with_resource(updated, message, history, iterations - 1)
+  else
+    continue_with_resource(resource, message, history, iterations - 1)
+  end
+end
+```
 
 ---
 
