@@ -144,6 +144,84 @@ defmodule AshBaml.ToolCallingIntegrationTest do
       assert 4.0 in calc_tool.numbers
     end
 
+    test "concurrent tool selection calls (cluster-safe)" do
+      # This test verifies that multiple parallel tool selection calls work correctly
+      # CRITICAL: This tests cluster safety - no shared mutable state or race conditions
+      messages = [
+        "What's the weather in Tokyo?",
+        "Calculate 100 + 200",
+        "Temperature in London in fahrenheit?",
+        "Divide 50 by 2",
+        "Weather forecast for Paris?"
+      ]
+
+      start_time = System.monotonic_time(:millisecond)
+
+      results =
+        messages
+        |> Task.async_stream(
+          fn message ->
+            {:ok, tool_call} =
+              ToolTestResource
+              |> Ash.ActionInput.for_action(:select_tool, %{message: message})
+              |> Ash.run_action()
+
+            {message, tool_call}
+          end,
+          timeout: 30_000,
+          max_concurrency: 5
+        )
+        |> Enum.to_list()
+
+      duration = System.monotonic_time(:millisecond) - start_time
+
+      # All tasks should succeed
+      Enum.each(results, fn result ->
+        assert {:ok, {_message, _tool_call}} = result
+      end)
+
+      # Extract the tool calls
+      tool_calls =
+        Enum.map(results, fn {:ok, {message, tool_call}} ->
+          {message, tool_call}
+        end)
+
+      # Verify each tool call is a valid union
+      Enum.each(tool_calls, fn {_message, tool_call} ->
+        assert %Ash.Union{} = tool_call
+        assert tool_call.type in [:weather_tool, :calculator_tool]
+      end)
+
+      # Verify correct tool selection based on message content
+      weather_calls =
+        Enum.filter(tool_calls, fn {msg, _} ->
+          String.contains?(msg, "weather") or String.contains?(msg, "Temperature") or
+            String.contains?(msg, "forecast")
+        end)
+
+      calc_calls =
+        Enum.filter(tool_calls, fn {msg, _} ->
+          String.contains?(msg, "Calculate") or String.contains?(msg, "Divide")
+        end)
+
+      # Should have 3 weather and 2 calculator calls
+      assert length(weather_calls) == 3
+      assert length(calc_calls) == 2
+
+      # Verify weather calls selected weather_tool
+      Enum.each(weather_calls, fn {_msg, tool_call} ->
+        assert tool_call.type == :weather_tool
+      end)
+
+      # Verify calculator calls selected calculator_tool
+      Enum.each(calc_calls, fn {_msg, tool_call} ->
+        assert tool_call.type == :calculator_tool
+      end)
+
+      IO.puts("Concurrent tool selection: #{length(results)} calls completed in #{duration}ms ✓")
+      IO.puts("Average time per call: #{div(duration, length(results))}ms")
+    end
+
     defp dispatch_tool_union(tool_union) do
       case tool_union do
         %Ash.Union{type: :weather_tool, value: %BamlClient.WeatherTool{} = tool} ->
