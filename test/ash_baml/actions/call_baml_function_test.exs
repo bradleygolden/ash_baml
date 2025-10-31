@@ -52,7 +52,7 @@ defmodule AshBaml.Actions.CallBamlFunctionTest do
     test "action can be defined with call_baml helper" do
       defmodule WorkingClient do
         defmodule TestFn do
-          def call(_args), do: {:ok, %{result: "success"}}
+          def call(_args, _opts \\ []), do: {:ok, %{result: "success"}}
         end
       end
 
