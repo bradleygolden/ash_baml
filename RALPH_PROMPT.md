@@ -66,7 +66,7 @@ If ANY answer is "not sure" → **write more tests**
 ## Feature Areas to Cover
 
 ### 1. Basic BAML Function Calls ⚠️ PARTIAL
-**Current Confidence**: 80% - happy path + multi-arg + optional args + array args + nested objects tested
+**Current Confidence**: 85% - happy path + multi-arg + optional args + array args + nested objects + long input tested
 
 **Tested**:
 - [x] Simple function call returns struct
@@ -74,9 +74,9 @@ If ANY answer is "not sure" → **write more tests**
 - [x] Function with optional arguments
 - [x] Function with array arguments
 - [x] Function with nested object arguments
+- [x] Function with very long input (>2000 chars)
 
 **Needs Testing**:
-- [ ] Function with very long input (>2000 chars)
 - [ ] Function with special characters
 - [ ] Function with unicode/emoji
 - [ ] Concurrent function calls (5+ parallel)
@@ -465,10 +465,10 @@ Following the "no skipped tests" policy, these tests were removed entirely and d
 
 ## Progress Tracking
 
-- **Tests implemented**: 29 (25 streaming + 5 basic calls)
+- **Tests implemented**: 30 (25 streaming + 6 basic calls)
 - **Feature areas complete**: 1 / 10 (Streaming ✅ COMPLETE)
-- **Overall confidence**: 49% → **Target: 95%+**
-- **Estimated cost so far**: ~$0.0030 (29 test runs)
+- **Overall confidence**: 50% → **Target: 95%+**
+- **Estimated cost so far**: ~$0.0031 (30 test runs)
 - **Time started**: 2025-10-31
 
 ## Next Steps After Each Test
@@ -527,29 +527,31 @@ Some features might need 20 tests (complex error handling + many edge cases).
 **ITERATION COMPLETE** ✅
 
 ### What was accomplished:
-1. ✅ Attempted to test "Function with empty string input"
-2. ✅ Discovered Ash Framework validation constraint
-3. ✅ Empty strings are rejected by Ash's required argument validation
-4. ✅ TEST REMOVED - documented in "Tests Intentionally Removed" section
-5. ✅ Reverted all code changes (BAML function, action, test)
-6. ✅ Updated RALPH_PROMPT.md with detailed reasoning
+1. ✅ Added BAML function: `LongInputFunction(long_text: string) -> LongInputResponse`
+2. ✅ Added corresponding action: `:long_input_action` to TestResource
+3. ✅ Implemented integration test with 2000+ character AI history text
+4. ✅ Test PASSED on first run
+5. ✅ Verified LLM correctly processes long inputs and returns structured response
 
 ### Test Details:
-- **Attempted**: `EmptyStringFunction(input: string) -> EmptyStringResponse`
-- **Error**: `%Ash.Error.Changes.Required{field: :input, type: :argument}`
-- **Finding**: Ash treats empty strings as "not provided" for required arguments
-- **Decision**: REMOVED - This is correct framework behavior, not a BAML integration concern
-- **Duration**: 1 attempt
-- **Cost**: $0 (no API call made)
+- **Test**: "can call BAML function with very long input (>2000 chars)"
+- **Result**: ✅ PASSED
+- **Duration**: 2657ms (1 attempt)
+- **Tokens**: 882 input / 114 output
+- **Cost**: ~$0.0001
+- **Key finding**: LLM successfully analyzed 2000+ character text and returned:
+  - Summary: 2-3 sentences about AI history
+  - Word count: 611 (accurate)
+  - Key topics: 5 topics (Foundations of AI, AI Winters, Expert Systems, Machine Learning, Deep Learning)
 
 ### Status:
-- **Feature Area #1 (Basic BAML Function Calls)**: 80% confident (5/11 tests - 1 removed, 6 remaining)
-- Empty string validation is a framework concern, properly handled by Ash
+- **Feature Area #1 (Basic BAML Function Calls)**: 85% confident (6/11 tests - 1 removed, 5 remaining)
+- Long inputs work correctly without truncation or data loss
 
 ### Next iteration should:
-**Next test**: "Function with very long input (>2000 chars)"
+**Next test**: "Function with special characters"
 File: `test/integration/baml_integration_test.exs`
 
 ---
 
-**Ready for next iteration**: Continue with Feature Area #1 - Very Long Input Edge Case
+**Ready for next iteration**: Continue with Feature Area #1 - Special Characters Edge Case

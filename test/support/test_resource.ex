@@ -38,5 +38,10 @@ defmodule AshBaml.Test.TestResource do
       argument(:user, :map, allow_nil?: false)
       run(call_baml(:NestedObjectFunction))
     end
+
+    action :long_input_action, :map do
+      argument(:long_text, :string, allow_nil?: false)
+      run(call_baml(:LongInputFunction))
+    end
   end
 end

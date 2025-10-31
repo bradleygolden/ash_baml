@@ -106,3 +106,23 @@ function NestedObjectFunction(user: UserProfile) -> NestedObjectResponse {
     {{ ctx.output_format }}
   "#
 }
+
+class LongInputResponse {
+  summary string
+  word_count int
+  key_topics string[]
+}
+
+function LongInputFunction(long_text: string) -> LongInputResponse {
+  client TestClient
+  prompt #"
+    Analyze the following text:
+    {{ long_text }}
+
+    Provide:
+    1. A brief summary (2-3 sentences)
+    2. An approximate word count
+    3. A list of 3-5 key topics or themes
+    {{ ctx.output_format }}
+  "#
+}
