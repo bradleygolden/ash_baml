@@ -138,10 +138,15 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 
 ## Next Priority
 
-**FEATURE AREA #4**: Telemetry & Observability - ⚠️ **IN PROGRESS**
+**FEATURE AREA #5**: Telemetry & Observability - ⚠️ **IN PROGRESS**
 - Currently at 65% confidence with 7 tests passing
 - Most recent: Telemetry respects enabled/disabled config ✅
 - Next test: Custom event prefix works
+
+**FEATURE AREA #4 (Tool Calling) VERIFIED**: ✅ COMPLETE
+- All 12 tests passing in test/integration/tool_calling_integration_test.exs
+- Verified on 2025-10-31 - no regressions, all tests green
+- 98% confidence - production ready
 
 **Note on Auto-Generated Actions** (originally Feature Area #4, now deferred):
 - ⚠️ **BLOCKED BY TECHNICAL LIMITATION**
@@ -156,9 +161,11 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 
 ### Key Patterns Validated
 
-1. **Tool Calling is Production-Ready** ✅ (NEW)
-   - **Test Suite**: 10/10 tests passing in tool_calling_integration_test.exs
+1. **Tool Calling is Production-Ready** ✅ (VERIFIED 2025-10-31)
+   - **Test Suite**: 12/12 tests passing in tool_calling_integration_test.exs
    - **E2E workflows**: Complete flow from tool selection → dispatch → execution
+   - **Re-verified**: All tests still passing with no regressions
+   - **New findings**: Test suite comprehensively covers all checklist items from Feature Area #4
    - **Ambiguous prompts**: LLM makes consistent tool choices (3/3 same selection)
    - **Field population**: All tool fields correctly extracted from natural language
    - **3-way unions**: TimerTool | WeatherTool | CalculatorTool working perfectly
