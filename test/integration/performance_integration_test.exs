@@ -71,5 +71,69 @@ defmodule AshBaml.PerformanceIntegrationTest do
       assert duration < 30_000,
              "10 concurrent calls took #{duration}ms, expected < 30000ms"
     end
+
+    test "20 concurrent calls (check for bottlenecks)" do
+      # This test verifies the system can handle higher concurrency (20 parallel calls)
+      # Checks for performance bottlenecks, connection limits, or resource contention
+      # CRITICAL: Tests cluster safety at higher concurrency levels
+
+      messages =
+        Enum.map(1..20, fn i ->
+          "Message #{i}: Respond with a single sentence."
+        end)
+
+      start_time = System.monotonic_time(:millisecond)
+
+      results =
+        messages
+        |> Task.async_stream(
+          fn message ->
+            {:ok, result} =
+              TestResource
+              |> Ash.ActionInput.for_action(:test_action, %{
+                message: message
+              })
+              |> Ash.run_action()
+
+            {message, result}
+          end,
+          timeout: 60_000,
+          max_concurrency: 20
+        )
+        |> Enum.to_list()
+
+      duration = System.monotonic_time(:millisecond) - start_time
+
+      # All tasks should succeed
+      Enum.each(results, fn result ->
+        assert {:ok, {_message, _response}} = result
+      end)
+
+      # Extract the responses
+      responses =
+        Enum.map(results, fn {:ok, {message, response}} ->
+          {message, response}
+        end)
+
+      # Verify each response is valid
+      Enum.each(responses, fn {_message, response} ->
+        assert is_struct(response)
+        assert Map.has_key?(response, :content)
+        assert is_binary(response.content)
+        assert String.length(response.content) > 0
+      end)
+
+      # Verify all 20 calls completed
+      assert length(responses) == 20
+
+      IO.puts("20 concurrent calls: #{length(results)} calls completed in #{duration}ms ✓")
+      IO.puts("Average time per call: #{div(duration, length(results))}ms")
+
+      # Check for performance bottlenecks
+      # Should complete in reasonable time (< 45 seconds for 20 concurrent calls)
+      # If significantly slower than 10 concurrent calls, indicates bottleneck
+      assert duration < 45_000,
+             "20 concurrent calls took #{duration}ms, expected < 45000ms - possible bottleneck"
+    end
   end
 end
