@@ -36,9 +36,10 @@ Emitted when a BAML function call starts.
   resource: module(),                    # Ash resource (e.g., MyApp.Assistant)
   action: atom(),                        # Action name (e.g., :say_hello)
   function_name: String.t(),             # BAML function (e.g., "SayHello")
-  arguments: map(),                      # Function arguments
-  client_module: module(),               # BAML client module
-  streaming: boolean()                   # true if streaming call
+  collector_name: String.t()             # Collector reference identifier
+  # Optional fields (configured via `metadata` DSL option):
+  # llm_client: any()                    # LLM client used (opt-in)
+  # stream: boolean()                    # true if streaming call (opt-in)
 }
 ```
 
@@ -62,10 +63,10 @@ Emitted when a BAML function call completes successfully.
   resource: module(),
   action: atom(),
   function_name: String.t(),
-  client_module: module(),
-  streaming: boolean(),
-  model: String.t() | nil,               # Model used (e.g., "gpt-4")
-  result: any()                          # Function result
+  collector_name: String.t()
+  # Optional fields (configured via `metadata` DSL option):
+  # llm_client: any()                    # LLM client used (opt-in)
+  # stream: boolean()                    # true if streaming call (opt-in)
 }
 ```
 
@@ -86,13 +87,48 @@ Emitted when a BAML function call fails.
   resource: module(),
   action: atom(),
   function_name: String.t(),
-  client_module: module(),
-  streaming: boolean(),
+  collector_name: String.t(),
   kind: :error | :exit | :throw,
   reason: any(),                         # Error reason
   stacktrace: list()
+  # Optional fields (configured via `metadata` DSL option):
+  # llm_client: any()                    # LLM client used (opt-in)
+  # stream: boolean()                    # true if streaming call (opt-in)
 }
 ```
+
+## Metadata Configuration
+
+By default, telemetry events include only **safe metadata fields**:
+- `resource` - The Ash resource module
+- `action` - The action name
+- `function_name` - The BAML function name
+- `collector_name` - The collector reference identifier
+
+**Optional metadata fields** can be enabled per-resource using the `metadata` DSL option:
+
+```elixir
+defmodule MyApp.Assistant do
+  use Ash.Resource, extensions: [AshBaml.Resource]
+
+  baml do
+    client_module MyApp.BamlClient
+    import_functions [:SayHello]
+
+    telemetry do
+      enabled true
+      # Enable optional metadata fields
+      metadata [:llm_client, :stream]
+    end
+  end
+end
+```
+
+**Available optional fields:**
+- `:llm_client` - The LLM client used for the call
+- `:stream` - Whether this was a streaming call (boolean)
+
+These fields are opt-in for privacy and performance reasons. Only include metadata you need for your observability use case.
 
 ## Attaching Handlers
 
@@ -136,8 +172,7 @@ defmodule MyApp.TelemetryHandler do
     Logger.info("BAML call completed", [
       function: metadata.function_name,
       duration_ms: duration_ms,
-      tokens: measurements.total_tokens,
-      model: metadata.model
+      tokens: measurements.total_tokens
     ])
   end
 
@@ -454,14 +489,13 @@ defmodule MyApp.DatadogReporter do
     Statix.histogram("baml.call.duration", duration_ms, [
       tags: [
         "function:#{metadata.function_name}",
-        "model:#{metadata.model}",
         "resource:#{inspect(metadata.resource)}"
       ]
     ])
 
     if tokens = measurements.total_tokens do
       Statix.histogram("baml.call.tokens", tokens, [
-        tags: ["function:#{metadata.function_name}", "model:#{metadata.model}"]
+        tags: ["function:#{metadata.function_name}"]
       ])
     end
   end
@@ -503,11 +537,12 @@ defmodule MyApp.HoneycombReporter do
     Process.put(:honeycomb_span_id, span_id)
 
     # Start span in Honeycomb
+    # Note: metadata.stream is only available if configured via `metadata: [:stream]`
     Honeycomb.start_span(trace_id, span_id, %{
       name: "baml.#{metadata.function_name}",
       "baml.function": metadata.function_name,
       "baml.resource": inspect(metadata.resource),
-      "baml.streaming": metadata.streaming
+      "baml.stream": Map.get(metadata, :stream, false)
     }, config.api_key)
   end
 

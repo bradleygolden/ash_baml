@@ -124,7 +124,8 @@ defmodule AshBaml.MixProject do
         ]
       ],
       skip_undefined_reference_warnings_on: [
-        "CHANGELOG.md"
+        "CHANGELOG.md",
+        "README.md"
       ],
       before_closing_head_tag: fn
         :html ->
