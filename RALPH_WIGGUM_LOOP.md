@@ -78,7 +78,7 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 ---
 
 ### 4. Telemetry & Observability ⚠️ PARTIAL
-**Current Confidence**: 75% - 8 E2E tests passing, needs more coverage
+**Current Confidence**: 80% - 9 E2E tests passing, needs more coverage
 
 **Tested**:
 - [x] Start/stop events emitted with real API call
@@ -89,9 +89,9 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 - [x] Multiple concurrent calls tracked separately
 - [x] Telemetry respects enabled/disabled config
 - [x] Custom event prefix works
+- [x] Metadata fields are complete
 
 **Needs Testing**:
-- [ ] Metadata fields are complete
 - [ ] Telemetry overhead is minimal
 
 **Tests Removed** (documented in Learnings):
@@ -114,35 +114,37 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 
 ## Progress Tracking
 
-- **Tests implemented**: 50 (22 streaming + 9 basic calls + 12 tool calling + 8 telemetry)
+- **Tests implemented**: 51 (22 streaming + 9 basic calls + 12 tool calling + 9 telemetry)
 - **Feature areas complete**: 3 / 10 (Basic Calls ✅, Streaming ✅, Tool Calling ✅)
-- **Overall confidence**: 70% → **Target: 95%+**
-- **Estimated cost so far**: ~$0.0086 (50 test runs)
+- **Overall confidence**: 71% → **Target: 95%+**
+- **Estimated cost so far**: ~$0.0087 (51 test runs)
 - **Time started**: 2025-10-31
 
 ## Latest Test Results
 
-**Test**: Custom Event Prefix Works (Telemetry Feature Area #8)
+**Test**: Metadata Fields Are Complete (Telemetry Feature Area #4)
 - **Status**: ✅ PASSED
-- **Duration**: 1.5 seconds (1 API call with custom prefix verification)
-- **Tokens**: ~38 input / ~20 output
+- **Duration**: 2.9 seconds (1 API call with metadata verification)
+- **Tokens**: ~38 input / ~44 output
 - **Cost**: ~$0.0001
 - **Key Findings**:
-  - Custom telemetry prefix `[:my_app, :llm]` works correctly
-  - Events emitted with custom prefix instead of default `[:ash_baml]`
-  - Both `:start` and `:stop` events use custom prefix
-  - NO events emitted on default prefix (verified isolation)
-  - All measurements and metadata work correctly with custom prefix
-  - Configuration via `prefix([:my_app, :llm])` DSL is simple and clean
-  - Enables multiple apps to use ash_baml with distinct telemetry namespaces
-  - Useful for multi-tenant or microservice architectures
+  - ALL expected metadata fields present in both :start and :stop events
+  - Standard fields verified: `resource`, `action`, `function_name`, `collector_name`
+  - `model_name` correctly added to :stop event only (expected behavior)
+  - Metadata consistency verified between :start and :stop events
+  - Field types validated: resource is module, action is atom, names are strings
+  - `collector_name` is the collector reference as string (e.g., "#Ref<...>")
+  - `function_name` is string "TestFunction" (not atom)
+  - `model_name` contains expected model identifier ("gpt-4o-mini")
+  - Metadata structure matches documented API in AshBaml.Telemetry moduledoc
+  - Complete metadata enables full observability for production debugging
 
 ## Next Priority
 
 **FEATURE AREA #4**: Telemetry & Observability - ⚠️ **IN PROGRESS**
-- Currently at 75% confidence with 8 tests passing
-- Most recent: Custom event prefix works ✅
-- Next test: Metadata fields are complete
+- Currently at 80% confidence with 9 tests passing
+- Most recent: Metadata fields are complete ✅
+- Next test: Telemetry overhead is minimal
 
 **FEATURE AREA #4 (Tool Calling) VERIFIED**: ✅ COMPLETE
 - All 12 tests passing in test/integration/tool_calling_integration_test.exs
@@ -206,6 +208,21 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
    - **No invalid values**: LLM never returned values outside the allowed enum set
    - **Confidence**: Enum constraints are production-ready for restricting tool parameters
    - **Pattern**: Use enum constraints for fields with fixed sets of allowed values
+
+4. **Telemetry Metadata is Complete and Well-Structured** ✅ (VERIFIED 2025-10-31)
+   - **Test**: Verified ALL expected metadata fields present in telemetry events
+   - **Standard metadata** (present in both :start and :stop events):
+     - `resource`: The Ash resource module (e.g., `MyApp.Assistant`)
+     - `action`: The action name as atom (e.g., `:chat`)
+     - `function_name`: BAML function name as string (e.g., `"TestFunction"`)
+     - `collector_name`: Collector reference as string (e.g., `"#Ref<0.123.456.789>"`)
+   - **Additional metadata** (:stop event only):
+     - `model_name`: LLM model identifier (e.g., `"gpt-4o-mini"`)
+   - **Consistency**: All shared fields match exactly between :start and :stop events
+   - **Types validated**: resource is module, action is atom, names are binary strings
+   - **Structure matches API**: Metadata format matches AshBaml.Telemetry moduledoc
+   - **Observability**: Complete metadata enables full production debugging and tracing
+   - **Pattern**: Attach telemetry handlers to track all BAML calls with full context
 
 4. **Ambiguous Tool Selection is Consistent** ✅
    - **Test**: Ambiguous prompt "What about 72 degrees?" tested 3 times

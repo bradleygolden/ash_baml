@@ -621,5 +621,101 @@ defmodule AshBaml.TelemetryIntegrationTest do
       # Cleanup
       :telemetry.detach(handler_id)
     end
+
+    test "metadata fields are complete" do
+      # This test verifies that ALL expected metadata fields are present
+      # in telemetry events, with correct types and reasonable values
+      test_pid = self()
+      ref = make_ref()
+      handler_id = "test-metadata-#{:erlang.ref_to_list(ref)}"
+
+      :telemetry.attach_many(
+        handler_id,
+        [
+          [:ash_baml, :call, :start],
+          [:ash_baml, :call, :stop]
+        ],
+        fn event_name, measurements, metadata, _config ->
+          send(test_pid, {ref, event_name, measurements, metadata})
+        end,
+        nil
+      )
+
+      # Make a BAML call
+      {:ok, _result} =
+        TelemetryTestResource
+        |> Ash.ActionInput.for_action(:test_telemetry, %{
+          message: "Test metadata completeness"
+        })
+        |> Ash.run_action()
+
+      # Verify :start event metadata is complete
+      assert_receive {^ref, [:ash_baml, :call, :start], _start_measurements, start_metadata}, 1000
+
+      # Required metadata fields (present in both :start and :stop)
+      assert Map.has_key?(start_metadata, :resource), "Start metadata missing :resource"
+      assert start_metadata.resource == TelemetryTestResource
+
+      assert Map.has_key?(start_metadata, :action), "Start metadata missing :action"
+      assert start_metadata.action == :test_telemetry
+
+      assert Map.has_key?(start_metadata, :function_name), "Start metadata missing :function_name"
+      assert start_metadata.function_name == "TestFunction"
+      assert is_binary(start_metadata.function_name)
+
+      assert Map.has_key?(start_metadata, :collector_name),
+             "Start metadata missing :collector_name"
+
+      assert is_binary(start_metadata.collector_name)
+      # Collector name is the collector reference as a string (e.g., "#Ref<...>")
+      assert String.starts_with?(start_metadata.collector_name, "#Ref<"),
+             "Collector name should be a reference string"
+
+      # Verify :stop event metadata is complete
+      assert_receive {^ref, [:ash_baml, :call, :stop], _stop_measurements, stop_metadata}, 5000
+
+      # Same required fields as :start
+      assert Map.has_key?(stop_metadata, :resource), "Stop metadata missing :resource"
+      assert stop_metadata.resource == TelemetryTestResource
+
+      assert Map.has_key?(stop_metadata, :action), "Stop metadata missing :action"
+      assert stop_metadata.action == :test_telemetry
+
+      assert Map.has_key?(stop_metadata, :function_name), "Stop metadata missing :function_name"
+      assert stop_metadata.function_name == "TestFunction"
+
+      assert Map.has_key?(stop_metadata, :collector_name),
+             "Stop metadata missing :collector_name"
+
+      assert is_binary(stop_metadata.collector_name)
+
+      # :stop event should ALSO have model_name (added after BAML call completes)
+      assert Map.has_key?(stop_metadata, :model_name), "Stop metadata missing :model_name"
+      assert is_binary(stop_metadata.model_name)
+      assert String.contains?(stop_metadata.model_name, "gpt-4o-mini")
+
+      # Verify metadata consistency between :start and :stop
+      assert start_metadata.resource == stop_metadata.resource,
+             "Resource should match between start and stop"
+
+      assert start_metadata.action == stop_metadata.action,
+             "Action should match between start and stop"
+
+      assert start_metadata.function_name == stop_metadata.function_name,
+             "Function name should match between start and stop"
+
+      assert start_metadata.collector_name == stop_metadata.collector_name,
+             "Collector name should match between start and stop"
+
+      IO.puts("All metadata fields are complete and correct ✓")
+      IO.puts("  resource: #{inspect(stop_metadata.resource)}")
+      IO.puts("  action: #{stop_metadata.action}")
+      IO.puts("  function_name: #{stop_metadata.function_name}")
+      IO.puts("  model_name: #{stop_metadata.model_name}")
+      IO.puts("  collector_name: #{stop_metadata.collector_name}")
+
+      # Cleanup
+      :telemetry.detach(handler_id)
+    end
   end
 end
