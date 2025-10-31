@@ -144,6 +144,28 @@ defmodule AshBaml.ToolCallingIntegrationTest do
       assert 4.0 in calc_tool.numbers
     end
 
+    test "3+ tool options in union (timer tool)" do
+      {:ok, tool_call} =
+        ToolTestResource
+        |> Ash.ActionInput.for_action(:select_tool, %{
+          message: "Set a timer for 5 minutes called 'tea brewing'"
+        })
+        |> Ash.run_action()
+
+      # Verify it's a union with timer_tool type
+      assert %Ash.Union{type: :timer_tool, value: timer_tool} = tool_call
+
+      # Verify fields are populated
+      assert timer_tool.duration_seconds != nil
+      assert is_integer(timer_tool.duration_seconds)
+      # 5 minutes = 300 seconds
+      assert timer_tool.duration_seconds == 300
+
+      assert timer_tool.label != nil
+      assert is_binary(timer_tool.label)
+      assert String.contains?(String.downcase(timer_tool.label), "tea")
+    end
+
     test "concurrent tool selection calls (cluster-safe)" do
       # This test verifies that multiple parallel tool selection calls work correctly
       # CRITICAL: This tests cluster safety - no shared mutable state or race conditions

@@ -16,7 +16,12 @@ class CalculatorTool {
   numbers float[] @description("Numbers to perform operation on")
 }
 
-function SelectTool(message: string) -> WeatherTool | CalculatorTool {
+class TimerTool {
+  duration_seconds int @description("Duration in seconds for the timer")
+  label string @description("Optional label/name for the timer")
+}
+
+function SelectTool(message: string) -> WeatherTool | CalculatorTool | TimerTool {
   client TestToolClient
   prompt #"
     Based on the user's message, determine which tool to call.

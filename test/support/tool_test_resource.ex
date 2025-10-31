@@ -26,6 +26,12 @@ defmodule AshBaml.Test.ToolTestResource do
             constraints: [
               instance_of: AshBaml.Test.BamlClient.CalculatorTool
             ]
+          ],
+          timer_tool: [
+            type: :struct,
+            constraints: [
+              instance_of: AshBaml.Test.BamlClient.TimerTool
+            ]
           ]
         ]
       )
