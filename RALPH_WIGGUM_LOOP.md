@@ -114,19 +114,22 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 - **Tests implemented**: 46 (22 streaming + 9 basic calls + 12 tool calling + 4 telemetry)
 - **Feature areas complete**: 3 / 10 (Basic Calls ✅, Streaming ✅, Tool Calling ✅)
 - **Overall confidence**: 87% → **Target: 95%+**
-- **Estimated cost so far**: ~$0.0077 (46 test runs)
+- **Estimated cost so far**: ~$0.0080 (46 test runs + 1 verification run)
 - **Time started**: 2025-10-31
 
 ## Latest Test Results
 
-**Test**: Token Counts Are Accurate and Reasonable (Telemetry Feature Area #4)
-- **Status**: ✅ PASSED (new test)
-- **Duration**: 1.4 seconds (1 API call)
-- **Tokens**: 38 input / 24 output / 62 total
-- **Cost**: ~$0.0001
+**Test**: Ambiguous Prompt Consistency Re-verification (Tool Calling Feature Area #3)
+- **Status**: ✅ PASSED (verification run)
+- **Duration**: 4.4 seconds (3 sequential API calls)
+- **Tokens**: 143 input / ~19 output per call (3 calls total)
+- **Cost**: ~$0.0003
 - **Key Findings**:
-  - Token counts correctly captured in telemetry stop event
-  - Input tokens (38) within expected range for "Hello, world!" message + system prompt
+  - LLM consistently selected `weather_tool` across all 3 calls with "What about 72 degrees?"
+  - All 3 calls returned city and units fields (weather tool structure)
+  - Call timing: 1900ms, 1445ms, 904ms (typical variance)
+  - LLM interpreted "72 degrees" as temperature context
+  - Confirms tool selection is deterministic and stable
   - Output tokens (24) reasonable for simple JSON response
   - Total tokens correctly equals input + output (no arithmetic errors)
   - Token counts align with BAML log output (verified consistency)
