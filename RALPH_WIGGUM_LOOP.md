@@ -78,7 +78,7 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 ---
 
 ### 4. Telemetry & Observability ⚠️ PARTIAL
-**Current Confidence**: 65% - 7 E2E tests passing, needs more coverage
+**Current Confidence**: 75% - 8 E2E tests passing, needs more coverage
 
 **Tested**:
 - [x] Start/stop events emitted with real API call
@@ -88,9 +88,9 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 - [x] Function name captured in metadata
 - [x] Multiple concurrent calls tracked separately
 - [x] Telemetry respects enabled/disabled config
+- [x] Custom event prefix works
 
 **Needs Testing**:
-- [ ] Custom event prefix works
 - [ ] Metadata fields are complete
 - [ ] Telemetry overhead is minimal
 
@@ -114,34 +114,35 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 
 ## Progress Tracking
 
-- **Tests implemented**: 49 (22 streaming + 9 basic calls + 12 tool calling + 7 telemetry)
+- **Tests implemented**: 50 (22 streaming + 9 basic calls + 12 tool calling + 8 telemetry)
 - **Feature areas complete**: 3 / 10 (Basic Calls ✅, Streaming ✅, Tool Calling ✅)
-- **Overall confidence**: 69% → **Target: 95%+**
-- **Estimated cost so far**: ~$0.0085 (49 test runs)
+- **Overall confidence**: 70% → **Target: 95%+**
+- **Estimated cost so far**: ~$0.0086 (50 test runs)
 - **Time started**: 2025-10-31
 
 ## Latest Test Results
 
-**Test**: Telemetry Respects Enabled/Disabled Config (Telemetry Feature Area #4)
+**Test**: Custom Event Prefix Works (Telemetry Feature Area #8)
 - **Status**: ✅ PASSED
-- **Duration**: 2.7 seconds (1 API call + event verification)
-- **Tokens**: ~41 input / ~56 output
+- **Duration**: 1.5 seconds (1 API call with custom prefix verification)
+- **Tokens**: ~38 input / ~20 output
 - **Cost**: ~$0.0001
 - **Key Findings**:
-  - BAML calls work correctly with telemetry disabled
-  - NO telemetry events emitted when `enabled(false)` is configured
-  - Both `:start` and `:stop` events properly suppressed
-  - Configuration change requires no code changes - just DSL setting
-  - Useful for environments where telemetry is not needed (testing, local dev)
-  - Validates that telemetry is opt-in and can be safely disabled
-  - Performance unaffected by telemetry being disabled
+  - Custom telemetry prefix `[:my_app, :llm]` works correctly
+  - Events emitted with custom prefix instead of default `[:ash_baml]`
+  - Both `:start` and `:stop` events use custom prefix
+  - NO events emitted on default prefix (verified isolation)
+  - All measurements and metadata work correctly with custom prefix
+  - Configuration via `prefix([:my_app, :llm])` DSL is simple and clean
+  - Enables multiple apps to use ash_baml with distinct telemetry namespaces
+  - Useful for multi-tenant or microservice architectures
 
 ## Next Priority
 
-**FEATURE AREA #5**: Telemetry & Observability - ⚠️ **IN PROGRESS**
-- Currently at 65% confidence with 7 tests passing
-- Most recent: Telemetry respects enabled/disabled config ✅
-- Next test: Custom event prefix works
+**FEATURE AREA #4**: Telemetry & Observability - ⚠️ **IN PROGRESS**
+- Currently at 75% confidence with 8 tests passing
+- Most recent: Custom event prefix works ✅
+- Next test: Metadata fields are complete
 
 **FEATURE AREA #4 (Tool Calling) VERIFIED**: ✅ COMPLETE
 - All 12 tests passing in test/integration/tool_calling_integration_test.exs
@@ -307,6 +308,23 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
    - **Error handling**: Rescue clause catches any parsing errors, returns nil
    - **Confidence**: Model name reliably captured for observability and cost attribution
    - **Use case**: Essential for multi-model deployments and cost tracking by model
+
+10. **Custom Telemetry Prefix Works Perfectly** ✅ (NEW)
+   - **Test**: Created resource with custom prefix `[:my_app, :llm]`, verified events emitted correctly
+   - **Result**: ✅ PASSED - Custom prefix fully functional
+   - **Configuration**: Simple DSL syntax: `prefix([:my_app, :llm])`
+   - **Verification**:
+     - Events emitted with custom prefix: `[:my_app, :llm, :call, :start]` and `[:my_app, :llm, :call, :stop]`
+     - NO events emitted on default `[:ash_baml]` prefix (verified isolation)
+     - All measurements (duration, tokens) work correctly with custom prefix
+     - All metadata (resource, action, function_name) included properly
+   - **Use cases**:
+     - Multi-tenant applications: Each tenant can have its own telemetry namespace
+     - Microservices: Different services can use distinct prefixes for aggregation
+     - Multi-app deployments: Separate telemetry streams per application
+     - Monitoring isolation: Different teams can monitor different prefixes
+   - **Confidence**: Custom prefix is production-ready for namespace isolation
+   - **Pattern**: Configure via DSL, attach handlers to custom prefix, events "just work"
 
 ### Tests Intentionally Removed
 

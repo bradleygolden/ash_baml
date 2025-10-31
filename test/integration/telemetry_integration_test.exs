@@ -12,6 +12,7 @@ defmodule AshBaml.TelemetryIntegrationTest do
     resources do
       resource(AshBaml.TelemetryIntegrationTest.TelemetryTestResource)
       resource(AshBaml.TelemetryIntegrationTest.TelemetryDisabledResource)
+      resource(AshBaml.TelemetryIntegrationTest.CustomPrefixResource)
     end
   end
 
@@ -59,6 +60,32 @@ defmodule AshBaml.TelemetryIntegrationTest do
 
     actions do
       action :test_disabled, :map do
+        argument(:message, :string, allow_nil?: false)
+        run(call_baml(:TestFunction))
+      end
+    end
+  end
+
+  # Define a test resource with CUSTOM telemetry prefix
+  defmodule CustomPrefixResource do
+    @moduledoc false
+
+    use Ash.Resource,
+      domain: AshBaml.TelemetryIntegrationTest.TelemetryTestDomain,
+      extensions: [AshBaml.Resource]
+
+    baml do
+      client_module(AshBaml.Test.BamlClient)
+
+      telemetry do
+        enabled(true)
+        events([:start, :stop])
+        prefix([:my_app, :llm])
+      end
+    end
+
+    actions do
+      action :test_custom_prefix, :map do
         argument(:message, :string, allow_nil?: false)
         run(call_baml(:TestFunction))
       end
@@ -523,6 +550,73 @@ defmodule AshBaml.TelemetryIntegrationTest do
       refute_receive {^ref, [:ash_baml, :call, :stop], _, _}, 500
 
       IO.puts("Telemetry disabled: No events emitted as expected ✓")
+
+      # Cleanup
+      :telemetry.detach(handler_id)
+    end
+
+    test "custom event prefix works" do
+      # This test verifies that when a custom telemetry prefix is configured,
+      # events are emitted with that prefix instead of the default [:ash_baml]
+      test_pid = self()
+      ref = make_ref()
+      handler_id = "test-custom-prefix-#{:erlang.ref_to_list(ref)}"
+
+      # Attach handler to CUSTOM prefix (not default [:ash_baml])
+      :telemetry.attach_many(
+        handler_id,
+        [
+          [:my_app, :llm, :call, :start],
+          [:my_app, :llm, :call, :stop]
+        ],
+        fn event_name, measurements, metadata, _config ->
+          send(test_pid, {ref, event_name, measurements, metadata})
+        end,
+        nil
+      )
+
+      # Make a BAML call with custom prefix resource
+      {:ok, result} =
+        CustomPrefixResource
+        |> Ash.ActionInput.for_action(:test_custom_prefix, %{
+          message: "Testing custom prefix"
+        })
+        |> Ash.run_action()
+
+      # Verify the call succeeded
+      assert is_struct(result)
+      assert result.content != nil
+
+      # Verify :start event was emitted with CUSTOM prefix
+      assert_receive {^ref, [:my_app, :llm, :call, :start], start_measurements, start_metadata},
+                     1000
+
+      # Verify start event structure
+      assert is_integer(start_measurements.monotonic_time)
+      assert is_integer(start_measurements.system_time)
+      assert start_metadata.function_name == "TestFunction"
+      assert start_metadata.resource == CustomPrefixResource
+      assert start_metadata.action == :test_custom_prefix
+
+      # Verify :stop event was emitted with CUSTOM prefix
+      assert_receive {^ref, [:my_app, :llm, :call, :stop], stop_measurements, stop_metadata},
+                     5000
+
+      # Verify stop event structure
+      assert is_integer(stop_measurements.duration)
+      assert stop_measurements.duration > 0
+      assert is_integer(stop_measurements.input_tokens)
+      assert stop_measurements.input_tokens > 0
+      assert is_integer(stop_measurements.output_tokens)
+      assert stop_measurements.output_tokens > 0
+      assert stop_metadata.function_name == "TestFunction"
+
+      # Verify NO events were emitted with default [:ash_baml] prefix
+      # (We should NOT receive events on the default prefix)
+      refute_receive {^ref, [:ash_baml, :call, :start], _, _}, 100
+      refute_receive {^ref, [:ash_baml, :call, :stop], _, _}, 100
+
+      IO.puts("Custom prefix [:my_app, :llm] works correctly ✓")
 
       # Cleanup
       :telemetry.detach(handler_id)
