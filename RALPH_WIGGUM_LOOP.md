@@ -161,15 +161,13 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 - [ ] Connection pooling works (if applicable)
 - [ ] Load test (100 calls in sequence)
 
-**Latest Result**: Stress test (50 concurrent calls) ✅ PASSED (4/4 total performance tests)
-- All 50 concurrent calls completed successfully in 6.1 seconds
-- Average time per call: 122ms (excellent parallelism)
-- All responses valid with non-empty content
-- No resource exhaustion or connection limits detected
-- No interference between concurrent calls (correct response routing)
-- Cluster-safe design verified under stress: stateless, isolated operations
-- Total duration: 6.1 seconds (50 concurrent API calls)
-- Cost: ~$0.0050 (50 calls with ~40 input / ~65 output tokens each)
+**Latest Result**: "Timeout configuration is respected" ❌ REMOVED - Feature not available in BAML
+- **Research**: BAML does not support timeout configuration (checked docs and GitHub)
+- **Reason**: Client options don't include timeout settings (Issue #1630 tracks feature request)
+- **Documented**: Added to "Tests Intentionally Removed" with workarounds and tracking info
+- **Workarounds**: ExUnit timeout, Task.async_stream timeout, HTTP client defaults
+- **Impact**: Low - existing tests verify normal completion times (<10s)
+- **Action**: Removed from needs testing list in Feature Area #6
 
 **Stop When**: Confident system handles production load without issues ⏳ IN PROGRESS
 
