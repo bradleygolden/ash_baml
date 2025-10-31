@@ -111,6 +111,8 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 - Need to verify E2E: BAML generation → Ash action → LLM call → result
 - Next test: "import_functions creates working regular action"
 
+**Note**: Feature Area #3 (Tool Calling) ambiguous prompt test was re-verified on 2025-10-31 and confirmed still passing - LLM consistently selected weather_tool across 3 calls for "What about 72 degrees?"
+
 ## Learnings & Discoveries
 
 ### Key Patterns Validated

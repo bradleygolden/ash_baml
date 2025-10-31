@@ -395,8 +395,60 @@ Mission is complete when:
 3. ✅ Every realistic failure mode has a test
 4. ✅ An AI agent can say "I'm confident this works" and mean it
 5. ✅ No obvious gaps in test coverage
+6. ✅ Quality assurance complete (see QA Phase below)
 
 **Estimated tests needed**: 80-150 (whatever it takes!)
+
+## QA Phase (After All Tests Pass)
+
+**IMPORTANT**: Once all 10 feature areas reach 95%+ confidence, run the QA phase:
+
+### Step 1: Run Quality Assurance
+```bash
+/qa
+```
+
+The `/qa` command will run comprehensive quality checks including:
+- Code smell detection
+- Comment analysis
+- Documentation completeness
+- Consistency verification
+- Dead code detection
+
+### Step 2: Address High-Confidence Issues
+
+After `/qa` completes, review the report and address issues in priority order:
+
+1. **Critical issues first** (high confidence findings)
+2. **Use specialized agents**:
+   - For comment cleanup: Use `comment-scrubber` agent proactively
+   - For code smells: Use `code-smell-checker` agent
+   - For documentation gaps: Use `documentation-completeness-checker` agent
+
+3. **One issue at a time** (same as test loop):
+   - Pick highest confidence issue
+   - Fix it
+   - Run relevant tests to verify fix didn't break anything
+   - Commit with direct git commands
+   - Continue to next issue
+
+### Step 3: Comment Scrubbing Priority
+
+**Encourage comment-scrubber usage**: After tests pass, code should be self-documenting.
+
+Run comment scrubber to identify:
+- Non-critical comments that can be removed
+- Commented-out code that should be deleted
+- Redundant documentation comments
+- TODOs that are completed
+
+**Philosophy**: Well-tested code with good naming doesn't need many comments.
+
+### QA Complete When:
+- All high-confidence issues resolved
+- No obvious code smells
+- Non-critical comments removed
+- Code is clean and maintainable
 
 ## Learnings & Discoveries
 
