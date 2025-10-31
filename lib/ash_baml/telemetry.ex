@@ -134,7 +134,8 @@ defmodule AshBaml.Telemetry do
     if enabled?(input, config) && should_sample?(config) do
       execute_with_telemetry(input, function_name, config, func)
     else
-      func.([])
+      # Pass empty map - BAML client expects a map for options
+      func.(%{})
     end
   end
 
@@ -156,7 +157,8 @@ defmodule AshBaml.Telemetry do
     )
 
     try do
-      result = func.(collectors: [collector])
+      # BAML client expects a map for options
+      result = func.(%{collectors: [collector]})
 
       duration = System.monotonic_time() - start_time
 

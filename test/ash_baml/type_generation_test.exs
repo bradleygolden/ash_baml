@@ -8,6 +8,7 @@ defmodule AshBaml.TypeGenerationTest do
 
   setup do
     File.rm_rf!(@tmp_output)
+    File.mkdir_p!(@tmp_output)
     :ok
   end
 

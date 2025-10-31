@@ -31,5 +31,34 @@ defmodule AshBaml.IntegrationTest do
       assert is_float(result.confidence)
       # end
     end
+
+    test "can call BAML function with multiple arguments" do
+      # This test verifies that functions with multiple arguments work correctly
+      # - Multiple argument types (string, integer, string)
+      # - Arguments are passed correctly to BAML function
+      # - Response structure matches expected type
+
+      {:ok, result} =
+        AshBaml.Test.TestResource
+        |> Ash.ActionInput.for_action(:multi_arg_action, %{
+          name: "Alice",
+          age: 30,
+          topic: "artificial intelligence"
+        })
+        |> Ash.run_action()
+
+      # Verify correct response structure
+      assert %AshBaml.Test.BamlClient.MultiArgResponse{} = result
+
+      # Verify all fields are present and correct types
+      assert is_binary(result.greeting)
+      assert is_binary(result.description)
+      assert is_binary(result.age_category)
+
+      # Verify content makes sense
+      assert String.contains?(result.greeting, "Alice") or String.contains?(result.greeting, "30")
+      assert result.age_category in ["child", "teen", "adult", "senior"]
+      assert String.length(result.description) > 0
+    end
   end
 end
