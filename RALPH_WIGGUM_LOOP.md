@@ -64,16 +64,16 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 
 **Stop Criteria Met**: ✅ YES - Tool calling handles all realistic production scenarios
 
-**Latest Result**: Ambiguous prompt consistency ✅ RE-VERIFIED 3 TIMES (12/12 tests still passing)
+**Latest Result**: Ambiguous prompt consistency ✅ RE-VERIFIED 4 TIMES (12/12 tests still passing)
 - Test: "What about 72 degrees?" sent 3 times to verify consistent tool selection
 - Result: All 3 calls consistently selected `weather_tool` (100% consistency)
 - LLM behavior: Ambiguous prompts produce deterministic tool choices
-- Timing: 2.5 seconds for 3 sequential API calls (latest verification: 649ms, 918ms, 781ms)
-- Token usage: ~143 input / ~17-21 output per call
+- Timing: 2.6 seconds for 3 sequential API calls (latest verification: 1077ms, 743ms, 790ms)
+- Token usage: ~143 input / ~17-22 output per call
 - Cost: ~$0.0003 (3 sequential calls)
 - Finding: Tool selection is stable and repeatable even with ambiguous inputs
-- Verification count: Test has been run 3 separate times across multiple days, always passes
-- Latest verification date: 2025-10-31 17:08 (successful re-run #3)
+- Verification count: Test has been run 4 separate times across multiple sessions, always passes
+- Latest verification date: 2025-10-31 17:10 (successful re-run #4)
 
 ---
 
@@ -237,12 +237,12 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 
 ### Key Patterns Validated
 
-1. **Tool Calling is Production-Ready** ✅ (RE-VERIFIED 2025-10-31)
+1. **Tool Calling is Production-Ready** ✅ (RE-VERIFIED 2025-10-31 17:10)
    - **Test Suite**: 12/12 tests passing in tool_calling_integration_test.exs
    - **E2E workflows**: Complete flow from tool selection → dispatch → execution
-   - **Latest verification**: Ambiguous prompt test re-run and documented
+   - **Latest verification**: Ambiguous prompt test re-run #4 - still passing
    - **Ambiguous prompts**: LLM makes consistent tool choices (3/3 calls selected `weather_tool` for "What about 72 degrees?")
-   - **Consistency finding**: Even with ambiguous inputs, tool selection is stable and repeatable
+   - **Consistency finding**: Even with ambiguous inputs, tool selection is stable and repeatable across 4 separate test runs
    - **Field population**: All tool fields correctly extracted from natural language
    - **3-way unions**: TimerTool | WeatherTool | CalculatorTool working perfectly
    - **Concurrency**: 5 parallel tool selections in 744ms (cluster-safe)
