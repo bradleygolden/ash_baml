@@ -76,7 +76,7 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 
 - **Tests implemented**: 34 (25 streaming + 9 basic calls + 3 tool calling)
 - **Feature areas complete**: 2 / 10 (Streaming ✅, Basic Calls ✅)
-- **Overall confidence**: 60% → **Target: 95%+**
+- **Overall confidence**: 61% → **Target: 95%+**
 - **Estimated cost so far**: ~$0.0047 (34 test runs + 3 consistency calls)
 - **Time started**: 2025-10-31
 
