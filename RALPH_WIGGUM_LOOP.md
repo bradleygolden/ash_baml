@@ -48,7 +48,7 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 ---
 
 ### 3. Tool Calling (Union Types) ⚠️ IN PROGRESS
-**Current Confidence**: 58% - happy paths + ambiguous prompt tested
+**Current Confidence**: 62% - happy paths + ambiguous prompt + consistency tested
 
 **Tested**:
 - [x] Weather tool selection and execution
@@ -65,9 +65,15 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 - [ ] Tool with invalid parameter types
 - [ ] Concurrent tool selection calls
 - [ ] 3+ tool options in union
-- [ ] Tool selection consistency (same input → same tool)
 
 **Stop Criteria Met**: ❌ NO - need more edge case and error handling tests
+
+**Latest Result**: "Ambiguous prompt (makes consistent tool choice)" ✅ PASSED
+- All 3 calls consistently selected weather_tool
+- LLM interpreted "72 degrees" as temperature (fahrenheit)
+- Filled city as "unknown" (reasonable fallback)
+- All unions properly typed and unwrapped
+- Test completed in 3.0 seconds
 
 ---
 
@@ -75,31 +81,33 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 
 - **Tests implemented**: 34 (25 streaming + 9 basic calls + 3 tool calling)
 - **Feature areas complete**: 2 / 10 (Streaming ✅, Basic Calls ✅)
-- **Overall confidence**: 61% → **Target: 95%+**
-- **Estimated cost so far**: ~$0.0047 (34 test runs + 3 consistency calls)
+- **Overall confidence**: 62% → **Target: 95%+**
+- **Estimated cost so far**: ~$0.0050 (34 test runs + 3 ambiguous prompt calls)
 - **Time started**: 2025-10-31
 
 ## Latest Test Results
 
-**Test**: "Same function called multiple times (consistency)"
+**Test**: "Ambiguous prompt (makes consistent tool choice)"
 - **Status**: ✅ PASSED
-- **Duration**: 8.2 seconds (3 sequential calls)
-- **Tokens**: 41 input / 113-119 output per call
+- **Duration**: 3.0 seconds (3 sequential calls)
+- **Tokens**: 111 input / 17-21 output per call
 - **Cost**: ~$0.0003 (3 calls)
 - **Key Findings**:
-  - All 3 calls returned consistent structure (Reply struct)
-  - Required fields present in all responses (content, confidence)
-  - Field types consistent across calls (string, float)
-  - All confidence values identical (0.95)
-  - Content varied as expected (different wording, same meaning about "consistency in testing")
-  - No random failures or nil responses
-  - Structure verification: same `__struct__`, same field types, all non-empty content
+  - Ambiguous message: "What about 72 degrees?" could match weather OR calculator
+  - All 3 calls consistently selected weather_tool (same type across all calls)
+  - LLM interpreted "degrees" as temperature context
+  - Filled city as "unknown" (reasonable fallback for ambiguous location)
+  - Units correctly inferred as "fahrenheit" (US context for "72 degrees")
+  - All unions properly typed and unwrapped
+  - No random failures or inconsistent tool selection
+  - Demonstrates BAML's reliability even with ambiguous prompts
 
 ## Next Priority
 
 **FEATURE AREA #3**: Tool Calling (Union Types) - Continue testing edge cases
-- Currently at 58% confidence (3/13 tests remaining)
+- Currently at 62% confidence (3/12 tests passing, 9 remaining)
 - Need to test error handling, edge cases, and concurrent tool selection
+- Next test: "Tool with all fields populated"
 
 ## Learnings & Discoveries
 
