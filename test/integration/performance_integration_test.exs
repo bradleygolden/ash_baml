@@ -283,5 +283,98 @@ defmodule AshBaml.PerformanceIntegrationTest do
 
       IO.puts("Memory usage is reasonable - no leaks detected ✓")
     end
+
+    test "load test (50 calls in sequence)" do
+      # This test verifies that the system can handle a sustained load of sequential calls
+      # Checks for performance degradation over time, memory leaks, or resource exhaustion
+      # 50 sequential calls simulates continuous production usage
+      # CRITICAL: Tests that sequential load doesn't cause degradation
+
+      num_calls = 50
+
+      IO.puts("Starting load test: #{num_calls} sequential calls")
+
+      start_time = System.monotonic_time(:millisecond)
+
+      results =
+        Enum.map(1..num_calls, fn i ->
+          call_start = System.monotonic_time(:millisecond)
+
+          {:ok, result} =
+            TestResource
+            |> Ash.ActionInput.for_action(:test_action, %{
+              message: "Load test call #{i}"
+            })
+            |> Ash.run_action()
+
+          call_duration = System.monotonic_time(:millisecond) - call_start
+
+          if rem(i, 10) == 0 do
+            IO.puts("  Completed #{i}/#{num_calls} calls...")
+          end
+
+          {i, result, call_duration}
+        end)
+
+      total_duration = System.monotonic_time(:millisecond) - start_time
+
+      # Verify all calls succeeded
+      assert length(results) == num_calls
+
+      Enum.each(results, fn {_i, result, _duration} ->
+        assert is_struct(result)
+        assert Map.has_key?(result, :content)
+        assert is_binary(result.content)
+        assert String.length(result.content) > 0
+      end)
+
+      # Calculate timing statistics
+      avg_time = div(total_duration, num_calls)
+      durations = Enum.map(results, fn {_i, _result, duration} -> duration end)
+      min_time = Enum.min(durations)
+      max_time = Enum.max(durations)
+
+      # Extract first 10 and last 10 call durations from results
+      first_10_times =
+        results
+        |> Enum.take(10)
+        |> Enum.map(fn {_i, _result, duration} -> duration end)
+
+      last_10_times =
+        results
+        |> Enum.take(-10)
+        |> Enum.map(fn {_i, _result, duration} -> duration end)
+
+      avg_first_10 = div(Enum.sum(first_10_times), length(first_10_times))
+      avg_last_10 = div(Enum.sum(last_10_times), length(last_10_times))
+
+      IO.puts("\nLoad test results:")
+      IO.puts("  Total calls: #{num_calls}")
+      IO.puts("  Total duration: #{Float.round(total_duration / 1000, 1)} seconds")
+      IO.puts("  Average time per call: #{avg_time}ms")
+      IO.puts("  Min time: #{min_time}ms")
+      IO.puts("  Max time: #{max_time}ms")
+      IO.puts("  First 10 calls average: #{avg_first_10}ms")
+      IO.puts("  Last 10 calls average: #{avg_last_10}ms")
+
+      # Check for performance degradation
+      # Last 10 calls should not be significantly slower than first 10
+      # Allow up to 50% degradation as tolerance (network variance, API throttling, etc.)
+      degradation_threshold = avg_first_10 * 1.5
+
+      assert avg_last_10 < degradation_threshold,
+             "Performance degradation detected: first 10 avg=#{avg_first_10}ms, last 10 avg=#{avg_last_10}ms"
+
+      IO.puts(
+        "  Performance degradation check: ✓ (#{Float.round(avg_last_10 / avg_first_10 * 100, 1)}% of initial)"
+      )
+
+      # Total duration should be reasonable (< 90 seconds for 50 sequential calls)
+      # Each call should average < 2 seconds
+      assert total_duration < 90_000,
+             "#{num_calls} sequential calls took #{total_duration}ms (#{Float.round(total_duration / 1000, 1)}s), expected < 90s"
+
+      IO.puts("Load test completed successfully - no degradation detected ✓")
+    end
   end
 end
