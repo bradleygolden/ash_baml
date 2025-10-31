@@ -15,6 +15,9 @@ defmodule AshBaml.Actions.CallBamlFunction do
   configured BAML client module, constructs the function module name, validates
   it exists, and delegates the call to the generated BAML function.
 
+  Telemetry is automatically integrated based on resource configuration and
+  can be overridden per-action via the `telemetry` option.
+
   Returns `{:ok, result}` on success or `{:error, reason}` on failure.
   """
   @impl true
@@ -24,15 +27,42 @@ defmodule AshBaml.Actions.CallBamlFunction do
     function_module = Module.concat(client_module, function_name)
 
     if Code.ensure_loaded?(function_module) do
-      case function_module.call(input.arguments) do
-        {:ok, result} ->
-          {:ok, wrap_union_result(input, result)}
+      telemetry_config = build_telemetry_config(input.resource, opts)
+
+      result =
+        AshBaml.Telemetry.with_telemetry(
+          input,
+          function_name,
+          telemetry_config,
+          fn collector_opts ->
+            function_module.call(input.arguments, collector_opts)
+          end
+        )
+
+      case result do
+        {:ok, data} ->
+          {:ok, wrap_union_result(input, data)}
 
         error ->
           error
       end
     else
       build_module_not_found_error(input.resource, function_name, client_module, function_module)
+    end
+  end
+
+  defp build_telemetry_config(resource, opts) do
+    base_config = AshBaml.Info.baml_telemetry_config(resource)
+
+    case Keyword.get(opts, :telemetry) do
+      false ->
+        Keyword.put(base_config, :enabled, false)
+
+      overrides when is_list(overrides) ->
+        Keyword.merge(base_config, overrides)
+
+      _ ->
+        base_config
     end
   end
 

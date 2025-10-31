@@ -3,6 +3,126 @@ defmodule AshBaml.Dsl do
   DSL for configuring BAML integration in Ash resources.
   """
 
+  @telemetry %Spark.Dsl.Section{
+    name: :telemetry,
+    describe: """
+    Configure telemetry for BAML function calls.
+
+    Telemetry is opt-in and disabled by default. When enabled, emits
+    `:telemetry` events for observability into LLM interactions.
+
+    ## Events Emitted
+
+    - `[:ash_baml, :call, :start]` - Before BAML function call
+    - `[:ash_baml, :call, :stop]` - After successful call
+    - `[:ash_baml, :call, :exception]` - On error
+
+    ## Example
+
+        telemetry do
+          enabled true
+          metadata [:function_name, :resource]
+          sample_rate 1.0
+        end
+    """,
+    examples: [
+      """
+      telemetry do
+        enabled true
+        prefix [:my_app, :ai]
+        metadata [:function_name, :resource, :action]
+        sample_rate 0.1  # Track 10% of calls
+      end
+      """
+    ],
+    schema: [
+      enabled: [
+        type: :boolean,
+        default: false,
+        doc: """
+        Enable telemetry for BAML function calls.
+
+        When `false`, no collectors are created and no telemetry events
+        are emitted, resulting in zero overhead.
+
+        Default: `false`
+        """
+      ],
+      prefix: [
+        type: {:list, :atom},
+        default: [:ash_baml],
+        doc: """
+        Event name prefix for telemetry events.
+
+        Events will be named `prefix ++ [:call, event_type]`.
+
+        Default: `[:ash_baml]` (events: `[:ash_baml, :call, :start]`, etc.)
+        """
+      ],
+      events: [
+        type: {:list, {:in, [:start, :stop, :exception]}},
+        default: [:start, :stop, :exception],
+        doc: """
+        Which telemetry events to emit.
+
+        Allowed values: `:start`, `:stop`, `:exception`
+
+        Default: `[:start, :stop, :exception]`
+        """
+      ],
+      metadata: [
+        type: {:list, :atom},
+        default: [],
+        doc: """
+        Additional metadata fields to include in telemetry events.
+
+        Safe fields (always included):
+        - `:resource` - The Ash resource module
+        - `:action` - The action name
+        - `:function_name` - The BAML function name
+        - `:collector_name` - The collector reference identifier
+
+        Opt-in fields (must be explicitly listed):
+        - `:llm_client` - The LLM client used
+        - `:stream` - Whether this was a streaming call
+
+        Default: `[]` (only safe fields included)
+        """
+      ],
+      sample_rate: [
+        type: :float,
+        default: 1.0,
+        doc: """
+        Sampling rate for telemetry (0.0 - 1.0).
+
+        Use lower rates for high-volume operations to reduce overhead.
+        - `1.0` = 100% of calls tracked
+        - `0.1` = 10% of calls tracked
+        - `0.0` = effectively disables telemetry
+
+        Default: `1.0`
+        """
+      ],
+      collector_name: [
+        type: {:or, [:string, {:fun, 1}]},
+        default: nil,
+        doc: """
+        Custom name for collectors.
+
+        Can be:
+        - A string: `"my-collector"`
+        - A function that receives the input and returns a string:
+          `fn input -> "\#{input.resource}-\#{input.action.name}" end`
+
+        If not provided, a unique name is generated:
+        `"ResourceModule-FunctionName-unique_integer"`
+
+        Default: `nil` (auto-generated)
+        """
+      ]
+    ]
+  }
+
   @baml %Spark.Dsl.Section{
     name: :baml,
     describe: """
@@ -12,12 +132,27 @@ defmodule AshBaml.Dsl do
 
         baml do
           client_module MyApp.BamlClient
+
+          telemetry do
+            enabled true
+          end
         end
     """,
     examples: [
       """
       baml do
         client_module MyApp.BamlClient
+      end
+      """,
+      """
+      baml do
+        client_module MyApp.BamlClient
+
+        telemetry do
+          enabled true
+          metadata [:function_name, :llm_client]
+          sample_rate 0.5
+        end
       end
       """
     ],
@@ -80,7 +215,8 @@ defmodule AshBaml.Dsl do
         - Argument types are valid
         """
       ]
-    ]
+    ],
+    sections: [@telemetry]
   }
 
   @doc false

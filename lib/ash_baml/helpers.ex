@@ -31,15 +31,40 @@ defmodule AshBaml.Helpers do
 
   - `function_name` - Atom matching a BAML function name
 
-  ## Options
+  ## Options (via `call_baml/2`)
 
-  None for Phase 1. Future phases will support:
-  - `client: :atom` - Override client
-  - `stream: boolean` - Enable streaming
+  - `telemetry: false` - Disable telemetry for this specific call
+  - `telemetry: keyword()` - Override telemetry configuration
   """
   defmacro call_baml(function_name) when is_atom(function_name) do
     quote do
       {AshBaml.Actions.CallBamlFunction, [function: unquote(function_name)]}
+    end
+  end
+
+  @doc """
+  Calls a BAML function with options.
+
+  Accepts the same options as `call_baml/1`, plus additional options
+  for controlling execution behavior.
+
+  ## Options
+
+  - `telemetry: false` - Disable telemetry for this specific call
+  - `telemetry: keyword()` - Override telemetry configuration (e.g., `sample_rate: 0.1`)
+
+  ## Examples
+
+      # Disable telemetry for this call
+      run call_baml(:InternalFunction, telemetry: false)
+
+      # Override sample rate for expensive function
+      run call_baml(:ExpensiveFunction, telemetry: [sample_rate: 0.1])
+  """
+  defmacro call_baml(function_name, opts) when is_atom(function_name) do
+    quote do
+      {AshBaml.Actions.CallBamlFunction,
+       Keyword.merge([function: unquote(function_name)], unquote(opts))}
     end
   end
 
