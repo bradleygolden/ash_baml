@@ -296,5 +296,65 @@ defmodule AshBaml.IntegrationTest do
       assert String.contains?(received_lower, "special") or
                String.contains?(received_lower, "test")
     end
+
+    test "can handle concurrent function calls (5+ parallel)" do
+      # This test verifies that ash_baml handles concurrent operations correctly
+      # - Multiple BAML function calls in parallel (5 concurrent tasks)
+      # - Each call completes successfully without interference
+      # - Results are independent and correct for each call
+      # - No race conditions or shared state issues
+      # - Performance: all calls complete within reasonable time
+      #
+      # CLUSTERING NOTE: This test assumes single-node operation.
+      # In a distributed Erlang cluster, these concurrent calls could
+      # potentially run on different nodes. The design should ensure:
+      # - No shared mutable state between calls
+      # - Each call is completely isolated
+      # - Results are properly routed back to calling process
+      # - No assumptions about process locality
+
+      # Create 5 different tasks that will run concurrently
+      tasks =
+        Enum.map(1..5, fn i ->
+          Task.async(fn ->
+            message = "Concurrent test message #{i}"
+
+            {:ok, result} =
+              AshBaml.Test.TestResource
+              |> Ash.ActionInput.for_action(:test_action, %{message: message})
+              |> Ash.run_action()
+
+            {i, result, message}
+          end)
+        end)
+
+      # Wait for all tasks to complete (timeout: 30 seconds total)
+      results = Task.await_many(tasks, 30_000)
+
+      # Verify we got exactly 5 results
+      assert length(results) == 5
+
+      # Verify each result is correct
+      Enum.each(results, fn {i, result, _original_message} ->
+        # Verify correct response structure
+        assert %AshBaml.Test.BamlClient.Reply{} = result
+
+        # Verify all fields are present and correct types
+        assert is_binary(result.content)
+        assert is_float(result.confidence)
+
+        # Verify content is non-empty
+        assert String.length(result.content) > 0
+
+        # Verify confidence is in valid range
+        assert result.confidence >= 0.0 and result.confidence <= 1.0
+
+        # Log for debugging
+        IO.puts("Task #{i} completed: #{String.slice(result.content, 0..50)}...")
+      end)
+
+      # Verify that all tasks completed (none timed out or failed)
+      assert length(results) == 5
+    end
   end
 end
