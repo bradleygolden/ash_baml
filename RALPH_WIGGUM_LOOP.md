@@ -78,16 +78,16 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 ---
 
 ### 4. Telemetry & Observability ⚠️ PARTIAL
-**Current Confidence**: 50% - 4 E2E tests passing, needs more coverage
+**Current Confidence**: 55% - 5 E2E tests passing, needs more coverage
 
 **Tested**:
 - [x] Start/stop events emitted with real API call
 - [x] Duration timing is accurate (tested against wall clock)
 - [x] Token counts are accurate and reasonable
 - [x] Model name captured in metadata
+- [x] Function name captured in metadata
 
 **Needs Testing**:
-- [ ] Function name captured in metadata (already validated in first test, needs separate test)
 - [ ] Telemetry works with errors
 - [ ] Telemetry works with timeouts
 - [ ] Multiple concurrent calls tracked separately
@@ -111,36 +111,33 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 
 ## Progress Tracking
 
-- **Tests implemented**: 46 (22 streaming + 9 basic calls + 12 tool calling + 4 telemetry)
+- **Tests implemented**: 47 (22 streaming + 9 basic calls + 12 tool calling + 5 telemetry)
 - **Feature areas complete**: 3 / 10 (Basic Calls ✅, Streaming ✅, Tool Calling ✅)
-- **Overall confidence**: 87% → **Target: 95%+**
-- **Estimated cost so far**: ~$0.0080 (46 test runs + 1 verification run)
+- **Overall confidence**: 67% → **Target: 95%+**
+- **Estimated cost so far**: ~$0.0081 (47 test runs)
 - **Time started**: 2025-10-31
 
 ## Latest Test Results
 
-**Test**: Ambiguous Prompt Consistency Re-verification (Tool Calling Feature Area #3)
-- **Status**: ✅ PASSED (verification run)
-- **Duration**: 4.4 seconds (3 sequential API calls)
-- **Tokens**: 143 input / ~19 output per call (3 calls total)
-- **Cost**: ~$0.0003
+**Test**: Function Name Captured in Metadata (Telemetry Feature Area #4)
+- **Status**: ✅ PASSED
+- **Duration**: 1.8 seconds (1 API call)
+- **Tokens**: 39 input / 59 output
+- **Cost**: ~$0.0001
 - **Key Findings**:
-  - LLM consistently selected `weather_tool` across all 3 calls with "What about 72 degrees?"
-  - All 3 calls returned city and units fields (weather tool structure)
-  - Call timing: 1900ms, 1445ms, 904ms (typical variance)
-  - LLM interpreted "72 degrees" as temperature context
-  - Confirms tool selection is deterministic and stable
-  - Output tokens (24) reasonable for simple JSON response
-  - Total tokens correctly equals input + output (no arithmetic errors)
-  - Token counts align with BAML log output (verified consistency)
-  - Telemetry accurately tracks token usage for cost monitoring
+  - Function name "TestFunction" correctly captured in both :start and :stop events
+  - Metadata includes `function_name` field in both event types
+  - Function name is consistent between start and stop events
+  - Validates telemetry metadata completeness for debugging
+  - Test confirms observability for tracking which BAML functions are called
+  - Useful for production monitoring and performance analysis
 
 ## Next Priority
 
 **FEATURE AREA #4**: Telemetry & Observability - ⚠️ **IN PROGRESS**
-- Currently at 45% confidence with 3 tests passing
-- Most recent: Token counts validation ✅
-- Next test: Metadata fields are complete (model name, function name, resource, action)
+- Currently at 55% confidence with 5 tests passing
+- Most recent: Function name captured in metadata ✅
+- Next test: Telemetry works with errors
 
 **Note on Auto-Generated Actions** (originally Feature Area #4, now deferred):
 - ⚠️ **BLOCKED BY TECHNICAL LIMITATION**

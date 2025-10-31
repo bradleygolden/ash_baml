@@ -279,5 +279,62 @@ defmodule AshBaml.TelemetryIntegrationTest do
       # Cleanup
       :telemetry.detach(handler_id)
     end
+
+    test "function name captured in metadata" do
+      # This test specifically verifies that the BAML function name
+      # is correctly captured in telemetry metadata for both start and stop events
+      test_pid = self()
+      ref = make_ref()
+      handler_id = "test-function-name-#{:erlang.ref_to_list(ref)}"
+
+      :telemetry.attach_many(
+        handler_id,
+        [
+          [:ash_baml, :call, :start],
+          [:ash_baml, :call, :stop]
+        ],
+        fn event_name, _measurements, metadata, _config ->
+          send(test_pid, {ref, event_name, metadata})
+        end,
+        nil
+      )
+
+      # Make a BAML call with TestFunction
+      {:ok, _result} =
+        TelemetryTestResource
+        |> Ash.ActionInput.for_action(:test_telemetry, %{
+          message: "Test function name capture"
+        })
+        |> Ash.run_action()
+
+      # Verify :start event captures function_name
+      assert_receive {^ref, [:ash_baml, :call, :start], start_metadata}, 1000
+
+      assert Map.has_key?(start_metadata, :function_name),
+             "Start event metadata should include function_name field"
+
+      assert start_metadata.function_name == "TestFunction",
+             "Expected function_name 'TestFunction', got: #{inspect(start_metadata.function_name)}"
+
+      # Verify :stop event captures function_name
+      assert_receive {^ref, [:ash_baml, :call, :stop], stop_metadata}, 5000
+
+      assert Map.has_key?(stop_metadata, :function_name),
+             "Stop event metadata should include function_name field"
+
+      assert stop_metadata.function_name == "TestFunction",
+             "Expected function_name 'TestFunction', got: #{inspect(stop_metadata.function_name)}"
+
+      # Verify both events have the same function name
+      assert start_metadata.function_name == stop_metadata.function_name,
+             "Function name should be consistent between start and stop events"
+
+      IO.puts(
+        "Function name captured correctly in both events: #{start_metadata.function_name} ✓"
+      )
+
+      # Cleanup
+      :telemetry.detach(handler_id)
+    end
   end
 end
