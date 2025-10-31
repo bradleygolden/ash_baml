@@ -341,6 +341,8 @@ Currently at 50% confidence. Need to test edge cases beyond happy path.
 
 **CRITICAL: Each iteration must be small and bounded (1-2 minutes max)**
 
+**Note**: These instructions apply during the testing phase. Once all feature areas reach 95%+ confidence, proceed to the QA Phase (see above).
+
 1. **Pick the next unchecked [ ] test** from the feature area with lowest confidence
 2. **Implement ONLY that ONE test** (nothing else!)
 3. **REMEMBER**: Design for Erlang clustering - avoid local-only assumptions
