@@ -27,5 +27,5 @@ defmodule AshBaml.Resource do
   use Spark.Dsl.Extension,
     sections: [AshBaml.Dsl.baml()],
     imports: [AshBaml.Helpers],
-    transformers: []
+    transformers: [AshBaml.Transformers.ImportBamlFunctions]
 end

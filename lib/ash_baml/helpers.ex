@@ -42,4 +42,22 @@ defmodule AshBaml.Helpers do
       {AshBaml.Actions.CallBamlFunction, [function: unquote(function_name)]}
     end
   end
+
+  @doc """
+  Macro for calling BAML functions with streaming.
+
+  Returns a Stream that emits chunks as they arrive from the LLM.
+
+  ## Example
+
+      action :chat_stream, AshBaml.Type.Stream do
+        argument :message, :string
+        run call_baml_stream(:ChatAgent)
+      end
+  """
+  defmacro call_baml_stream(function_name) when is_atom(function_name) do
+    quote do
+      {AshBaml.Actions.CallBamlStream, [function: unquote(function_name)]}
+    end
+  end
 end
