@@ -79,10 +79,10 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 
 ## Progress Tracking
 
-- **Tests implemented**: 43 (22 streaming + 9 basic calls + 12 tool calling)
+- **Tests implemented**: 44 (22 streaming + 9 basic calls + 12 tool calling + 2 telemetry)
 - **Feature areas complete**: 3 / 10 (Basic Calls ✅, Streaming ✅, Tool Calling ✅)
-- **Overall confidence**: 84% → **Target: 95%+**
-- **Estimated cost so far**: ~$0.0074 (43 test runs)
+- **Overall confidence**: 85% → **Target: 95%+**
+- **Estimated cost so far**: ~$0.0075 (44 test runs)
 - **Time started**: 2025-10-31
 
 ## Latest Test Results
@@ -192,6 +192,21 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
    - **Consistency**: Both :start and :stop events have matching metadata
    - **Confidence**: Telemetry integration works correctly with real API calls
    - **Pattern**: Use `:telemetry.attach_many/4` to capture events for monitoring/logging
+
+6. **Telemetry Duration Timing is Accurate** ✅
+   - **Test**: Measured wall clock time vs telemetry duration for BAML call
+   - **Result**: ✅ PASSED - Telemetry duration accurately reflects actual API time
+   - **Timing**: Wall=762ms, Telemetry=742ms, Overhead=20ms
+   - **Accuracy verified**:
+     - Telemetry duration (742ms) closely matches actual API call time (762ms wall)
+     - Overhead is minimal (20ms) - well within 500ms allowance for framework/dispatch
+     - Duration matches BAML log output (732ms reported by BamlElixir)
+   - **Range validation**:
+     - Duration > 0 (sanity check)
+     - Duration < wall clock (telemetry measures just BAML call, not framework overhead)
+     - Duration in reasonable range (100ms-10s for LLM API calls)
+   - **Confidence**: Telemetry duration measurements are reliable for performance monitoring
+   - **Use case**: Can trust telemetry for monitoring API latency and detecting slowdowns
 
 ### Tests Intentionally Removed
 
