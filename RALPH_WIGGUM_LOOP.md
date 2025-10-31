@@ -72,16 +72,16 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 
 **Stop Criteria Met**: ✅ YES - Tool calling handles all realistic production scenarios
 
-**Latest Result**: Ambiguous prompt consistency ✅ RE-VERIFIED 4 TIMES (12/12 tests still passing)
+**Latest Result**: Ambiguous prompt consistency ✅ RE-VERIFIED 5 TIMES (12/12 tests still passing)
 - Test: "What about 72 degrees?" sent 3 times to verify consistent tool selection
 - Result: All 3 calls consistently selected `weather_tool` (100% consistency)
 - LLM behavior: Ambiguous prompts produce deterministic tool choices
-- Timing: 2.6 seconds for 3 sequential API calls (latest verification: 1077ms, 743ms, 790ms)
-- Token usage: ~143 input / ~17-22 output per call
+- Timing: 3.2 seconds for 3 sequential API calls (latest verification: 1342ms, 946ms, 820ms)
+- Token usage: ~143 input / ~17-21 output per call
 - Cost: ~$0.0003 (3 sequential calls)
 - Finding: Tool selection is stable and repeatable even with ambiguous inputs
-- Verification count: Test has been run 4 separate times across multiple sessions, always passes
-- Latest verification date: 2025-10-31 17:10 (successful re-run #4)
+- Verification count: Test has been run 5 separate times across multiple sessions, always passes
+- Latest verification date: 2025-10-31 17:14 (successful re-run #5)
 
 ---
 
