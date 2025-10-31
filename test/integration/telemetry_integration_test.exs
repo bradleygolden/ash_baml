@@ -234,5 +234,50 @@ defmodule AshBaml.TelemetryIntegrationTest do
       # Cleanup
       :telemetry.detach(handler_id)
     end
+
+    test "model name captured in metadata" do
+      # This test verifies that the model name used for the BAML call
+      # is captured in the telemetry metadata
+      test_pid = self()
+      ref = make_ref()
+      handler_id = "test-model-#{:erlang.ref_to_list(ref)}"
+
+      :telemetry.attach(
+        handler_id,
+        [:ash_baml, :call, :stop],
+        fn _event_name, _measurements, metadata, _config ->
+          send(test_pid, {ref, metadata})
+        end,
+        nil
+      )
+
+      # Make a BAML call (TestClient uses gpt-4o-mini)
+      {:ok, _result} =
+        TelemetryTestResource
+        |> Ash.ActionInput.for_action(:test_telemetry, %{
+          message: "Hello, test!"
+        })
+        |> Ash.run_action()
+
+      assert_receive {^ref, metadata}, 5000
+
+      # Verify model name is captured
+      # TestClient is configured to use gpt-4o-mini
+      assert Map.has_key?(metadata, :model_name),
+             "Metadata should include model_name field"
+
+      # Model name should be a string
+      assert is_binary(metadata.model_name),
+             "Model name should be a string"
+
+      # Should contain "gpt-4o-mini" (the model configured in test_functions.baml)
+      assert String.contains?(metadata.model_name, "gpt-4o-mini"),
+             "Expected model name to contain 'gpt-4o-mini', got: #{metadata.model_name}"
+
+      IO.puts("Model name captured: #{metadata.model_name} ✓")
+
+      # Cleanup
+      :telemetry.detach(handler_id)
+    end
   end
 end

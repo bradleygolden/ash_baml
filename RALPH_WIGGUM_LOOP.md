@@ -78,15 +78,15 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 ---
 
 ### 4. Telemetry & Observability ⚠️ PARTIAL
-**Current Confidence**: 45% - 3 E2E tests passing, needs more coverage
+**Current Confidence**: 50% - 4 E2E tests passing, needs more coverage
 
 **Tested**:
 - [x] Start/stop events emitted with real API call
 - [x] Duration timing is accurate (tested against wall clock)
 - [x] Token counts are accurate and reasonable
+- [x] Model name captured in metadata
 
 **Needs Testing**:
-- [ ] Model name captured in metadata
 - [ ] Function name captured in metadata (already validated in first test, needs separate test)
 - [ ] Telemetry works with errors
 - [ ] Telemetry works with timeouts
@@ -96,12 +96,13 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 - [ ] Metadata fields are complete
 - [ ] Telemetry overhead is minimal
 
-**Latest Result**: Token counts validation ✅ PASSED (1 new test, 3/3 total)
-- Input tokens: 38 (within expected 5-200 range for short message)
-- Output tokens: 24 (within expected 0-500 range for simple response)
-- Total tokens: 62 (correctly equals input + output)
-- Token counts align with BAML log output
-- Duration: 1.4 seconds
+**Latest Result**: Model name captured in metadata ✅ PASSED (1 new test, 4/4 total)
+- Model name successfully extracted from collector function log
+- TestClient uses `gpt-4o-mini` model (from test_functions.baml)
+- Model name appears in telemetry `:stop` event metadata
+- Extracts from `BamlElixir.Collector.last_function_log/1` → request body JSON
+- Handles missing/malformed data gracefully (returns nil)
+- Duration: 1.5 seconds
 - Cost: ~$0.0001
 
 **Stop When**: Production monitoring can be trusted for debugging and billing
@@ -110,10 +111,10 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 
 ## Progress Tracking
 
-- **Tests implemented**: 45 (22 streaming + 9 basic calls + 12 tool calling + 3 telemetry)
+- **Tests implemented**: 46 (22 streaming + 9 basic calls + 12 tool calling + 4 telemetry)
 - **Feature areas complete**: 3 / 10 (Basic Calls ✅, Streaming ✅, Tool Calling ✅)
-- **Overall confidence**: 86% → **Target: 95%+**
-- **Estimated cost so far**: ~$0.0076 (45 test runs)
+- **Overall confidence**: 87% → **Target: 95%+**
+- **Estimated cost so far**: ~$0.0077 (46 test runs)
 - **Time started**: 2025-10-31
 
 ## Latest Test Results
@@ -242,7 +243,7 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
    - **Confidence**: Telemetry duration measurements are reliable for performance monitoring
    - **Use case**: Can trust telemetry for monitoring API latency and detecting slowdowns
 
-7. **Telemetry Token Counts are Accurate** ✅ (NEW)
+7. **Telemetry Token Counts are Accurate** ✅
    - **Test**: Validated token count measurements in telemetry stop event
    - **Result**: ✅ PASSED - Token counts accurate and within expected ranges
    - **Token counts**: Input=38, Output=24, Total=62
@@ -258,6 +259,21 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
      - Output tokens reasonable for response type (<500 for simple structs)
    - **Confidence**: Can trust telemetry for cost monitoring and billing
    - **Use case**: Accurate token tracking enables reliable cost estimation and budget monitoring
+
+8. **Telemetry Model Name Extraction** ✅ (NEW)
+   - **Test**: Verified model name is captured in telemetry metadata
+   - **Result**: ✅ PASSED - Model name successfully extracted and included
+   - **Model name**: "gpt-4o-mini" (from TestClient configuration)
+   - **Implementation**:
+     - Uses `BamlElixir.Collector.last_function_log/1` to get call details
+     - Extracts model from request body JSON: `calls[0].request.body.model`
+     - Parses JSON with Jason to extract model field
+     - Handles missing/malformed data gracefully (returns nil on error)
+     - Added to metadata only in `:stop` event (model unknown at `:start`)
+   - **Metadata field**: `:model_name` in telemetry stop event
+   - **Error handling**: Rescue clause catches any parsing errors, returns nil
+   - **Confidence**: Model name reliably captured for observability and cost attribution
+   - **Use case**: Essential for multi-model deployments and cost tracking by model
 
 ### Tests Intentionally Removed
 

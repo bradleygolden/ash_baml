@@ -163,6 +163,10 @@ defmodule AshBaml.Telemetry do
       duration = System.monotonic_time() - start_time
 
       usage = get_usage(collector)
+      model_name = get_model_name(collector)
+
+      # Add model_name to metadata for :stop event
+      metadata_with_model = Map.put(metadata, :model_name, model_name)
 
       emit_event(
         :stop,
@@ -174,7 +178,7 @@ defmodule AshBaml.Telemetry do
           total_tokens: usage.total_tokens,
           monotonic_time: System.monotonic_time()
         },
-        metadata
+        metadata_with_model
       )
 
       result
@@ -262,6 +266,25 @@ defmodule AshBaml.Telemetry do
   rescue
     _ ->
       %{input_tokens: 0, output_tokens: 0, total_tokens: 0}
+  end
+
+  defp get_model_name(collector) do
+    log_result = BamlElixir.Collector.last_function_log(collector)
+
+    case log_result do
+      %{"calls" => [%{"request" => %{"body" => body}} | _]} when is_binary(body) ->
+        # Parse the JSON body to extract the model name
+        case Jason.decode(body) do
+          {:ok, %{"model" => model}} when is_binary(model) -> model
+          _ -> nil
+        end
+
+      _ ->
+        nil
+    end
+  rescue
+    _ ->
+      nil
   end
 
   defp build_metadata(input, function_name, collector, config) do
