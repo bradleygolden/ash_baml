@@ -11,6 +11,7 @@ defmodule AshBaml.TelemetryIntegrationTest do
 
     resources do
       resource(AshBaml.TelemetryIntegrationTest.TelemetryTestResource)
+      resource(AshBaml.TelemetryIntegrationTest.TelemetryDisabledResource)
     end
   end
 
@@ -34,6 +35,30 @@ defmodule AshBaml.TelemetryIntegrationTest do
 
     actions do
       action :test_telemetry, :map do
+        argument(:message, :string, allow_nil?: false)
+        run(call_baml(:TestFunction))
+      end
+    end
+  end
+
+  # Define a test resource with telemetry DISABLED
+  defmodule TelemetryDisabledResource do
+    @moduledoc false
+
+    use Ash.Resource,
+      domain: AshBaml.TelemetryIntegrationTest.TelemetryTestDomain,
+      extensions: [AshBaml.Resource]
+
+    baml do
+      client_module(AshBaml.Test.BamlClient)
+
+      telemetry do
+        enabled(false)
+      end
+    end
+
+    actions do
+      action :test_disabled, :map do
         argument(:message, :string, allow_nil?: false)
         run(call_baml(:TestFunction))
       end
@@ -455,6 +480,49 @@ defmodule AshBaml.TelemetryIntegrationTest do
       end)
 
       IO.puts("Concurrent telemetry tracking: #{length(start_events)} calls tracked separately ✓")
+
+      # Cleanup
+      :telemetry.detach(handler_id)
+    end
+
+    test "telemetry respects enabled/disabled config" do
+      # This test verifies that when telemetry is disabled via config,
+      # NO telemetry events are emitted for BAML calls
+      test_pid = self()
+      ref = make_ref()
+      handler_id = "test-disabled-#{:erlang.ref_to_list(ref)}"
+
+      :telemetry.attach_many(
+        handler_id,
+        [
+          [:ash_baml, :call, :start],
+          [:ash_baml, :call, :stop]
+        ],
+        fn event_name, measurements, metadata, _config ->
+          send(test_pid, {ref, event_name, measurements, metadata})
+        end,
+        nil
+      )
+
+      # Make a BAML call with telemetry DISABLED
+      {:ok, result} =
+        TelemetryDisabledResource
+        |> Ash.ActionInput.for_action(:test_disabled, %{
+          message: "This should not emit telemetry events"
+        })
+        |> Ash.run_action()
+
+      # Verify the call succeeded (functionality still works)
+      assert is_struct(result)
+      assert result.content != nil
+      assert is_float(result.confidence)
+
+      # Verify NO telemetry events were emitted
+      # Wait a bit to ensure no events are coming
+      refute_receive {^ref, [:ash_baml, :call, :start], _, _}, 500
+      refute_receive {^ref, [:ash_baml, :call, :stop], _, _}, 500
+
+      IO.puts("Telemetry disabled: No events emitted as expected ✓")
 
       # Cleanup
       :telemetry.detach(handler_id)

@@ -78,7 +78,7 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 ---
 
 ### 4. Telemetry & Observability ⚠️ PARTIAL
-**Current Confidence**: 60% - 6 E2E tests passing, needs more coverage
+**Current Confidence**: 65% - 7 E2E tests passing, needs more coverage
 
 **Tested**:
 - [x] Start/stop events emitted with real API call
@@ -87,9 +87,9 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 - [x] Model name captured in metadata
 - [x] Function name captured in metadata
 - [x] Multiple concurrent calls tracked separately
+- [x] Telemetry respects enabled/disabled config
 
 **Needs Testing**:
-- [ ] Telemetry respects enabled/disabled config
 - [ ] Custom event prefix works
 - [ ] Metadata fields are complete
 - [ ] Telemetry overhead is minimal
@@ -98,16 +98,15 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 - "Telemetry works with errors" - Cannot reliably trigger API errors without mocking infrastructure
 - "Telemetry works with timeouts" - Cannot reliably trigger timeouts without mocking infrastructure
 
-**Latest Result**: Multiple concurrent calls tracked separately ✅ PASSED (1 new test, 6/6 total)
-- 3 concurrent BAML calls tracked with separate telemetry events
-- All 3 start events emitted with unique monotonic timestamps
-- All 3 stop events emitted with separate duration/token measurements
-- No mixing of measurements between concurrent calls
-- Start times are unique for each call (verified via monotonic_time)
-- All durations reasonable (751ms, 931ms, 941ms)
-- Total: 6 telemetry events (3 starts + 3 stops) all correct
-- Duration: 1.2 seconds (3 parallel API calls)
-- Cost: ~$0.0003 (3 concurrent calls)
+**Latest Result**: Telemetry respects enabled/disabled config ✅ PASSED (1 new test, 7/7 total)
+- BAML call succeeds when telemetry is disabled (functionality unaffected)
+- NO telemetry events emitted when `enabled(false)` is set
+- Verified no `:start` events emitted (500ms wait)
+- Verified no `:stop` events emitted (500ms wait)
+- Configuration properly respected at runtime
+- Telemetry can be safely disabled without breaking BAML calls
+- Duration: 2.7 seconds (1 API call + verification waits)
+- Cost: ~$0.0001 (1 API call with ~41 input / ~56 output tokens)
 
 **Stop When**: Production monitoring can be trusted for debugging and billing
 
@@ -115,35 +114,34 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 
 ## Progress Tracking
 
-- **Tests implemented**: 48 (22 streaming + 9 basic calls + 12 tool calling + 6 telemetry)
+- **Tests implemented**: 49 (22 streaming + 9 basic calls + 12 tool calling + 7 telemetry)
 - **Feature areas complete**: 3 / 10 (Basic Calls ✅, Streaming ✅, Tool Calling ✅)
-- **Overall confidence**: 68% → **Target: 95%+**
-- **Estimated cost so far**: ~$0.0084 (48 test runs)
+- **Overall confidence**: 69% → **Target: 95%+**
+- **Estimated cost so far**: ~$0.0085 (49 test runs)
 - **Time started**: 2025-10-31
 
 ## Latest Test Results
 
-**Test**: Multiple Concurrent Calls Tracked Separately (Telemetry Feature Area #4)
+**Test**: Telemetry Respects Enabled/Disabled Config (Telemetry Feature Area #4)
 - **Status**: ✅ PASSED
-- **Duration**: 1.2 seconds (3 parallel API calls)
-- **Tokens**: ~40 input / ~24 output per call (3 calls total)
-- **Cost**: ~$0.0003
+- **Duration**: 2.7 seconds (1 API call + event verification)
+- **Tokens**: ~41 input / ~56 output
+- **Cost**: ~$0.0001
 - **Key Findings**:
-  - Telemetry correctly tracks 3 concurrent BAML calls independently
-  - All 6 events received (3 starts + 3 stops)
-  - Each start event has unique monotonic_time (no timestamp collision)
-  - Each stop event has separate duration and token measurements
-  - No mixing of measurements between concurrent calls
-  - Call durations: 751ms, 931ms, 941ms (all reasonable)
-  - Validates telemetry is cluster-safe and handles concurrent operations correctly
-  - Critical for production monitoring where multiple calls happen in parallel
+  - BAML calls work correctly with telemetry disabled
+  - NO telemetry events emitted when `enabled(false)` is configured
+  - Both `:start` and `:stop` events properly suppressed
+  - Configuration change requires no code changes - just DSL setting
+  - Useful for environments where telemetry is not needed (testing, local dev)
+  - Validates that telemetry is opt-in and can be safely disabled
+  - Performance unaffected by telemetry being disabled
 
 ## Next Priority
 
 **FEATURE AREA #4**: Telemetry & Observability - ⚠️ **IN PROGRESS**
-- Currently at 60% confidence with 6 tests passing
-- Most recent: Multiple concurrent calls tracked separately ✅
-- Next test: Telemetry respects enabled/disabled config
+- Currently at 65% confidence with 7 tests passing
+- Most recent: Telemetry respects enabled/disabled config ✅
+- Next test: Custom event prefix works
 
 **Note on Auto-Generated Actions** (originally Feature Area #4, now deferred):
 - ⚠️ **BLOCKED BY TECHNICAL LIMITATION**
