@@ -87,21 +87,18 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 
 ## Latest Test Results
 
-**Test**: Enum Constraints Validation
-- **Status**: ✅ PASSED (2/2 new tests, 12/12 total in tool calling suite)
-- **Duration**: 4.6 seconds (5 API calls total)
-- **Tokens**: ~722 input / ~82 output (across 5 calls)
-- **Cost**: ~$0.0004
+**Test**: Ambiguous Prompt Consistency (re-verification)
+- **Status**: ✅ PASSED (verified test still works correctly)
+- **Duration**: 2.7 seconds (3 sequential API calls)
+- **Tokens**: ~143 input / ~20 output per call (3 calls total)
+- **Cost**: ~$0.0002
 - **Key Findings**:
-  - LLM correctly respects enum constraints: "add" | "subtract" | "multiply" | "divide"
-  - Natural language to enum mapping is perfect:
-    - "Subtract 50 from 100" → "subtract" ✅
-    - "Multiply 5 by 3 by 2" → "multiply" ✅
-    - "Divide 100 by 4" → "divide" ✅
-    - "Add 1 and 2 and 3" → "add" ✅
-  - All 4 enum values tested and validated
-  - No invalid enum values returned by LLM
-  - BAML's type system enforces enum constraints correctly
+  - LLM consistently selected `weather_tool` for ambiguous prompt "What about 72 degrees?"
+  - All 3 calls made the same tool choice (100% consistency)
+  - Even though city values varied ("72 degrees", "Unknown", "unknown"), tool type remained stable
+  - The LLM interpreted "degrees" as temperature (weather) rather than number (calculator)
+  - Average time per call: ~900ms
+  - This confirms tool selection is deterministic for given prompts
 
 ## Next Priority
 
