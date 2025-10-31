@@ -159,7 +159,6 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 **Needs Testing**:
 - [ ] Memory usage is reasonable
 - [ ] Connection pooling works (if applicable)
-- [ ] Timeout configuration is respected
 - [ ] Load test (100 calls in sequence)
 
 **Latest Result**: Stress test (50 concurrent calls) ✅ PASSED (4/4 total performance tests)
@@ -526,6 +525,23 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
    - **Observation**: API key changes don't propagate to already-initialized BAML client
    - **Alternative**: Would require mocking infrastructure (Mox/Mimic) to inject errors
    - **Current state**: No mocking libraries in project dependencies
+
+8. **"Timeout configuration is respected"** - REMOVED (Feature Area #6)
+   - **Why**: BAML does not currently support timeout configuration
+   - **Research findings**:
+     - BAML client options do not include timeout settings (checked v0.x docs)
+     - OpenAI provider docs show no `request_timeout`, `connection_timeout`, or similar options
+     - Feature proposal exists (GitHub Issue #1630) but not yet implemented
+     - Options are "pass-through to POST request" but timeout isn't among them
+   - **Current state**: No timeout control at BAML client level
+   - **Workarounds**:
+     - ExUnit test timeout (e.g., `@moduletag timeout: 60_000`) provides process-level limits
+     - Task.async_stream has built-in timeout parameter for concurrent operations
+     - OpenAI API has default timeouts (usually 60-120s) at HTTP client level
+   - **Reimplement?**: Only after BAML adds timeout support in client options
+   - **Tracking**: Monitor GitHub Issue #1630 for timeout feature implementation
+   - **Production impact**: Minimal - API calls typically complete in <10s, rely on framework-level timeouts
+   - **Alternative testing**: Existing tests verify normal completion times (<10s) which indirectly validates no unexpected hangs
    - **Code coverage**: Exception handling code exists in `AshBaml.Telemetry` (lines 185-204)
    - **What exists**: `:exception` event configured, rescue clause emits event with error details
    - **Confidence in code**: High - exception handling follows standard Elixir patterns
