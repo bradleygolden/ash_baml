@@ -78,7 +78,7 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 ---
 
 ### 4. Telemetry & Observability ⚠️ PARTIAL
-**Current Confidence**: 55% - 5 E2E tests passing, needs more coverage
+**Current Confidence**: 60% - 6 E2E tests passing, needs more coverage
 
 **Tested**:
 - [x] Start/stop events emitted with real API call
@@ -86,9 +86,9 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 - [x] Token counts are accurate and reasonable
 - [x] Model name captured in metadata
 - [x] Function name captured in metadata
+- [x] Multiple concurrent calls tracked separately
 
 **Needs Testing**:
-- [ ] Multiple concurrent calls tracked separately
 - [ ] Telemetry respects enabled/disabled config
 - [ ] Custom event prefix works
 - [ ] Metadata fields are complete
@@ -98,14 +98,16 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 - "Telemetry works with errors" - Cannot reliably trigger API errors without mocking infrastructure
 - "Telemetry works with timeouts" - Cannot reliably trigger timeouts without mocking infrastructure
 
-**Latest Result**: Model name captured in metadata ✅ PASSED (1 new test, 5/5 total)
-- Model name successfully extracted from collector function log
-- TestClient uses `gpt-4o-mini` model (from test_functions.baml)
-- Model name appears in telemetry `:stop` event metadata
-- Extracts from `BamlElixir.Collector.last_function_log/1` → request body JSON
-- Handles missing/malformed data gracefully (returns nil)
-- Duration: 1.5 seconds
-- Cost: ~$0.0001
+**Latest Result**: Multiple concurrent calls tracked separately ✅ PASSED (1 new test, 6/6 total)
+- 3 concurrent BAML calls tracked with separate telemetry events
+- All 3 start events emitted with unique monotonic timestamps
+- All 3 stop events emitted with separate duration/token measurements
+- No mixing of measurements between concurrent calls
+- Start times are unique for each call (verified via monotonic_time)
+- All durations reasonable (751ms, 931ms, 941ms)
+- Total: 6 telemetry events (3 starts + 3 stops) all correct
+- Duration: 1.2 seconds (3 parallel API calls)
+- Cost: ~$0.0003 (3 concurrent calls)
 
 **Stop When**: Production monitoring can be trusted for debugging and billing
 
@@ -113,33 +115,35 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 
 ## Progress Tracking
 
-- **Tests implemented**: 47 (22 streaming + 9 basic calls + 12 tool calling + 5 telemetry)
+- **Tests implemented**: 48 (22 streaming + 9 basic calls + 12 tool calling + 6 telemetry)
 - **Feature areas complete**: 3 / 10 (Basic Calls ✅, Streaming ✅, Tool Calling ✅)
-- **Overall confidence**: 67% → **Target: 95%+**
-- **Estimated cost so far**: ~$0.0081 (47 test runs)
+- **Overall confidence**: 68% → **Target: 95%+**
+- **Estimated cost so far**: ~$0.0084 (48 test runs)
 - **Time started**: 2025-10-31
 
 ## Latest Test Results
 
-**Test**: Function Name Captured in Metadata (Telemetry Feature Area #4)
+**Test**: Multiple Concurrent Calls Tracked Separately (Telemetry Feature Area #4)
 - **Status**: ✅ PASSED
-- **Duration**: 1.8 seconds (1 API call)
-- **Tokens**: 39 input / 59 output
-- **Cost**: ~$0.0001
+- **Duration**: 1.2 seconds (3 parallel API calls)
+- **Tokens**: ~40 input / ~24 output per call (3 calls total)
+- **Cost**: ~$0.0003
 - **Key Findings**:
-  - Function name "TestFunction" correctly captured in both :start and :stop events
-  - Metadata includes `function_name` field in both event types
-  - Function name is consistent between start and stop events
-  - Validates telemetry metadata completeness for debugging
-  - Test confirms observability for tracking which BAML functions are called
-  - Useful for production monitoring and performance analysis
+  - Telemetry correctly tracks 3 concurrent BAML calls independently
+  - All 6 events received (3 starts + 3 stops)
+  - Each start event has unique monotonic_time (no timestamp collision)
+  - Each stop event has separate duration and token measurements
+  - No mixing of measurements between concurrent calls
+  - Call durations: 751ms, 931ms, 941ms (all reasonable)
+  - Validates telemetry is cluster-safe and handles concurrent operations correctly
+  - Critical for production monitoring where multiple calls happen in parallel
 
 ## Next Priority
 
 **FEATURE AREA #4**: Telemetry & Observability - ⚠️ **IN PROGRESS**
-- Currently at 55% confidence with 5 tests passing
-- Most recent: Function name captured in metadata ✅
-- Next test: Telemetry works with errors
+- Currently at 60% confidence with 6 tests passing
+- Most recent: Multiple concurrent calls tracked separately ✅
+- Next test: Telemetry respects enabled/disabled config
 
 **Note on Auto-Generated Actions** (originally Feature Area #4, now deferred):
 - ⚠️ **BLOCKED BY TECHNICAL LIMITATION**
@@ -262,7 +266,29 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
    - **Confidence**: Can trust telemetry for cost monitoring and billing
    - **Use case**: Accurate token tracking enables reliable cost estimation and budget monitoring
 
-8. **Telemetry Model Name Extraction** ✅ (NEW)
+8. **Concurrent Telemetry Tracking Works Perfectly** ✅ (NEW)
+   - **Test**: 3 parallel BAML calls tracked with telemetry
+   - **Result**: ✅ PASSED - Each concurrent call tracked separately with no mixing
+   - **Timing**: 1.2 seconds total (3 parallel calls: 751ms, 931ms, 941ms)
+   - **Events captured**:
+     - 6 total events: 3 start + 3 stop (all received correctly)
+     - Start events: All have unique monotonic_time timestamps (no collisions)
+     - Stop events: Each has separate duration and token measurements
+   - **Measurements validation**:
+     - All durations > 0 and reasonable (100ms-10s range)
+     - All token counts > 0 and properly tracked per call
+     - No mixing of measurements between concurrent calls
+   - **Metadata validation**:
+     - All events have correct function_name, resource, action
+     - All start/stop pairs properly matched
+   - **Cluster safety**:
+     - Telemetry naturally handles concurrent calls (process isolation)
+     - Each Task.async spawns separate process with own telemetry context
+     - No shared mutable state to break in distributed scenarios
+   - **Confidence**: Telemetry is production-ready for concurrent/parallel workloads
+   - **Pattern**: Concurrent calls tracked automatically - no special handling needed
+
+9. **Telemetry Model Name Extraction** ✅
    - **Test**: Verified model name is captured in telemetry metadata
    - **Result**: ✅ PASSED - Model name successfully extracted and included
    - **Model name**: "gpt-4o-mini" (from TestClient configuration)

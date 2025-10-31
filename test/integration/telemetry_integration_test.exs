@@ -336,5 +336,128 @@ defmodule AshBaml.TelemetryIntegrationTest do
       # Cleanup
       :telemetry.detach(handler_id)
     end
+
+    test "multiple concurrent calls tracked separately" do
+      # This test verifies that when multiple BAML calls happen concurrently,
+      # each call's telemetry events are tracked separately with no mixing of measurements
+      test_pid = self()
+      ref = make_ref()
+      handler_id = "test-concurrent-#{:erlang.ref_to_list(ref)}"
+
+      :telemetry.attach_many(
+        handler_id,
+        [
+          [:ash_baml, :call, :start],
+          [:ash_baml, :call, :stop]
+        ],
+        fn event_name, measurements, metadata, _config ->
+          send(test_pid, {ref, event_name, measurements, metadata})
+        end,
+        nil
+      )
+
+      # Make 3 concurrent BAML calls with different messages
+      messages = [
+        "Hello from call 1",
+        "Greetings from call 2",
+        "Hi there from call 3"
+      ]
+
+      # Launch all calls concurrently
+      tasks =
+        Enum.map(messages, fn message ->
+          Task.async(fn ->
+            {:ok, result} =
+              TelemetryTestResource
+              |> Ash.ActionInput.for_action(:test_telemetry, %{message: message})
+              |> Ash.run_action()
+
+            result
+          end)
+        end)
+
+      # Wait for all to complete
+      results = Task.await_many(tasks, 30_000)
+
+      # All should succeed
+      assert length(results) == 3
+
+      # Collect all telemetry events (3 starts + 3 stops = 6 events)
+      events =
+        Enum.map(1..6, fn _ ->
+          assert_receive {^ref, event_name, measurements, metadata}, 5000
+          {event_name, measurements, metadata}
+        end)
+
+      # Separate start and stop events
+      start_events =
+        events
+        |> Enum.filter(fn {event_name, _, _} ->
+          event_name == [:ash_baml, :call, :start]
+        end)
+
+      stop_events =
+        events
+        |> Enum.filter(fn {event_name, _, _} ->
+          event_name == [:ash_baml, :call, :stop]
+        end)
+
+      # Should have exactly 3 start and 3 stop events
+      assert length(start_events) == 3,
+             "Expected 3 start events, got #{length(start_events)}"
+
+      assert length(stop_events) == 3,
+             "Expected 3 stop events, got #{length(stop_events)}"
+
+      # All start events should have monotonic_time and system_time
+      Enum.each(start_events, fn {_event, measurements, metadata} ->
+        assert is_integer(measurements.monotonic_time),
+               "Start event should have monotonic_time"
+
+        assert is_integer(measurements.system_time),
+               "Start event should have system_time"
+
+        assert metadata.function_name == "TestFunction"
+      end)
+
+      # All stop events should have duration and token counts
+      Enum.each(stop_events, fn {_event, measurements, metadata} ->
+        assert is_integer(measurements.duration), "Stop event should have duration"
+        assert measurements.duration > 0, "Duration should be positive"
+        assert is_integer(measurements.input_tokens), "Stop event should have input_tokens"
+        assert measurements.input_tokens > 0, "Input tokens should be positive"
+        assert is_integer(measurements.output_tokens), "Stop event should have output_tokens"
+        assert measurements.output_tokens > 0, "Output tokens should be positive"
+
+        assert measurements.total_tokens ==
+                 measurements.input_tokens + measurements.output_tokens,
+               "Total should equal input + output"
+
+        assert metadata.function_name == "TestFunction"
+      end)
+
+      # Verify no overlapping timestamps (each call should be distinct)
+      start_times =
+        start_events
+        |> Enum.map(fn {_, measurements, _} -> measurements.monotonic_time end)
+        |> Enum.sort()
+
+      # All start times should be unique (different calls)
+      assert length(Enum.uniq(start_times)) == 3,
+             "Start times should be unique for each concurrent call"
+
+      # Verify durations are reasonable (each call took between 100ms-10s)
+      stop_events
+      |> Enum.each(fn {_, measurements, _} ->
+        duration_ms = System.convert_time_unit(measurements.duration, :native, :millisecond)
+        assert duration_ms >= 100, "Duration #{duration_ms}ms seems too fast"
+        assert duration_ms <= 10_000, "Duration #{duration_ms}ms seems too slow"
+      end)
+
+      IO.puts("Concurrent telemetry tracking: #{length(start_events)} calls tracked separately ✓")
+
+      # Cleanup
+      :telemetry.detach(handler_id)
+    end
   end
 end
