@@ -126,3 +126,27 @@ function LongInputFunction(long_text: string) -> LongInputResponse {
     {{ ctx.output_format }}
   "#
 }
+
+class SpecialCharsResponse {
+  received_text string
+  char_count int
+  has_quotes bool
+  has_newlines bool
+  has_special_symbols bool
+}
+
+function SpecialCharsFunction(text_with_special_chars: string) -> SpecialCharsResponse {
+  client TestClient
+  prompt #"
+    Analyze the following text that may contain special characters:
+    {{ text_with_special_chars }}
+
+    Provide:
+    1. Echo back the exact text you received
+    2. Count the total characters
+    3. Indicate if it contains quotes (single or double)
+    4. Indicate if it contains newlines
+    5. Indicate if it contains special symbols like @#$%&*
+    {{ ctx.output_format }}
+  "#
+}

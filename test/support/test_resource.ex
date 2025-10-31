@@ -43,5 +43,10 @@ defmodule AshBaml.Test.TestResource do
       argument(:long_text, :string, allow_nil?: false)
       run(call_baml(:LongInputFunction))
     end
+
+    action :special_chars_action, :map do
+      argument(:text_with_special_chars, :string, allow_nil?: false)
+      run(call_baml(:SpecialCharsFunction))
+    end
   end
 end

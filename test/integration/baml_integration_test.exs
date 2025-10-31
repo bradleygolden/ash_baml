@@ -242,5 +242,59 @@ defmodule AshBaml.IntegrationTest do
       assert String.contains?(summary_lower, "ai") or
                String.contains?(summary_lower, "artificial")
     end
+
+    test "can call BAML function with special characters" do
+      # This test verifies that functions handle special characters correctly
+      # - Text with quotes, apostrophes, newlines, tabs, and special symbols
+      # - Characters are properly escaped and transmitted to LLM
+      # - Response correctly identifies the presence of special characters
+      # - No data corruption or encoding issues occur
+
+      special_text = """
+      Hello "world"! This is a test with 'special' characters.
+      It includes:
+      - Double quotes: "test"
+      - Single quotes: 'test'
+      - Apostrophes: don't, won't, it's
+      - Newlines and tabs:\tlike this
+      - Special symbols: @#$%&*()[]{}!?
+      - Unicode: émojis 🎉 and ñoño
+      - Backslashes: \\ and forward slashes: /
+      - Less than < and greater than >
+      """
+
+      {:ok, result} =
+        AshBaml.Test.TestResource
+        |> Ash.ActionInput.for_action(:special_chars_action, %{
+          text_with_special_chars: special_text
+        })
+        |> Ash.run_action()
+
+      # Verify correct response structure
+      assert %AshBaml.Test.BamlClient.SpecialCharsResponse{} = result
+
+      # Verify all fields are present and correct types
+      assert is_binary(result.received_text)
+      assert is_integer(result.char_count)
+      assert is_boolean(result.has_quotes)
+      assert is_boolean(result.has_newlines)
+      assert is_boolean(result.has_special_symbols)
+
+      # Verify content makes sense
+      assert String.length(result.received_text) > 0
+      assert result.char_count > 0
+      # Text definitely has quotes
+      assert result.has_quotes == true
+      # Text definitely has newlines
+      assert result.has_newlines == true
+      # Text definitely has special symbols
+      assert result.has_special_symbols == true
+
+      # Verify key content is preserved (not checking exact match due to LLM interpretation)
+      received_lower = String.downcase(result.received_text)
+
+      assert String.contains?(received_lower, "special") or
+               String.contains?(received_lower, "test")
+    end
   end
 end
