@@ -27,6 +27,15 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 
 **Stop Criteria Met**: ✅ YES - 9/10 tests passing, only edge case validation remaining
 
+**Latest Result**: "Same function called multiple times (consistency)" ✅ PASSED
+- All 3 sequential calls returned consistent structure
+- Required fields present in all responses
+- Field types consistent across calls
+- All confidence values identical (0.95)
+- Content varied as expected (different wording, same meaning)
+- No random failures or nil responses
+- Test completed in 8.2 seconds
+
 ---
 
 ### 2. Streaming Responses ✅ COMPLETE
@@ -68,22 +77,24 @@ Stop when an AI coding agent can have **complete confidence** that all BAML func
 - **Tests implemented**: 34 (25 streaming + 9 basic calls + 3 tool calling)
 - **Feature areas complete**: 2 / 10 (Streaming ✅, Basic Calls ✅)
 - **Overall confidence**: 60% → **Target: 95%+**
-- **Estimated cost so far**: ~$0.0044 (34 test runs)
+- **Estimated cost so far**: ~$0.0047 (34 test runs + 3 consistency calls)
 - **Time started**: 2025-10-31
 
 ## Latest Test Results
 
-**Test**: "Ambiguous prompt makes consistent tool choice"
+**Test**: "Same function called multiple times (consistency)"
 - **Status**: ✅ PASSED
-- **Duration**: 2.7 seconds (3 sequential calls)
-- **Tokens**: 111 input / 17-24 output per call
-- **Cost**: ~$0.0004 (3 calls)
+- **Duration**: 8.2 seconds (3 sequential calls)
+- **Tokens**: 41 input / 113-119 output per call
+- **Cost**: ~$0.0003 (3 calls)
 - **Key Findings**:
-  - LLM consistently selected `weather_tool` across all 3 calls
-  - Ambiguous prompt "What about 72 degrees?" could match weather or calculator
-  - Tool selection was deterministic despite ambiguity
-  - LLM correctly interpreted "degrees" as temperature units (fahrenheit)
-  - Handled missing city gracefully (returned "unknown" and "City Not Specified")
+  - All 3 calls returned consistent structure (Reply struct)
+  - Required fields present in all responses (content, confidence)
+  - Field types consistent across calls (string, float)
+  - All confidence values identical (0.95)
+  - Content varied as expected (different wording, same meaning about "consistency in testing")
+  - No random failures or nil responses
+  - Structure verification: same `__struct__`, same field types, all non-empty content
 
 ## Next Priority
 
