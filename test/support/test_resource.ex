@@ -28,5 +28,10 @@ defmodule AshBaml.Test.TestResource do
       argument(:location, :string, allow_nil?: true)
       run(call_baml(:OptionalArgsFunction))
     end
+
+    action :array_args_action, :map do
+      argument(:tags, {:array, :string}, allow_nil?: false)
+      run(call_baml(:ArrayArgsFunction))
+    end
   end
 end

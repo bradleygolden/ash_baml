@@ -95,5 +95,33 @@ defmodule AshBaml.IntegrationTest do
       # Location should be nil when not provided
       assert is_nil(result_without_location.location)
     end
+
+    test "can call BAML function with array arguments" do
+      # This test verifies that functions with array arguments work correctly
+      # - Array of strings is passed to BAML function
+      # - Array is properly serialized and sent to LLM
+      # - Response includes information based on array content
+
+      tags = ["elixir", "programming", "functional", "erlang", "beam"]
+
+      {:ok, result} =
+        AshBaml.Test.TestResource
+        |> Ash.ActionInput.for_action(:array_args_action, %{tags: tags})
+        |> Ash.run_action()
+
+      # Verify correct response structure
+      assert %AshBaml.Test.BamlClient.TagAnalysisResponse{} = result
+
+      # Verify all fields are present and correct types
+      assert is_binary(result.summary)
+      assert is_integer(result.tag_count)
+      assert result.tag_count == length(tags)
+
+      # Verify content makes sense
+      assert String.length(result.summary) > 0
+
+      # most_common_tag is optional
+      assert is_binary(result.most_common_tag) or is_nil(result.most_common_tag)
+    end
   end
 end

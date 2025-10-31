@@ -55,3 +55,19 @@ function OptionalArgsFunction(name: string, age: int, location: string?) -> Prof
     {{ ctx.output_format }}
   "#
 }
+
+class TagAnalysisResponse {
+  summary string
+  tag_count int
+  most_common_tag string?
+}
+
+function ArrayArgsFunction(tags: string[]) -> TagAnalysisResponse {
+  client TestClient
+  prompt #"
+    Analyze the following tags: {{ tags }}.
+    Provide a brief summary of what these tags suggest, count how many tags there are,
+    and identify the most common theme or category (if applicable).
+    {{ ctx.output_format }}
+  "#
+}
