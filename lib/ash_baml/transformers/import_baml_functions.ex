@@ -36,6 +36,14 @@ defmodule AshBaml.Transformers.ImportBamlFunctions do
   @impl true
   def before?(_), do: false
 
+  @doc """
+  Transforms the DSL state by auto-generating Ash actions from imported BAML functions.
+
+  For each function in `import_functions`, validates the function exists and generates
+  both regular and streaming action variants.
+
+  Returns `{:ok, dsl_state}` with added actions or `{:error, reason}` if validation fails.
+  """
   @impl true
   def transform(dsl_state) do
     client_module = Info.baml_client_module(dsl_state)

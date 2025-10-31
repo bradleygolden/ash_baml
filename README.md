@@ -1,11 +1,65 @@
 # AshBaml
 
-Ash integration for BAML (Boundary ML) functions, enabling type-safe LLM interactions with support for structured outputs and tool calling.
+[![Hex.pm](https://img.shields.io/hexpm/v/ash_baml.svg)](https://hex.pm/packages/ash_baml)
+[![Hexdocs.pm](https://img.shields.io/badge/docs-hexdocs-purple.svg)](https://hexdocs.pm/ash_baml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+Ash integration for [BAML](https://docs.boundaryml.com) (Boundary ML) functions, enabling type-safe LLM interactions with support for structured outputs, tool calling, and streaming.
+
+## What is AshBaml?
+
+AshBaml bridges two powerful frameworks:
+- **[Ash Framework](https://hexdocs.pm/ash)**: Resource-based Elixir application framework
+- **[BAML](https://docs.boundaryml.com)**: Type-safe prompt engineering with structured outputs
+
+Together, they provide a declarative way to integrate LLMs into your Elixir applications with compile-time safety and runtime reliability.
+
+## Quick Start
+
+```elixir
+# 1. Add to mix.exs
+def deps do
+  [
+    {:ash_baml, "~> 0.1.0"}
+  ]
+end
+
+# 2. Define a BAML function in baml_src/functions.baml
+function ExtractUser(text: string) -> User {
+  client GPT4
+  prompt #"Extract user information from: {{ text }}"#
+}
+
+class User {
+  name string
+  email string
+}
+
+# 3. Generate types
+$ mix ash_baml.gen.types MyApp.BamlClient
+
+# 4. Create an Ash resource
+defmodule MyApp.Extractor do
+  use Ash.Resource,
+    extensions: [AshBaml.Resource]
+
+  baml do
+    client_module MyApp.BamlClient
+    import_functions [:ExtractUser]
+  end
+end
+
+# 5. Use it!
+{:ok, user} = MyApp.Extractor
+  |> Ash.ActionInput.for_action(:extract_user, %{text: "Alice alice@example.com"})
+  |> Ash.run_action()
+```
+
+📚 **[Read the full Getting Started tutorial →](https://hexdocs.pm/ash_baml/01-get-started.html)**
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `ash_baml` to your list of dependencies in `mix.exs`:
+Add `ash_baml` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
@@ -284,7 +338,39 @@ case tool_call do
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/ash_baml>.
+## Documentation
+
+Full documentation is available on [HexDocs](https://hexdocs.pm/ash_baml).
+
+### Tutorials
+
+- [Get Started](https://hexdocs.pm/ash_baml/01-get-started.html) - Your first BAML function call
+- [Structured Output](https://hexdocs.pm/ash_baml/02-structured-output.html) - Working with complex types
+- [Tool Calling](https://hexdocs.pm/ash_baml/03-tool-calling.html) - LLM-driven tool selection
+- [Building an Agent](https://hexdocs.pm/ash_baml/04-building-an-agent.html) - Multi-step autonomous agents
+
+### Topics
+
+- [Why AshBaml?](https://hexdocs.pm/ash_baml/why-ash-baml.html) - Philosophy and benefits
+- [Type Generation](https://hexdocs.pm/ash_baml/type-generation.html) - BAML to Ash type mapping
+- [Actions](https://hexdocs.pm/ash_baml/actions.html) - Understanding action generation
+- [Telemetry](https://hexdocs.pm/ash_baml/telemetry.html) - Monitoring and observability
+- [Patterns](https://hexdocs.pm/ash_baml/patterns.html) - Common patterns and best practices
+
+### How-to Guides
+
+- [Call BAML Functions](https://hexdocs.pm/ash_baml/call-baml-function.html)
+- [Implement Tool Calling](https://hexdocs.pm/ash_baml/implement-tool-calling.html)
+- [Add Streaming](https://hexdocs.pm/ash_baml/add-streaming.html)
+- [Configure Telemetry](https://hexdocs.pm/ash_baml/configure-telemetry.html)
+- [Build Agentic Loop](https://hexdocs.pm/ash_baml/build-agentic-loop.html)
+- [Customize Actions](https://hexdocs.pm/ash_baml/customize-actions.html)
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
