@@ -8,8 +8,6 @@ defmodule AshBaml.Actions.CallBamlStream do
 
   use Ash.Resource.Actions.Implementation
 
-  # Default timeout for stream receive operations (30 seconds)
-  # Prevents indefinite hangs if BAML process crashes or stalls
   @default_stream_timeout 30_000
 
   @doc """
@@ -86,20 +84,16 @@ defmodule AshBaml.Actions.CallBamlStream do
   defp stream_next({ref, :streaming}) do
     receive do
       {^ref, :chunk, chunk} ->
-        # Filter out chunks with nil content (partial parsing in progress)
         if valid_chunk?(chunk) do
           {[chunk], {ref, :streaming}}
         else
-          # Skip this chunk and continue streaming
           {[], {ref, :streaming}}
         end
 
       {^ref, :done, {:ok, final_result}} ->
-        # Emit the final result and then halt
         {[final_result], {ref, :done}}
 
       {^ref, :done, {:error, reason}} ->
-        # Stream ended with error
         {:halt, {ref, {:error, reason}}}
     after
       @default_stream_timeout ->
@@ -143,16 +137,14 @@ defmodule AshBaml.Actions.CallBamlStream do
     end
   end
 
-  # Validates that a chunk has usable content for streaming
-  # BAML sends partial chunks during progressive parsing where some fields may be nil
+  # Validates that a chunk has usable content for streaming.
+  # BAML sends partial chunks during progressive parsing where some fields may be nil.
+  # During streaming, confidence might be nil while content is being built.
+  # We emit chunks as long as content has a value, since that's the primary field
+  # being streamed. Confidence is typically only known when parsing completes.
   defp valid_chunk?(chunk) when is_struct(chunk) do
-    # During streaming, confidence might be nil while content is being built
-    # We emit chunks as long as content has a value, since that's the primary field
-    # being streamed. Confidence is typically only known when parsing completes.
     content = Map.get(chunk, :content)
 
-    # A chunk is valid if it has non-nil content
-    # Empty strings are valid (they indicate content is starting to arrive)
     case content do
       nil -> false
       _ -> true

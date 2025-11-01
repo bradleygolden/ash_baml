@@ -51,13 +51,9 @@ defmodule AshBaml.PerformanceIntegrationTest do
         assert is_binary(response.content)
         assert String.length(response.content) > 0
 
-        # Verify the message was processed (not just random response)
-        # The LLM should acknowledge it received a test message
         assert response.content != nil
       end)
 
-      # Reasonable performance expectation: should complete in < 30 seconds
-      # (10 concurrent calls should be much faster than 10 sequential calls)
       assert duration < 30_000,
              "10 concurrent calls took #{duration}ms, expected < 30000ms"
     end
@@ -111,12 +107,8 @@ defmodule AshBaml.PerformanceIntegrationTest do
         assert String.length(response.content) > 0
       end)
 
-      # Verify all 20 calls completed
       assert length(responses) == 20
 
-      # Check for performance bottlenecks
-      # Should complete in reasonable time (< 45 seconds for 20 concurrent calls)
-      # If significantly slower than 10 concurrent calls, indicates bottleneck
       assert duration < 45_000,
              "20 concurrent calls took #{duration}ms, expected < 45000ms - possible bottleneck"
     end
@@ -166,10 +158,8 @@ defmodule AshBaml.PerformanceIntegrationTest do
           {message, response}
         end)
 
-      # Verify all 50 calls completed
       assert length(responses) == num_calls
 
-      # Verify each response is valid
       Enum.each(responses, fn {_message, response} ->
         assert is_struct(response)
         assert Map.has_key?(response, :content)
@@ -179,11 +169,9 @@ defmodule AshBaml.PerformanceIntegrationTest do
 
       avg_time = div(duration, num_calls)
 
-      # Should complete in reasonable time (< 60 seconds for 50 concurrent calls)
       assert duration < 60_000,
              "50 concurrent calls took #{duration}ms, expected < 60000ms"
 
-      # Verify no resource exhaustion
       assert avg_time > 0
     end
 
@@ -192,13 +180,10 @@ defmodule AshBaml.PerformanceIntegrationTest do
       # Checks for memory leaks, excessive allocations, or unbounded growth
       # Measures memory before, during, and after a series of calls
 
-      # Force garbage collection to get a clean baseline
       :erlang.garbage_collect()
 
-      # Get baseline memory usage (in bytes)
       baseline_memory = :erlang.memory(:total)
 
-      # Make 10 sequential calls to see memory behavior
       Enum.each(1..10, fn i ->
         {:ok, _result} =
           TestResource
@@ -208,13 +193,10 @@ defmodule AshBaml.PerformanceIntegrationTest do
           |> Ash.run_action()
       end)
 
-      # Force garbage collection after calls
       :erlang.garbage_collect()
 
-      # Get memory usage after calls
       after_calls_memory = :erlang.memory(:total)
 
-      # Calculate memory growth
       memory_growth_bytes = after_calls_memory - baseline_memory
       memory_growth_mb = Float.round(memory_growth_bytes / 1_048_576, 2)
 
@@ -227,7 +209,6 @@ defmodule AshBaml.PerformanceIntegrationTest do
       assert memory_growth_bytes < 50 * 1_048_576,
              "Memory grew by #{memory_growth_mb} MB after 10 calls, expected < 50 MB. Possible memory leak."
 
-      # Make another batch to verify memory doesn't keep growing
       Enum.each(1..10, fn i ->
         {:ok, _result} =
           TestResource
@@ -280,7 +261,6 @@ defmodule AshBaml.PerformanceIntegrationTest do
 
       total_duration = System.monotonic_time(:millisecond) - start_time
 
-      # Verify all calls succeeded
       assert length(results) == num_calls
 
       Enum.each(results, fn {_i, result, _duration} ->
@@ -300,7 +280,6 @@ defmodule AshBaml.PerformanceIntegrationTest do
       assert max_time >= min_time, "Max time should be >= min time"
       assert max_time < 30_000, "Max time should be reasonable (< 30s)"
 
-      # Extract first 10 and last 10 call durations from results
       first_10_times =
         results
         |> Enum.take(10)
@@ -314,16 +293,11 @@ defmodule AshBaml.PerformanceIntegrationTest do
       avg_first_10 = div(Enum.sum(first_10_times), length(first_10_times))
       avg_last_10 = div(Enum.sum(last_10_times), length(last_10_times))
 
-      # Check for performance degradation
-      # Last 10 calls should not be significantly slower than first 10
-      # Allow up to 50% degradation as tolerance (network variance, API throttling, etc.)
       degradation_threshold = avg_first_10 * 1.5
 
       assert avg_last_10 < degradation_threshold,
              "Performance degradation detected: first 10 avg=#{avg_first_10}ms, last 10 avg=#{avg_last_10}ms"
 
-      # Total duration should be reasonable (< 90 seconds for 50 sequential calls)
-      # Each call should average < 2 seconds
       assert total_duration < 90_000,
              "#{num_calls} sequential calls took #{total_duration}ms (#{Float.round(total_duration / 1000, 1)}s), expected < 90s"
     end

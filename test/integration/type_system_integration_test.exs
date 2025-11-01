@@ -15,7 +15,6 @@ defmodule AshBaml.TypeSystemIntegrationTest do
         })
         |> Ash.run_action()
 
-      # Verify result is a Reply struct with proper string field
       assert %BamlClient.Reply{} = result
       assert is_binary(result.content)
       assert String.length(result.content) > 0
@@ -32,14 +31,10 @@ defmodule AshBaml.TypeSystemIntegrationTest do
         })
         |> Ash.run_action()
 
-      # The age argument is an integer - verify the action accepts it
-      # The response doesn't have an int field, but we verify the age was processed correctly
       assert %BamlClient.MultiArgResponse{} = result
       assert is_binary(result.greeting)
       assert is_binary(result.description)
       assert is_binary(result.age_category)
-
-      # Age 25 should be categorized as "adult" (20-64)
       assert String.contains?(String.downcase(result.age_category), "adult")
     end
 
@@ -51,7 +46,6 @@ defmodule AshBaml.TypeSystemIntegrationTest do
         })
         |> Ash.run_action()
 
-      # Reply has a confidence float field
       assert %BamlClient.Reply{} = result
       assert is_float(result.confidence)
       assert result.confidence >= 0.0
@@ -75,11 +69,8 @@ defmodule AshBaml.TypeSystemIntegrationTest do
         })
         |> Ash.run_action()
 
-      # NestedObjectResponse has is_international bool field
       assert %BamlClient.NestedObjectResponse{} = result
       assert is_boolean(result.is_international)
-
-      # Japan is international (assuming US as home country per prompt)
       assert result.is_international == true
     end
 
@@ -103,12 +94,10 @@ defmodule AshBaml.TypeSystemIntegrationTest do
         })
         |> Ash.run_action()
 
-      # ProfileResponse has interests string[] field
       assert %BamlClient.ProfileResponse{} = profile_result
       assert is_list(profile_result.interests)
       assert length(profile_result.interests) > 0
 
-      # Each element should be a string
       Enum.each(profile_result.interests, fn interest ->
         assert is_binary(interest)
       end)
@@ -120,7 +109,6 @@ defmodule AshBaml.TypeSystemIntegrationTest do
         |> Ash.ActionInput.for_action(:optional_args_action, %{
           name: "David",
           age: 35,
-          # location is optional, not providing it
           location: nil
         })
         |> Ash.run_action()
@@ -141,10 +129,7 @@ defmodule AshBaml.TypeSystemIntegrationTest do
         })
         |> Ash.run_action()
 
-      # ProfileResponse has location string? (optional) field
       assert %BamlClient.ProfileResponse{} = result
-
-      # Location should be populated when provided
       assert result.location != nil
       assert is_binary(result.location)
       assert String.contains?(String.downcase(result.location), "paris")
@@ -167,13 +152,11 @@ defmodule AshBaml.TypeSystemIntegrationTest do
         })
         |> Ash.run_action()
 
-      # NestedObjectResponse processes nested Address object
       assert %BamlClient.NestedObjectResponse{} = result
       assert is_binary(result.formatted_address)
       assert is_binary(result.distance_category)
       assert is_boolean(result.is_international)
 
-      # Verify the nested data was processed correctly
       assert String.contains?(result.formatted_address, "Frank") or
                String.contains?(result.formatted_address, "London")
 
@@ -183,13 +166,11 @@ defmodule AshBaml.TypeSystemIntegrationTest do
 
   describe "type coercion behavior" do
     test "integer argument accepts integer values" do
-      # This tests that Ash's type system correctly accepts integers
       {:ok, result} =
         TestResource
         |> Ash.ActionInput.for_action(:multi_arg_action, %{
           name: "Test",
           age: 30,
-          # Using actual integer
           topic: "test"
         })
         |> Ash.run_action()
@@ -197,10 +178,8 @@ defmodule AshBaml.TypeSystemIntegrationTest do
       assert %BamlClient.MultiArgResponse{} = result
     end
 
-    # Test removed: "string argument requires string (not atom)"
     # Reason: Ash's :string type automatically coerces atoms to strings
     # This is correct framework behavior, not a validation failure
-    # See: Ash.Type.String - supports atom-to-string coercion
   end
 
   describe "complex type combinations" do
@@ -212,7 +191,6 @@ defmodule AshBaml.TypeSystemIntegrationTest do
         })
         |> Ash.run_action()
 
-      # Reply struct has both string (content) and float (confidence)
       assert %BamlClient.Reply{} = result
       assert is_binary(result.content)
       assert is_float(result.confidence)
@@ -226,13 +204,11 @@ defmodule AshBaml.TypeSystemIntegrationTest do
         })
         |> Ash.run_action()
 
-      # LongInputResponse has key_topics string[]
       assert %BamlClient.LongInputResponse{} = result
       assert is_binary(result.summary)
       assert is_integer(result.word_count)
       assert is_list(result.key_topics)
 
-      # Verify each topic is a string
       Enum.each(result.key_topics, fn topic ->
         assert is_binary(topic)
       end)

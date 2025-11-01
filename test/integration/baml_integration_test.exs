@@ -14,7 +14,6 @@ defmodule AshBaml.IntegrationTest do
       assert %AshBaml.Test.BamlClient.Reply{} = result
       assert is_binary(result.content)
       assert is_float(result.confidence)
-      # end
     end
 
     test "can call BAML function with multiple arguments" do
@@ -27,15 +26,12 @@ defmodule AshBaml.IntegrationTest do
         })
         |> Ash.run_action()
 
-      # Verify correct response structure
       assert %AshBaml.Test.BamlClient.MultiArgResponse{} = result
 
-      # Verify all fields are present and correct types
       assert is_binary(result.greeting)
       assert is_binary(result.description)
       assert is_binary(result.age_category)
 
-      # Verify content makes sense
       assert is_binary(result.greeting)
       assert String.length(result.greeting) > 0
       assert result.age_category in ["child", "teen", "adult", "senior"]
@@ -43,7 +39,6 @@ defmodule AshBaml.IntegrationTest do
     end
 
     test "can call BAML function with optional arguments" do
-      # Test with optional argument provided
       {:ok, result_with_location} =
         AshBaml.Test.TestResource
         |> Ash.ActionInput.for_action(:optional_args_action, %{
@@ -53,14 +48,12 @@ defmodule AshBaml.IntegrationTest do
         })
         |> Ash.run_action()
 
-      # Verify correct response structure
       assert %AshBaml.Test.BamlClient.ProfileResponse{} = result_with_location
       assert is_binary(result_with_location.bio)
       assert is_list(result_with_location.interests)
       assert is_binary(result_with_location.location)
       assert result_with_location.location == "San Francisco"
 
-      # Test without optional argument
       {:ok, result_without_location} =
         AshBaml.Test.TestResource
         |> Ash.ActionInput.for_action(:optional_args_action, %{
@@ -69,20 +62,13 @@ defmodule AshBaml.IntegrationTest do
         })
         |> Ash.run_action()
 
-      # Verify correct response structure
       assert %AshBaml.Test.BamlClient.ProfileResponse{} = result_without_location
       assert is_binary(result_without_location.bio)
       assert is_list(result_without_location.interests)
-      # Location should be nil when not provided
       assert is_nil(result_without_location.location)
     end
 
     test "can call BAML function with array arguments" do
-      # This test verifies that functions with array arguments work correctly
-      # - Array of strings is passed to BAML function
-      # - Array is properly serialized and sent to LLM
-      # - Response includes information based on array content
-
       tags = ["elixir", "programming", "functional", "erlang", "beam"]
 
       {:ok, result} =
@@ -90,27 +76,18 @@ defmodule AshBaml.IntegrationTest do
         |> Ash.ActionInput.for_action(:array_args_action, %{tags: tags})
         |> Ash.run_action()
 
-      # Verify correct response structure
       assert %AshBaml.Test.BamlClient.TagAnalysisResponse{} = result
 
-      # Verify all fields are present and correct types
       assert is_binary(result.summary)
       assert is_integer(result.tag_count)
       assert result.tag_count == length(tags)
 
-      # Verify content makes sense
       assert String.length(result.summary) > 0
 
-      # most_common_tag is optional
       assert is_binary(result.most_common_tag) or is_nil(result.most_common_tag)
     end
 
     test "can call BAML function with nested object arguments" do
-      # This test verifies that functions with nested object arguments work correctly
-      # - Nested map structure is passed to BAML function
-      # - Nested fields are properly accessed in BAML template
-      # - Response includes information based on nested data
-
       user = %{
         name: "Alice Johnson",
         age: 32,
@@ -127,30 +104,18 @@ defmodule AshBaml.IntegrationTest do
         |> Ash.ActionInput.for_action(:nested_object_action, %{user: user})
         |> Ash.run_action()
 
-      # Verify correct response structure
       assert %AshBaml.Test.BamlClient.NestedObjectResponse{} = result
 
-      # Verify all fields are present and correct types
       assert is_binary(result.formatted_address)
       assert is_binary(result.distance_category)
       assert is_boolean(result.is_international)
 
-      # Verify content makes sense
       assert String.length(result.formatted_address) > 0
       assert result.distance_category in ["local", "regional", "international"]
-      # Canada is international from US perspective
       assert result.is_international == true
     end
 
     test "can call BAML function with very long input (>2000 chars)" do
-      # This test verifies that functions handle very long inputs correctly
-      # - Long text (>2000 chars) is passed to BAML function
-      # - LLM can process and analyze long context
-      # - Response structure is maintained with large inputs
-      # - No truncation or data loss occurs
-
-      # Create a text that is >2000 characters
-      # Using Lorem Ipsum paragraphs repeated to ensure length
       long_text =
         """
         The history of artificial intelligence (AI) is a fascinating journey that spans several decades
@@ -195,7 +160,6 @@ defmodule AshBaml.IntegrationTest do
         and neural networks.
         """ <> String.duplicate(" Additional context padding.", 50)
 
-      # Verify the text is indeed >2000 chars
       assert String.length(long_text) > 2000
 
       {:ok, result} =
@@ -203,15 +167,12 @@ defmodule AshBaml.IntegrationTest do
         |> Ash.ActionInput.for_action(:long_input_action, %{long_text: long_text})
         |> Ash.run_action()
 
-      # Verify correct response structure
       assert %AshBaml.Test.BamlClient.LongInputResponse{} = result
 
-      # Verify all fields are present and correct types
       assert is_binary(result.summary)
       assert is_integer(result.word_count)
       assert is_list(result.key_topics)
 
-      # Verify content makes sense
       assert String.length(result.summary) > 0
       assert result.word_count > 0
       assert is_list(result.key_topics)
@@ -219,12 +180,6 @@ defmodule AshBaml.IntegrationTest do
     end
 
     test "can call BAML function with special characters" do
-      # This test verifies that functions handle special characters correctly
-      # - Text with quotes, apostrophes, newlines, tabs, and special symbols
-      # - Characters are properly escaped and transmitted to LLM
-      # - Response correctly identifies the presence of special characters
-      # - No data corruption or encoding issues occur
-
       special_text = """
       Hello "world"! This is a test with 'special' characters.
       It includes:
@@ -245,48 +200,25 @@ defmodule AshBaml.IntegrationTest do
         })
         |> Ash.run_action()
 
-      # Verify correct response structure
       assert %AshBaml.Test.BamlClient.SpecialCharsResponse{} = result
 
-      # Verify all fields are present and correct types
       assert is_binary(result.received_text)
       assert is_integer(result.char_count)
       assert is_boolean(result.has_quotes)
       assert is_boolean(result.has_newlines)
       assert is_boolean(result.has_special_symbols)
 
-      # Verify content makes sense
       assert String.length(result.received_text) > 0
       assert result.char_count > 0
-      # Text definitely has quotes
       assert result.has_quotes == true
-      # Text definitely has newlines
       assert result.has_newlines == true
-      # Text definitely has special symbols
       assert result.has_special_symbols == true
 
-      # Verify key content is preserved (not checking exact match due to LLM interpretation)
       assert is_binary(result.received_text)
       assert String.length(result.received_text) > 0
     end
 
     test "can handle concurrent function calls (5+ parallel)" do
-      # This test verifies that ash_baml handles concurrent operations correctly
-      # - Multiple BAML function calls in parallel (5 concurrent tasks)
-      # - Each call completes successfully without interference
-      # - Results are independent and correct for each call
-      # - No race conditions or shared state issues
-      # - Performance: all calls complete within reasonable time
-      #
-      # CLUSTERING NOTE: This test assumes single-node operation.
-      # In a distributed Erlang cluster, these concurrent calls could
-      # potentially run on different nodes. The design should ensure:
-      # - No shared mutable state between calls
-      # - Each call is completely isolated
-      # - Results are properly routed back to calling process
-      # - No assumptions about process locality
-
-      # Create 5 different tasks that will run concurrently
       tasks =
         Enum.map(1..5, fn i ->
           Task.async(fn ->
@@ -301,46 +233,27 @@ defmodule AshBaml.IntegrationTest do
           end)
         end)
 
-      # Wait for all tasks to complete (timeout: 30 seconds total)
       results = Task.await_many(tasks, 30_000)
 
-      # Verify we got exactly 5 results
       assert length(results) == 5
 
-      # Verify each result is correct
       Enum.each(results, fn {_i, result, _original_message} ->
-        # Verify correct response structure
         assert %AshBaml.Test.BamlClient.Reply{} = result
 
-        # Verify all fields are present and correct types
         assert is_binary(result.content)
         assert is_float(result.confidence)
 
-        # Verify content is non-empty
         assert String.length(result.content) > 0
 
-        # Verify confidence is in valid range
         assert result.confidence >= 0.0 and result.confidence <= 1.0
       end)
 
-      # Verify that all tasks completed (none timed out or failed)
       assert length(results) == 5
     end
 
     test "same function called multiple times returns consistent structure" do
-      # This test verifies that calling the same function multiple times
-      # with the same input produces consistent results:
-      # - Same response structure every time
-      # - All required fields present in all calls
-      # - Field types are consistent across calls
-      # - No random failures or nil responses
-      #
-      # Note: We don't expect identical content (LLM responses vary),
-      # but we DO expect consistent structure and field presence.
-
       input_message = "Tell me about consistency in testing"
 
-      # Call the same function 3 times with same input
       results =
         Enum.map(1..3, fn _i ->
           {:ok, result} =
@@ -351,35 +264,26 @@ defmodule AshBaml.IntegrationTest do
           result
         end)
 
-      # Verify we got exactly 3 results
       assert length(results) == 3
 
-      # Verify each result has consistent structure
       Enum.each(results, fn result ->
-        # Same struct type every time
         assert %AshBaml.Test.BamlClient.Reply{} = result
 
-        # Required fields present every time
         assert is_binary(result.content)
         assert is_float(result.confidence)
 
-        # Fields have valid values
         assert String.length(result.content) > 0
         assert result.confidence >= 0.0 and result.confidence <= 1.0
       end)
 
-      # Verify all results have same field structure (even if content varies)
       [first | rest] = results
 
       Enum.each(rest, fn result ->
-        # Same struct type
         assert result.__struct__ == first.__struct__
 
-        # Same field types
         assert is_binary(result.content) == is_binary(first.content)
         assert is_float(result.confidence) == is_float(first.confidence)
 
-        # Both have non-empty content
         assert String.length(result.content) > 0
         assert String.length(first.content) > 0
       end)
