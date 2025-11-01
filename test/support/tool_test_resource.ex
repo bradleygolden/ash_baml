@@ -18,19 +18,19 @@ defmodule AshBaml.Test.ToolTestResource do
           weather_tool: [
             type: :struct,
             constraints: [
-              instance_of: AshBaml.Test.BamlClient.WeatherTool
+              instance_of: AshBaml.Test.BamlClient.Types.WeatherTool
             ]
           ],
           calculator_tool: [
             type: :struct,
             constraints: [
-              instance_of: AshBaml.Test.BamlClient.CalculatorTool
+              instance_of: AshBaml.Test.BamlClient.Types.CalculatorTool
             ]
           ],
           timer_tool: [
             type: :struct,
             constraints: [
-              instance_of: AshBaml.Test.BamlClient.TimerTool
+              instance_of: AshBaml.Test.BamlClient.Types.TimerTool
             ]
           ]
         ]

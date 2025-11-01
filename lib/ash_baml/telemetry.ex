@@ -1,4 +1,6 @@
 defmodule AshBaml.Telemetry do
+  require Logger
+
   @moduledoc """
   Telemetry integration for AshBaml.
 
@@ -262,7 +264,8 @@ defmodule AshBaml.Telemetry do
         %{input_tokens: 0, output_tokens: 0, total_tokens: 0}
     end
   rescue
-    _ ->
+    exception ->
+      Logger.debug("Failed to extract token usage from collector: #{inspect(exception)}")
       %{input_tokens: 0, output_tokens: 0, total_tokens: 0}
   end
 
@@ -281,7 +284,8 @@ defmodule AshBaml.Telemetry do
         nil
     end
   rescue
-    _ ->
+    exception ->
+      Logger.debug("Failed to extract model name from collector: #{inspect(exception)}")
       nil
   end
 
