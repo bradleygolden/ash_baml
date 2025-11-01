@@ -60,12 +60,17 @@ defmodule AshBaml.Actions.CallBamlStream do
   defp stream_next({ref, :streaming}) do
     receive do
       {^ref, :chunk, chunk} ->
-        # Emit the chunk and continue streaming
-        {[chunk], {ref, :streaming}}
+        # Filter out chunks with nil content (partial parsing in progress)
+        if valid_chunk?(chunk) do
+          {[chunk], {ref, :streaming}}
+        else
+          # Skip this chunk and continue streaming
+          {[], {ref, :streaming}}
+        end
 
-      {^ref, :done, {:ok, _final_result}} ->
-        # Stream complete successfully
-        {:halt, {ref, :done}}
+      {^ref, :done, {:ok, final_result}} ->
+        # Emit the final result and then halt
+        {[final_result], {ref, :done}}
 
       {^ref, :done, {:error, reason}} ->
         # Stream ended with error
@@ -80,6 +85,24 @@ defmodule AshBaml.Actions.CallBamlStream do
   defp stream_next({_ref, {:error, _reason}}) do
     {:halt, :error}
   end
+
+  # Validates that a chunk has usable content for streaming
+  # BAML sends partial chunks during progressive parsing where some fields may be nil
+  defp valid_chunk?(chunk) when is_struct(chunk) do
+    # During streaming, confidence might be nil while content is being built
+    # We emit chunks as long as content has a value, since that's the primary field
+    # being streamed. Confidence is typically only known when parsing completes.
+    content = Map.get(chunk, :content)
+
+    # A chunk is valid if it has non-nil content
+    # Empty strings are valid (they indicate content is starting to arrive)
+    case content do
+      nil -> false
+      _ -> true
+    end
+  end
+
+  defp valid_chunk?(_chunk), do: true
 
   defp build_module_not_found_error(resource, function_name, client_module, function_module) do
     {:error,
