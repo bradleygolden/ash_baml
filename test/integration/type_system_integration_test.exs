@@ -83,7 +83,9 @@ defmodule AshBaml.TypeSystemIntegrationTest do
         |> Ash.run_action()
 
       assert %BamlClient.TagAnalysisResponse{} = result
-      assert is_binary(result.category)
+      assert is_binary(result.summary)
+      assert is_integer(result.tag_count)
+      assert result.tag_count == 3
 
       {:ok, profile_result} =
         TestResource
