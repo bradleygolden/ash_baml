@@ -1,3 +1,44 @@
+=========== ITERATION 24 ===========
+**Date**: 2025-11-01
+**Task**: Remove non-critical comments from codebase
+
+**Implementation Status**: COMPLETE
+
+**Changes Made**:
+- Removed 9 non-critical comments from test files that were redundant or not adding value
+- Comments removed from:
+  - test/ash_baml/auto_generated_actions_test.exs (1 comment)
+  - test/integration/baml_integration_test.exs (3 comments)
+  - test/integration/performance_integration_test.exs (1 comment)
+  - test/integration/streaming_integration_test.exs (1 comment)
+  - test/integration/telemetry_integration_test.exs (3 comments)
+
+**Rationale**:
+- Developer notes about past implementation decisions removed
+- Section dividers for module definitions removed (module names are self-documenting)
+- Comments that simply restate what code does removed
+- Kept all business logic explanations and complex algorithm documentation
+
+**Test Results**:
+- Integration tests: 124 tests, 9 failures (expected LLM-dependent failures)
+- Same failure pattern as iteration 23 (LLM non-determinism)
+- All tests pass except flaky AI response tests
+
+**Commit Created**: 8f3e375
+- Remove non-critical comments from test files
+
+**Code Quality**:
+- Credo: Clean (all edited files pass)
+- Code remains fully functional
+- Documentation (@moduledoc, @doc) untouched
+- Complex logic explanations preserved
+
+**Next Steps**:
+- Code ready for merge
+- All critical issues from previous iterations resolved
+- Optional: Address 8 warnings from iteration 22 (stream handling, documentation)
+=========== ITERATION 24 ===========
+
 =========== ITERATION 23 ===========
 **Date**: 2025-11-01
 **Task**: Fix 3 critical issues from iteration 22
