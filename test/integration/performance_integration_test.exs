@@ -40,11 +40,8 @@ defmodule AshBaml.PerformanceIntegrationTest do
       duration = System.monotonic_time(:millisecond) - start_time
 
       Enum.each(results, fn result ->
-        case result do
-          {:ok, {_message, {:ok, _response}}} -> :ok
-          {:ok, {_message, {:error, _error}}} -> :ok
-          {:exit, _reason} -> :ok
-        end
+        assert {:ok, {_message, {:ok, _response}}} = result,
+               "Task failed: #{inspect(result)}"
       end)
 
       responses =
@@ -105,11 +102,8 @@ defmodule AshBaml.PerformanceIntegrationTest do
       duration = System.monotonic_time(:millisecond) - start_time
 
       Enum.each(results, fn result ->
-        case result do
-          {:ok, {_message, {:ok, _response}}} -> :ok
-          {:ok, {_message, {:error, _error}}} -> :ok
-          {:exit, _reason} -> :ok
-        end
+        assert {:ok, {_message, {:ok, _response}}} = result,
+               "Task failed: #{inspect(result)}"
       end)
 
       responses =
@@ -173,11 +167,8 @@ defmodule AshBaml.PerformanceIntegrationTest do
       duration = System.monotonic_time(:millisecond) - start_time
 
       Enum.each(results, fn result ->
-        case result do
-          {:ok, {_message, {:ok, _response}}} -> :ok
-          {:ok, {_message, {:error, _error}}} -> :ok
-          {:exit, _reason} -> :ok
-        end
+        assert {:ok, {_message, {:ok, _response}}} = result,
+               "Task failed: #{inspect(result)}"
       end)
 
       responses =
