@@ -134,7 +134,6 @@ defmodule AshBaml.Telemetry do
     if enabled?(input, config) && should_sample?(config) do
       execute_with_telemetry(input, function_name, config, func)
     else
-      # Pass empty map - BAML client expects a map for options
       func.(%{})
     end
   end
@@ -157,7 +156,6 @@ defmodule AshBaml.Telemetry do
     )
 
     try do
-      # BAML client expects a map for options
       result = func.(%{collectors: [collector]})
 
       duration = System.monotonic_time() - start_time
@@ -165,7 +163,6 @@ defmodule AshBaml.Telemetry do
       usage = get_usage(collector)
       model_name = get_model_name(collector)
 
-      # Add model_name to metadata for :stop event
       metadata_with_model = Map.put(metadata, :model_name, model_name)
 
       emit_event(
@@ -274,7 +271,6 @@ defmodule AshBaml.Telemetry do
 
     case log_result do
       %{"calls" => [%{"request" => %{"body" => body}} | _]} when is_binary(body) ->
-        # Parse the JSON body to extract the model name
         case Jason.decode(body) do
           {:ok, %{"model" => model}} when is_binary(model) -> model
           _ -> nil
