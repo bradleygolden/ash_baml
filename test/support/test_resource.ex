@@ -15,6 +15,11 @@ defmodule AshBaml.Test.TestResource do
       run(call_baml(:TestFunction))
     end
 
+    action :test_function, :map do
+      argument(:message, :string, allow_nil?: false)
+      run(call_baml(:TestFunction))
+    end
+
     action :multi_arg_action, :map do
       argument(:name, :string, allow_nil?: false)
       argument(:age, :integer, allow_nil?: false)
