@@ -8,6 +8,10 @@ defmodule AshBaml.Actions.CallBamlStream do
 
   use Ash.Resource.Actions.Implementation
 
+  # Default timeout for stream receive operations (30 seconds)
+  # Prevents indefinite hangs if BAML process crashes or stalls
+  @default_stream_timeout 30_000
+
   @doc """
   Executes the BAML function with streaming.
 
@@ -32,17 +36,39 @@ defmodule AshBaml.Actions.CallBamlStream do
     Stream.resource(
       fn -> start_streaming(function_module, arguments) end,
       fn state -> stream_next(state) end,
-      fn _state -> :ok end
+      fn state -> cleanup_stream(state) end
     )
   end
 
+  # Creates a stream that communicates via message passing with a BAML streaming process.
+  #
+  # ## Process Lifecycle
+  #
+  # The BAML client's `stream/2` function spawns a background process to handle
+  # streaming responses. This process sends messages to the parent process (self())
+  # using the pattern `{ref, :chunk, data}` or `{ref, :done, result}`.
+  #
+  # ### Known Limitation: Process Cleanup
+  #
+  # The BAML Elixir client (v1.0.0-pre.23) does not return a process reference
+  # from `stream/2`, which prevents explicit process termination on early stream
+  # consumption halts. The `cleanup_stream/1` function flushes the mailbox to
+  # prevent message accumulation but cannot terminate the BAML process.
+  #
+  # Impact:
+  # - If a stream is created but never fully consumed, the BAML process may
+  #   continue running until it completes or times out (30s default).
+  # - Mailbox cleanup prevents memory leaks from unconsumed messages.
+  # - This is acceptable for typical streaming scenarios where streams are
+  #   consumed to completion or timeout naturally.
+  #
+  # Future improvement: When BAML Elixir client exposes process references,
+  # update cleanup_stream/1 to explicitly terminate spawned processes.
+  #
   defp start_streaming(function_module, arguments) do
-    # Use the async stream function which handles its own process spawning
     parent = self()
     ref = make_ref()
 
-    # Call stream with a callback that sends messages to parent
-    # BAML client expects arguments as a map
     function_module.stream(arguments, fn
       {:partial, partial_result} ->
         send(parent, {ref, :chunk, partial_result})
@@ -75,6 +101,13 @@ defmodule AshBaml.Actions.CallBamlStream do
       {^ref, :done, {:error, reason}} ->
         # Stream ended with error
         {:halt, {ref, {:error, reason}}}
+    after
+      @default_stream_timeout ->
+        # Stream timeout - BAML process may have crashed or stalled
+        {:halt,
+         {ref,
+          {:error,
+           "Stream timeout after #{@default_stream_timeout}ms - BAML process may have crashed"}}}
     end
   end
 
@@ -84,6 +117,24 @@ defmodule AshBaml.Actions.CallBamlStream do
 
   defp stream_next({_ref, {:error, _reason}}) do
     {:halt, :error}
+  end
+
+  # Cleans up stream resources by flushing mailbox messages.
+  #
+  # Note: This only flushes messages. It cannot terminate the BAML streaming
+  # process as the client does not expose process references. See module docs
+  # for start_streaming/2 for full context on process lifecycle limitations.
+  defp cleanup_stream({ref, _status}) do
+    flush_stream_messages(ref)
+    :ok
+  end
+
+  defp flush_stream_messages(ref) do
+    receive do
+      {^ref, _, _} -> flush_stream_messages(ref)
+    after
+      0 -> :ok
+    end
   end
 
   # Validates that a chunk has usable content for streaming

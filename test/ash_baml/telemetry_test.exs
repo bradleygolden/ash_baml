@@ -220,6 +220,61 @@ defmodule AshBaml.TelemetryTest do
         {:ok, :fast_path}
       end)
     end
+
+    test "nil collector_name is accepted and generates auto name" do
+      defmodule NilCollectorResource do
+        use Ash.Resource,
+          domain: AshBaml.Test.TestDomain,
+          extensions: [AshBaml.Resource],
+          validate_domain_inclusion?: false
+
+        baml do
+          client_module(AshBaml.Test.BamlClient)
+
+          telemetry do
+            enabled(true)
+            collector_name(nil)
+          end
+        end
+
+        actions do
+          action :test_action, :map do
+            argument(:input, :string, allow_nil?: false)
+            run(call_baml(:TestFunction))
+          end
+        end
+      end
+
+      assert AshBaml.Info.baml_telemetry_collector_name(NilCollectorResource) == nil
+
+      assert AshBaml.Info.baml_telemetry_enabled?(NilCollectorResource) == true
+    end
+
+    test "omitted collector_name defaults to nil" do
+      defmodule DefaultCollectorResource do
+        use Ash.Resource,
+          domain: AshBaml.Test.TestDomain,
+          extensions: [AshBaml.Resource],
+          validate_domain_inclusion?: false
+
+        baml do
+          client_module(AshBaml.Test.BamlClient)
+
+          telemetry do
+            enabled(true)
+          end
+        end
+
+        actions do
+          action :test_action, :map do
+            argument(:input, :string, allow_nil?: false)
+            run(call_baml(:TestFunction))
+          end
+        end
+      end
+
+      assert AshBaml.Info.baml_telemetry_collector_name(DefaultCollectorResource) == nil
+    end
   end
 
   # Test helper to build input struct
