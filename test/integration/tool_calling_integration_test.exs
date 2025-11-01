@@ -53,6 +53,160 @@ defmodule AshBaml.ToolCallingIntegrationTest do
       assert result == 60.0
     end
 
+    test "ambiguous prompt selects valid tool" do
+      # LLM output is inherently non-deterministic for ambiguous prompts
+      ambiguous_message = "What about 72 degrees?"
+
+      {:ok, tool_call} =
+        ToolTestResource
+        |> Ash.ActionInput.for_action(:select_tool, %{
+          message: ambiguous_message
+        })
+        |> Ash.run_action()
+
+      assert %Ash.Union{} = tool_call
+
+      assert tool_call.type in [:weather_tool, :calculator_tool],
+             "Expected valid tool selection, got #{tool_call.type}"
+    end
+
+    test "tool with all fields populated (weather)" do
+      {:ok, tool_call} =
+        ToolTestResource
+        |> Ash.ActionInput.for_action(:select_tool, %{
+          message: "What's the temperature in Seattle in celsius?"
+        })
+        |> Ash.run_action()
+
+      assert %Ash.Union{type: :weather_tool, value: weather_tool} = tool_call
+
+      assert weather_tool.city != nil
+      assert weather_tool.city != ""
+      assert String.contains?(String.downcase(weather_tool.city), "seattle")
+
+      assert weather_tool.units != nil
+      assert weather_tool.units != ""
+      assert weather_tool.units in ["celsius", "fahrenheit"]
+      assert weather_tool.units == "celsius"
+    end
+
+    test "tool with all fields populated (calculator)" do
+      {:ok, tool_call} =
+        ToolTestResource
+        |> Ash.ActionInput.for_action(:select_tool, %{
+          message: "Multiply 3.5 times 2.0 and 4.0"
+        })
+        |> Ash.run_action()
+
+      assert %Ash.Union{type: :calculator_tool, value: calc_tool} = tool_call
+
+      assert calc_tool.operation != nil
+      assert calc_tool.operation in ["add", "subtract", "multiply", "divide"]
+      assert calc_tool.operation == "multiply"
+
+      assert calc_tool.numbers != nil
+      assert is_list(calc_tool.numbers)
+      assert length(calc_tool.numbers) > 0
+
+      Enum.each(calc_tool.numbers, fn num ->
+        assert is_float(num)
+      end)
+
+      expected_numbers = MapSet.new([3.5, 2.0, 4.0])
+      actual_numbers = MapSet.new(calc_tool.numbers)
+
+      assert MapSet.subset?(expected_numbers, actual_numbers),
+             "Expected numbers #{inspect(expected_numbers)}, got #{inspect(actual_numbers)}"
+    end
+
+    test "3+ tool options in union (timer tool)" do
+      {:ok, tool_call} =
+        ToolTestResource
+        |> Ash.ActionInput.for_action(:select_tool, %{
+          message: "Set a timer for 5 minutes called 'tea brewing'"
+        })
+        |> Ash.run_action()
+
+      assert %Ash.Union{type: :timer_tool, value: timer_tool} = tool_call
+
+      assert timer_tool.duration_seconds != nil
+      assert is_integer(timer_tool.duration_seconds)
+
+      assert timer_tool.duration_seconds in 295..305,
+             "Expected ~300 seconds for '5 minutes', got #{timer_tool.duration_seconds}"
+
+      assert timer_tool.label != nil
+      assert is_binary(timer_tool.label)
+      assert String.contains?(String.downcase(timer_tool.label), "tea")
+    end
+
+    test "concurrent tool selection calls (cluster-safe)" do
+      # CRITICAL: This tests cluster safety - no shared mutable state or race conditions
+      messages = [
+        "What's the weather in Tokyo?",
+        "Calculate 100 + 200",
+        "Temperature in London in fahrenheit?",
+        "Divide 50 by 2",
+        "Weather forecast for Paris?"
+      ]
+
+      start_time = System.monotonic_time(:millisecond)
+
+      results =
+        messages
+        |> Task.async_stream(
+          fn message ->
+            {:ok, tool_call} =
+              ToolTestResource
+              |> Ash.ActionInput.for_action(:select_tool, %{message: message})
+              |> Ash.run_action()
+
+            {message, tool_call}
+          end,
+          timeout: 30_000,
+          max_concurrency: 5
+        )
+        |> Enum.to_list()
+
+      _duration = System.monotonic_time(:millisecond) - start_time
+
+      Enum.each(results, fn result ->
+        assert {:ok, {_message, _tool_call}} = result
+      end)
+
+      tool_calls =
+        Enum.map(results, fn {:ok, {message, tool_call}} ->
+          {message, tool_call}
+        end)
+
+      Enum.each(tool_calls, fn {_message, tool_call} ->
+        assert %Ash.Union{} = tool_call
+        assert tool_call.type in [:weather_tool, :calculator_tool]
+      end)
+
+      weather_calls =
+        Enum.filter(tool_calls, fn {msg, _} ->
+          String.contains?(msg, "weather") or String.contains?(msg, "Temperature") or
+            String.contains?(msg, "forecast")
+        end)
+
+      calc_calls =
+        Enum.filter(tool_calls, fn {msg, _} ->
+          String.contains?(msg, "Calculate") or String.contains?(msg, "Divide")
+        end)
+
+      assert length(weather_calls) == 3
+      assert length(calc_calls) == 2
+
+      Enum.each(weather_calls, fn {_msg, tool_call} ->
+        assert tool_call.type == :weather_tool
+      end)
+
+      Enum.each(calc_calls, fn {_msg, tool_call} ->
+        assert tool_call.type == :calculator_tool
+      end)
+    end
+
     defp dispatch_tool_union(tool_union) do
       case tool_union do
         %Ash.Union{type: :weather_tool, value: %BamlClient.WeatherTool{} = tool} ->
@@ -80,16 +234,11 @@ defmodule AshBaml.ToolCallingIntegrationTest do
     end
 
     test "integration test documentation - tool calling pattern" do
-      # This test documents the complete tool calling pattern without requiring LLM calls
-      # Real usage would follow this same pattern but with actual LLM responses
-
-      # In real usage, this would come from SelectTool BAML function
       simulated_weather_tool = %BamlClient.WeatherTool{
         city: "Paris",
         units: "celsius"
       }
 
-      # Wrap in Ash.Union as BAML would do
       simulated_union = %Ash.Union{
         type: :weather_tool,
         value: simulated_weather_tool
@@ -127,8 +276,6 @@ defmodule AshBaml.ToolCallingIntegrationTest do
     test "handles unknown tool types gracefully" do
       unknown_tool = %{unknown_field: "value"}
 
-      # Attempting to use it would not match the case patterns
-      # This demonstrates that developers control the dispatch
       result = classify_tool(unknown_tool)
 
       assert result == :unknown
@@ -140,6 +287,37 @@ defmodule AshBaml.ToolCallingIntegrationTest do
         |> Ash.ActionInput.for_action(:execute_weather, %{city: "Tokyo"})
         |> Ash.run_action!()
       end
+    end
+  end
+
+  describe "enum constraints validation" do
+    test "LLM respects enum constraints in tool selection" do
+      {:ok, tool_call} =
+        ToolTestResource
+        |> Ash.ActionInput.for_action(:select_tool, %{
+          message: "What is 100 plus 50 plus 25?"
+        })
+        |> Ash.run_action()
+
+      assert %Ash.Union{type: :calculator_tool, value: calc_tool} = tool_call
+
+      assert calc_tool.operation in ["add", "subtract", "multiply", "divide"]
+      assert calc_tool.operation == "add"
+
+      assert 100.0 in calc_tool.numbers
+      assert 50.0 in calc_tool.numbers
+      assert 25.0 in calc_tool.numbers
+    end
+
+    @tag :skip
+    test "LLM correctly maps natural language to enum values" do
+      # Test skipped until we have:
+      # 1. Mocked LLM responses for deterministic testing
+      # 2. More precise prompts that eliminate ambiguity
+      #
+      # NOTE: This test requires either mocked responses or unambiguous prompts
+      # to handle the subtraction ambiguity (100-50 vs 50-100). Current LLM
+      # behavior is non-deterministic for this edge case.
     end
   end
 end

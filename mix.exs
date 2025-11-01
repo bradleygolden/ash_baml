@@ -36,6 +36,7 @@ defmodule AshBaml.MixProject do
     [
       {:ash, "~> 3.0"},
       {:baml_elixir, "~> 1.0.0-pre.23"},
+      {:jason, "~> 1.4"},
       {:spark, "~> 2.2"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},

@@ -6,668 +6,485 @@ allowed-tools: Read, Grep, Glob, Task, Bash, TodoWrite, Write, SlashCommand, Ask
 
 # QA
 
-Systematically validate Elixir implementation against quality standards and success criteria.
+Validate implementation against quality standards and success criteria.
 
-**Project Type**: Library/Package
-
-## Purpose
-
-Validate completed work through automated checks, code review, and comprehensive quality analysis to ensure implementation meets standards.
-
-## Steps to Execute:
+## Execution Steps
 
 ### Step 1: Determine Scope
 
 **If plan name provided:**
-- Locate plan file: `.thoughts/plans/*[plan-name]*.md`
-- Read plan completely
-- Extract success criteria
-- Validate implementation against that plan
+- Locate plan: `.thoughts/plans/*[plan-name]*.md`
+- Read plan and extract success criteria
+- Validate implementation against plan
 
-**If no plan provided:**
-- General Elixir project health check
+**If no plan:**
+- General health check
 - Run all quality tools
 - Review recent changes
-- Provide overall quality assessment
 
-### Step 2: Initial Discovery
+### Step 2: Generate QA Plan
 
-**Read implementation plan** (if validating against plan):
+**2.1 Gather Git Evidence**
+
+Run in parallel:
 ```bash
-find .thoughts/plans -name "*[plan-name]*.md" -type f
-```
-
-**Gather git evidence:**
-```bash
-# See what changed
 git status
-git diff --stat
+git diff --stat main...HEAD
 git log --oneline -10
-
-# If validating a specific branch
-git diff main...HEAD --stat
+git diff --name-only main...HEAD | grep '^lib/.*\.ex$'
+git diff --name-only main...HEAD | grep '^test/.*\.exs$'
 ```
 
-**Create validation plan** using TodoWrite:
+**2.2 Create QA Plan Document**
+
+Save to: `.thoughts/qa-plans/YYYY-MM-DD-[plan-name]-qa-plan.md`
+
+```markdown
+---
+date: [ISO timestamp]
+plan: [Plan name if applicable]
+branch: [Current branch]
+commit: [Current commit hash]
+files_changed: [N]
+---
+
+# QA Plan: [Plan Name or "General Health Check"]
+
+**Created**: [Date/time]
+**Branch**: [branch]
+**Comparing**: main...HEAD
+**Files Changed**: [N] lib/, [N] test/
+
+## Automated Quality Checks
+
+- [ ] mix compile --warnings-as-errors
+- [ ] mix test --warnings-as-errors
+- [ ] mix format --check-formatted
+- [ ] mix credo --strict
+- [ ] mix dialyzer
+- [ ] mix sobelow --exit Low
+- [ ] mix docs
+
+## Codebase-Wide Analysis
+
+- [ ] consistency-checker
+- [ ] documentation-completeness-checker
+- [ ] dead-code-detector
+
+## Per-File Diff Analysis
+
+### Lib Files
+
+[For each lib file:]
+- [ ] [file_path]
+
+### Test Files
+
+[For each test file:]
+- [ ] [file_path]
+
+## Success Criteria
+
+[If plan exists, include criteria from plan, otherwise general criteria]
+
+## Execution Order
+
+1. Automated checks (parallel)
+2. Codebase-wide agents (parallel)
+3. Per-file lib analysis (sequential)
+4. Per-file test analysis (sequential)
+5. Generate report
 ```
-1. [in_progress] Gather context and plan
-2. [pending] Run automated quality checks
-3. [pending] Spawn validation agents
-4. [pending] Check manual criteria
-5. [pending] Generate validation report
-6. [pending] Offer fix plan generation if critical issues found
+
+**2.3 Setup TodoWrite**
+
+```
+1. [completed] Generate QA plan
+2. [in_progress] Run automated quality checks
+3. [pending] Run codebase-wide analysis
+4. [pending] Analyze changed lib files
+5. [pending] Analyze changed test files
+6. [pending] Generate QA report
+7. [pending] Offer fix plan if needed
 ```
 
 ### Step 3: Run Automated Quality Checks
 
-**IMPORTANT: Maximize parallel execution for speed!**
+Execute ALL checks in parallel (single message, multiple Bash tool calls):
 
-Execute ALL automated checks in a SINGLE message with multiple Bash tool calls:
-
-Run these concurrently in ONE message:
-- `mix test --warnings-as-errors` - Execute all tests
-- `mix format --check-formatted` - Verify code formatting
-- `mix credo --strict` - Static code analysis
-- `mix dialyzer` - Type checking
-- `mix compile --warnings-as-errors` - Clean compilation
-- `mix sobelow --exit Low` - Security scanning
-- `mix docs` - Documentation generation
-
-**Capture results** from each check:
-- Exit code (0 = pass, non-zero = fail)
-- Output messages
-- Any warnings or errors
-
-Mark this step complete in TodoWrite.
-
-### Step 4: Spawn Validation Agents
-
-**IMPORTANT: Launch ALL agents in parallel for speed!**
-
-Execute ALL four subagents in a SINGLE message with multiple Task tool calls.
-
-Launch these custom agents concurrently in ONE message:
-- **consistency-checker**: Verify documentation/code consistency
-- **documentation-completeness-checker**: Check @moduledoc, @doc, @spec coverage
-- **code-smell-checker**: Detect anti-patterns and non-idiomatic code
-- **dead-code-detector**: Find unused functions and modules
-
-**Example Task launches (all in one message):**
-
-```
-Task(subagent_type="consistency-checker", description="Check consistency", prompt="Analyze this Elixir project for consistency between documentation, code examples, and configuration. Verify README examples match actual code usage, check mix.exs dependencies are used, and ensure cross-references are accurate.")
-
-Task(subagent_type="documentation-completeness-checker", description="Check documentation", prompt="Verify all public modules and functions in lib/ have complete documentation. Check for @moduledoc, @doc, and @spec coverage. Report any missing or boilerplate documentation.")
-
-Task(subagent_type="code-smell-checker", description="Detect code smells", prompt="Analyze code quality for Elixir best practices. Check for pattern matching usage, pipe operators, function complexity, and idiomatic patterns. Flag bloated or non-idiomatic code. Use Skill tool to verify dependency usage against hex docs.")
-
-Task(subagent_type="dead-code-detector", description="Find dead code", prompt="Find unused private functions, unused modules, unreachable code, and large commented-out code blocks in lib/. Report findings with confidence levels.")
+```bash
+mix compile --warnings-as-errors
+mix test --warnings-as-errors
+mix format --check-formatted
+mix credo --strict
+mix dialyzer
+mix sobelow --exit Low
+mix docs
 ```
 
-**Wait for all agents** to complete before proceeding.
+Capture exit codes and output for each.
 
-**Collect all findings** for the final report.
+Mark step complete in TodoWrite.
 
-Mark this step complete in TodoWrite.
+### Step 4: Run Codebase-Wide Analysis
 
-### Step 5: Verify Success Criteria
+Launch ALL agents in parallel (single message, multiple Task tool calls):
 
-**If validating against plan:**
+```
+Task(subagent_type="consistency-checker",
+     description="Check consistency",
+     prompt="Analyze this Elixir project for consistency between documentation, code examples, and configuration. Verify README examples match actual code usage, check mix.exs dependencies are used, and ensure cross-references are accurate.")
 
-**Read success criteria** from plan:
-- Automated verification section
-- Manual verification section
+Task(subagent_type="documentation-completeness-checker",
+     description="Check documentation",
+     prompt="Verify all public modules and functions in lib/ have complete documentation. Check for @moduledoc and @doc coverage. Report any missing or boilerplate documentation.")
 
-**Check automated criteria:**
-- Match each criterion against actual checks
-- Confirm all automated checks passed
-- Note any that failed
+Task(subagent_type="dead-code-detector",
+     description="Find dead code",
+     prompt="Find unused private functions, unused modules, unreachable code, and large commented-out code blocks in lib/. Report findings with confidence levels.")
+```
 
-**Check manual criteria:**
-- Review each manual criterion
-- Assess whether it's met (check implementation)
-- Document status for each
+Wait for all agents to complete.
 
-**If general health check:**
+Mark step complete in TodoWrite.
 
-**Automated Health Indicators:**
-- Compilation succeeds
-- All tests pass
-- Format check passes
-- Quality tools pass (if configured)
+### Step 5: Analyze Changed Lib Files
 
-**Manual Health Indicators:**
-- Recent changes are logical
-- Code follows project patterns
-- No obvious bugs or issues
-- Documentation is adequate
+**5.1 Get Changed Lib Files**
 
-Mark this step complete in TodoWrite.
+```bash
+git diff --name-only main...HEAD | grep '^lib/.*\.ex$'
+```
 
-### Step 6: Elixir-Specific Quality Checks
+**5.2 Spawn One Agent Per File**
 
-**Module Organization:**
-- Are modules properly namespaced?
-- Is module structure clear (use, import, alias at top)?
-- Are public vs private functions clearly separated?
+For each lib file, launch sequentially (or in waves of 5 if many files):
 
-**Pattern Matching:**
-- Are function heads used effectively?
-- Is pattern matching preferred over conditionals?
-- Are guard clauses used appropriately?
+```
+Task(subagent_type="qa-lib-file-analyzer",
+     description="Analyze [filename]",
+     prompt="Analyze the git diff for [file_path] comparing main...HEAD. Report findings.")
+```
 
-**Error Handling:**
-- Are tuple returns used ({:ok, result}/{:error, reason})?
-- Are with blocks used for complex error flows?
-- Are errors propagated correctly?
+Collect findings from each agent.
 
-**Library-Specific:**
-- Is the public API well-designed and documented?
-- Are internal modules marked as private?
-- Is versioning handled correctly?
-- Are dependencies properly specified?
+Mark step complete in TodoWrite.
 
-Mark this step complete in TodoWrite.
+### Step 6: Analyze Changed Test Files
 
-### Step 7: Generate Validation Report
+**6.1 Get Changed Test Files**
 
-**Compile all findings:**
+```bash
+git diff --name-only main...HEAD | grep '^test/.*\.exs$'
+```
+
+**6.2 Spawn One Agent Per File**
+
+For each test file, launch sequentially (or in waves of 5 if many files):
+
+```
+Task(subagent_type="qa-test-file-analyzer",
+     description="Analyze [filename]",
+     prompt="Analyze the git diff for [file_path] comparing main...HEAD. Report findings.")
+```
+
+Collect findings from each agent.
+
+Mark step complete in TodoWrite.
+
+### Step 7: Generate QA Report
+
+**7.1 Compile Findings**
+
 - Automated check results
-- Agent findings (code review, tests, docs)
-- Success criteria status
-- Elixir-specific observations
+- Codebase-wide agent findings
+- Per-file lib analysis findings
+- Per-file test analysis findings
+- Success criteria status (if validating plan)
 
-**Create validation report structure:**
+**7.2 Determine Overall Status**
+
+- PASS: All checks passed, no critical issues
+- PASS_WITH_WARNINGS: Checks passed, some warnings found
+- FAIL: Checks failed or critical issues found
+
+**7.3 Create Report**
+
+Save to: `.thoughts/qa-reports/YYYY-MM-DD-[plan-name]-qa.md`
 
 ```markdown
 ---
 date: [ISO timestamp]
 validator: [Git user name]
 commit: [Current commit hash]
-branch: [Current branch name]
+branch: [Current branch]
 plan: [Plan name if applicable]
 status: [PASS / PASS_WITH_WARNINGS / FAIL]
-tags: [qa, validation, elixir, library, hex, elixir]
+tags: [qa, validation, elixir, library]
+qa_plan: [Path to QA plan file]
 ---
 
 # QA Report: [Plan Name or "General Health Check"]
 
-**Date**: [Current date and time]
-**Validator**: [Git user name]
-**Commit**: [Current commit hash]
-**Branch**: [Current branch]
-**Project Type**: Library/Package
+**Date**: [Date/time]
+**Validator**: [Git user]
+**Commit**: [hash]
+**Branch**: [branch]
+**QA Plan**: [path to qa-plan.md]
 
 ## Executive Summary
 
-**Overall Status**: ✅ PASS / ⚠️ PASS WITH WARNINGS / ❌ FAIL
+**Overall Status**: [PASS / PASS_WITH_WARNINGS / FAIL]
 
 **Quick Stats:**
-- Compilation: ✅/❌
-- Tests: [N] passed, [N] failed
-- Credo: ✅/❌
-- Dialyzer: ✅/❌
-- Sobelow: ✅/❌
-- Documentation: ✅/❌
-- Code Review: [N] observations
-- Test Coverage: [Assessment]
-- Documentation: [Assessment]
+- Compilation: [PASS/FAIL]
+- Tests: [N passed, N failed]
+- Credo: [PASS/FAIL]
+- Dialyzer: [PASS/FAIL]
+- Sobelow: [PASS/FAIL]
+- Documentation: [PASS/FAIL]
+- Files Analyzed: [N lib, N test]
 
 ## Automated Verification Results
 
 ### Compilation
 ```
-[Output from mix compile]
+[Output]
 ```
-**Status**: ✅ Success / ❌ Failed
-**Issues**: [List any warnings or errors]
+Status: [PASS/FAIL]
 
 ### Test Suite
 ```
-[Output from test command]
+[Output]
 ```
-**Status**: ✅ All passed / ❌ [N] failed
-**Failed Tests**:
-- [test name] - [reason]
+Status: [PASS/FAIL]
+Failed Tests: [list if any]
 
 ### Code Formatting
 ```
-[Output from mix format --check-formatted]
+[Output]
 ```
-**Status**: ✅ Formatted / ❌ Needs formatting
+Status: [PASS/FAIL]
 
 ### Credo Analysis
 ```
-[Output from mix credo --strict]
+[Output]
 ```
-**Status**: ✅ Passed / ❌ Issues found
-**Issues**:
-- [List any Credo warnings/errors]
+Status: [PASS/FAIL]
+Issues: [list if any]
 
 ### Dialyzer Type Checking
 ```
-[Output from mix dialyzer]
+[Output]
 ```
-**Status**: ✅ No type errors / ❌ Type errors found
-**Type Errors**:
-- [List any type errors]
+Status: [PASS/FAIL]
+Type Errors: [list if any]
 
 ### Sobelow Security Scan
 ```
-[Output from mix sobelow]
+[Output]
 ```
-**Status**: ✅ No security issues / ⚠️ Warnings / ❌ Issues found
-**Findings**:
-- [List any security findings]
+Status: [PASS/FAIL]
+Findings: [list if any]
 
 ### Documentation Generation
 ```
-[Output from mix docs]
+[Output]
 ```
-**Status**: ✅ Generated successfully / ❌ Errors
-**Issues**:
-- [List any documentation warnings]
+Status: [PASS/FAIL]
 
-## Agent Validation Results
+## Codebase-Wide Analysis
 
 ### Consistency Check
-
-[Findings from consistency-checker agent]
-
-**Consistency Issues**: [N] found
-- Documentation vs code mismatches
-- Configuration inconsistencies
-- Cross-reference errors
+[Findings from consistency-checker]
 
 ### Documentation Completeness
-
-[Findings from documentation-completeness-checker agent]
-
-**Documentation Status**:
-- Modules with @moduledoc: [N]/[M] ([X]%)
-- Functions with @doc: [N]/[M] ([X]%)
-- Functions with @spec: [N]/[M] ([X]%)
-- Quality assessment: [Good/Adequate/Needs Work]
-
-### Code Smell Analysis
-
-[Findings from code-smell-checker agent]
-
-**Code Quality**:
-- Code smells found: [N]
-- Bloated functions: [N]
-- Non-idiomatic patterns: [N]
-- File ratings: [X clean, Y minor issues, Z needs refactoring]
+[Findings from documentation-completeness-checker]
 
 ### Dead Code Detection
+[Findings from dead-code-detector]
 
-[Findings from dead-code-detector agent]
+## Per-File Analysis Results
 
-**Dead Code Found**:
-- Unused private functions: [N]
-- Unused modules: [N]
-- Unreachable code blocks: [N]
-- Commented-out code: [N] blocks
+### Lib Files
+
+[For each lib file analyzed:]
+
+#### [file_path]
+
+[Findings from qa-lib-file-analyzer]
+
+### Test Files
+
+[For each test file analyzed:]
+
+#### [file_path]
+
+[Findings from qa-test-file-analyzer]
 
 ## Success Criteria Validation
 
-[If validating against plan, list each criterion]
+[If validating against plan:]
 
 **Automated Criteria**:
-- [x] Compilation succeeds
-- [x] mix test --warnings-as-errors passes
-- [x] Credo analysis passes
-- [x] Dialyzer type checking passes
-- [x] Sobelow security scan passes
-- [x] Documentation generates successfully
+- [ ] [criterion from plan]
 
 **Manual Criteria**:
-- [x] Feature works as expected
-- [ ] Edge cases handled [Status]
-- [x] Documentation updated
+- [ ] [criterion from plan]
 
-## Elixir-Specific Observations
+[If general health check, list standard criteria]
 
-**Module Organization**: [Assessment]
-**Pattern Matching**: [Assessment]
-**Error Handling**: [Assessment]
-**Library API Design**: [Assessment]
-**Documentation Quality**: [Assessment]
+## Issues Summary
 
-## Issues Found
+### Critical Issues
+[List all CRITICAL severity issues with file:line]
 
-[If any issues, list them by severity]
+### Warnings
+[List all WARNING severity issues with file:line]
 
-### Critical Issues (Must Fix)
-[None or list]
-
-### Warnings (Should Fix)
-[None or list]
-
-### Recommendations (Consider)
-[None or list]
+### Recommendations
+[List all RECOMMENDATION severity issues with file:line]
 
 ## Overall Assessment
 
 [IF PASS]
-✅ **IMPLEMENTATION VALIDATED**
+PASS: All quality checks passed. Implementation meets standards and is ready for merge.
 
-All quality checks passed:
-- Automated verification: Complete
-- Code review: No issues
-- Tests: All passing
-- Documentation: Adequate
-
-Implementation meets quality standards and is ready for merge/deploy.
-
-[IF PASS WITH WARNINGS]
-⚠️ **PASS WITH WARNINGS**
-
-Core functionality validated but some areas need attention:
-- [List warning areas]
-
-Address warnings before merge or create follow-up tasks.
+[IF PASS_WITH_WARNINGS]
+PASS WITH WARNINGS: Core functionality validated. Address warnings before merge or document accepted warnings.
 
 [IF FAIL]
-❌ **VALIDATION FAILED**
-
-Critical issues prevent approval:
-- [List critical issues]
-
-Fix these issues and re-run QA: `/qa "[plan-name]"`
+FAIL: Critical issues prevent approval. Fix issues and re-run QA.
 
 ## Next Steps
 
 [IF PASS]
-- Merge to main branch
-- Deploy (if applicable)
-- Close related tickets
+- Merge to main
+- Deploy if applicable
 
-[IF PASS WITH WARNINGS]
-- Address warnings
-- Re-run QA or accept warnings and proceed
-- Document accepted warnings
+[IF PASS_WITH_WARNINGS]
+- Address warnings or document accepted warnings
+- Re-run QA or proceed with caution
 
 [IF FAIL]
 - Fix critical issues
-- Address failing tests
-- Re-run: `/qa "[plan-name]"`
+- Re-run: `/qa [plan-name]`
 ```
 
-Save report to: `.thoughts/qa-reports/YYYY-MM-DD-[plan-name]-qa.md`
+Mark step complete in TodoWrite.
 
-Mark this step complete in TodoWrite.
+### Step 8: Present Summary
 
-### Step 8: Present Results
-
-**Show concise summary to user:**
+Show concise summary:
 
 ```markdown
 # QA Validation Complete
 
 **Plan**: [Plan name or "General Health Check"]
-**Status**: ✅ PASS / ⚠️ PASS WITH WARNINGS / ❌ FAIL
+**Status**: [PASS / PASS_WITH_WARNINGS / FAIL]
 
-## Results Summary
-
-**Automated Checks**:
-- Compilation: ✅
-- Tests: ✅ [N] passed
-- Credo: ✅
-- Dialyzer: ✅
-- Sobelow: ✅
-- Documentation: ✅
-
-**Code Quality**:
-- Consistency: [N] issues
-- Documentation Completeness: [X]% coverage
-- Code Smells: [N] found
-- Dead Code: [N] items
+**Automated Checks**: [X/7 passed]
+**Files Analyzed**: [N lib, N test]
+**Issues Found**: [N critical, N warnings, N recommendations]
 
 **Detailed Report**: `.thoughts/qa-reports/YYYY-MM-DD-[plan-name]-qa.md`
 
 [IF FAIL]
-**Critical Issues**:
-1. [Issue with file:line]
-2. [Issue with file:line]
-
-Fix these and re-run: `/qa "[plan-name]"`
+**Critical Issues**: [count]
+[List top 3 critical issues with file:line]
 
 [IF PASS]
-**Ready to merge!** ✅
+Ready to merge.
 ```
 
-### Step 9: Offer Fix Plan Generation (Conditional)
+### Step 9: Offer Fix Plan (If Status is FAIL)
 
-**Only execute this step if overall status is ❌ FAIL**
-
-If QA detected critical issues:
+**Only if status is FAIL:**
 
 **9.1 Count Critical Issues**
 
-Count issues from validation report that are marked as ❌ CRITICAL or blocking.
+Count issues marked CRITICAL in report.
 
-**9.2 Prompt User for Fix Plan Generation**
+**9.2 Ask User**
 
-Use AskUserQuestion tool:
+Use AskUserQuestion:
 ```
-Question: "QA detected [N] critical issues. Generate a fix plan to address them?"
+Question: "QA detected [N] critical issues. Generate a fix plan?"
 Header: "Fix Plan"
 Options (multiSelect: false):
-  Option 1:
-    Label: "Yes, generate fix plan"
-    Description: "Create a detailed plan to address all critical issues using /plan command"
-  Option 2:
-    Label: "No, I'll fix manually"
-    Description: "Exit QA and fix issues manually, then re-run /qa"
+  - Label: "Yes, generate fix plan"
+    Description: "Create plan to address all critical issues"
+  - Label: "No, I'll fix manually"
+    Description: "Exit and fix manually, then re-run /qa"
 ```
 
-**9.3 If User Selects "Yes, generate fix plan":**
+**9.3 If "Yes":**
 
-**9.3.1 Extract QA Report Filename**
-
-Get the most recent QA report generated in Step 7:
+a. Get QA report path:
 ```bash
-ls -t .thoughts/qa-reports/*-qa.md 2>/dev/null | head -1
+ls -t .thoughts/qa-reports/*-qa.md | head -1
 ```
 
-Store filename in variable: QA_REPORT_PATH
-
-**9.3.2 Invoke Plan Command**
-
-Use SlashCommand tool:
+b. Generate fix plan:
 ```
-Command: /plan "Fix critical issues from QA report: [QA_REPORT_PATH]"
+SlashCommand: /plan "Fix critical issues from QA report: [report_path]"
 ```
 
-Wait for plan generation to complete.
-
-**9.3.3 Extract Plan Filename**
-
-Parse the output from /plan command to find the generated plan filename.
-Typical format: `.thoughts/plans/plan-YYYY-MM-DD-fix-*.md`
-
-Store plan name without path/extension in variable: FIX_PLAN_NAME
-
-Report to user:
+c. Ask to execute:
 ```
-Fix plan created at: [PLAN_FILENAME]
-```
-
-**9.3.4 Prompt User for Plan Execution**
-
-Use AskUserQuestion tool:
-```
-Question: "Fix plan created. Execute the fix plan now?"
+Question: "Fix plan created. Execute now?"
 Header: "Execute Plan"
 Options (multiSelect: false):
-  Option 1:
-    Label: "Yes, execute fix plan"
-    Description: "Run /implement to apply fixes, then re-run /qa for validation"
-  Option 2:
-    Label: "No, I'll review first"
-    Description: "Exit and review the plan manually before implementing"
+  - Label: "Yes, execute"
+    Description: "Run /implement then re-run /qa"
+  - Label: "No, I'll review first"
+    Description: "Exit and review plan manually"
 ```
 
-**9.3.5 If User Selects "Yes, execute fix plan":**
-
-Use SlashCommand tool:
+d. If "Yes, execute":
 ```
-Command: /implement "[FIX_PLAN_NAME]"
+SlashCommand: /implement "[plan_name]"
+SlashCommand: /qa
 ```
 
-Wait for implementation to complete.
+Report: "Fix cycle complete. Check QA results above."
+
+e. If "No, I'll review first":
 
 Report:
 ```
-Fix implementation complete. Re-running QA for validation...
+Fix plan saved at: [plan_path]
+
+To implement: /implement "[plan_name]"
+To re-validate: /qa
 ```
 
-Use SlashCommand tool:
-```
-Command: /qa
-```
-
-Wait for QA to complete.
+**9.4 If "No, I'll fix manually":**
 
 Report:
 ```
-Fix cycle complete. Check QA results above.
+Critical issues documented in: [report_path]
+
+After fixing, re-run: /qa
 ```
 
-**9.3.6 If User Selects "No, I'll review first":**
+## Guidelines
 
-Report:
-```
-Fix plan saved at: [PLAN_FILENAME]
+**Parallelization**: Execute independent operations in parallel (single message, multiple tool calls).
 
-When ready to implement:
-  /implement "[FIX_PLAN_NAME]"
+**Thoroughness**: Run all checks, document all findings, be objective.
 
-After implementing, re-run QA:
-  /qa
-```
+**Validation Philosophy**: Real validation, not rubber stamp. Focus on significant issues.
 
-**9.4 If User Selects "No, I'll fix manually":**
+**Edge Cases**:
+- If plan file not found: search `.thoughts/plans/`, list options, ask user
+- If no changes detected: note in report, run general health check
+- If quality tools not installed: note in report, skip tool, don't fail QA
+- If pre-existing test failures: document which are pre-existing, focus on new failures
 
-Report:
-```
-Manual fixes required.
+## Quality Tool Requirements
 
-Critical issues documented in: [QA_REPORT_PATH]
-
-After fixing, re-run QA:
-  /qa
-```
-
-**9.5 If QA Status is NOT ❌ FAIL:**
-
-Skip this step entirely (no fix plan offer needed).
-
-## Quality Tool Integration
-
-**Credo** - Static code analysis:
-- Integrated via `mix credo --strict`
-- Checks code style, design patterns, readability
-- Configuration: `.credo.exs` (if present)
-
-**Dialyzer** - Type checking:
-- Integrated via `mix dialyzer`
-- Performs static type analysis
-- Requires PLT file (auto-generated)
-
-**Sobelow** - Security scanning:
-- Integrated via `mix sobelow --exit Low`
-- Scans for security vulnerabilities
-- Particularly important for Phoenix/web apps
-
-**ExDoc** - Documentation generation:
-- Integrated via `mix docs`
-- Validates documentation syntax
-- Generates HTML docs
-
-## Important Guidelines
-
-### Automated vs Manual
-
-**Automated Verification:**
-- Must be runnable via command
-- Exit code determines pass/fail
-- Repeatable and consistent
-
-**Manual Verification:**
-- Requires human judgment
-- UI/UX quality
-- Business logic correctness
-- Edge case appropriateness
-
-### Thoroughness
-
-**Be comprehensive:**
-- Run all configured quality tools
-- Spawn all validation agents
-- Check all success criteria
-- Document all findings
-
-**Be objective:**
-- Report what you find
-- Don't minimize issues
-- Don't over-report non-issues
-- Focus on facts
-
-### Validation Philosophy
-
-**Not a rubber stamp:**
-- Real validation, not formality
-- Find real issues
-- Assess true quality
-
-**Not overly strict:**
-- Focus on significant issues
-- Warnings vs failures
-- Practical quality bar
-
-## Edge Cases
-
-### If Plan Doesn't Exist
-
-User provides plan name but file not found:
-- Search .thoughts/plans/
-- List available plans
-- Ask user to clarify or choose
-
-### If No Changes Detected
-
-Running QA but no git changes:
-- Note in report
-- Run general health check anyway
-- Report clean state
-
-### If Tests Have Pre-Existing Failures
-
-Tests failing before this implementation:
-- Document which tests are pre-existing
-- Focus on new failures
-- Note technical debt in report
-
-### If Quality Tools Not Installed
-
-If Credo, Dialyzer, etc. not in mix.exs:
-- Note in report
-- Skip that tool
-- Don't fail validation for missing optional tools
-
-## Example Session
-
-**User**: `/qa "user-authentication"`
-
-**Process**:
-1. Find plan: `.thoughts/plans/2025-01-23-user-authentication.md`
-2. Read success criteria from plan
-3. Run automated checks (compile, test, format, Credo, Dialyzer)
-4. Spawn 3 validation agents (code review, test coverage, docs)
-5. Wait for agents to complete
-6. Verify success criteria
-7. Check Elixir-specific patterns
-8. Generate comprehensive report
-9. Present summary: "✅ PASS - All 12 success criteria met"
+- **Credo**: Static analysis via `mix credo --strict`
+- **Dialyzer**: Type checking via `mix dialyzer`
+- **Sobelow**: Security scanning via `mix sobelow --exit Low`
+- **ExDoc**: Documentation via `mix docs`

@@ -3,6 +3,49 @@ defmodule AshBaml.TelemetryTest do
 
   alias AshBaml.Telemetry
 
+  defmodule NilCollectorResource do
+    use Ash.Resource,
+      domain: nil,
+      extensions: [AshBaml.Resource]
+
+    baml do
+      client_module(AshBaml.Test.BamlClient)
+
+      telemetry do
+        enabled(true)
+        collector_name(nil)
+      end
+    end
+
+    actions do
+      action :test_action, :map do
+        argument(:input, :string, allow_nil?: false)
+        run(call_baml(:TestFunction))
+      end
+    end
+  end
+
+  defmodule DefaultCollectorResource do
+    use Ash.Resource,
+      domain: nil,
+      extensions: [AshBaml.Resource]
+
+    baml do
+      client_module(AshBaml.Test.BamlClient)
+
+      telemetry do
+        enabled(true)
+      end
+    end
+
+    actions do
+      action :test_action, :map do
+        argument(:input, :string, allow_nil?: false)
+        run(call_baml(:TestFunction))
+      end
+    end
+  end
+
   describe "with_telemetry/4" do
     setup do
       handler_id = "test-handler-#{System.unique_integer([:positive])}"
@@ -176,8 +219,10 @@ defmodule AshBaml.TelemetryTest do
       config = [enabled: true, events: [:stop]]
 
       Telemetry.with_telemetry(input, :TestFunction, config, fn collector_opts ->
-        assert Keyword.has_key?(collector_opts, :collectors)
-        collectors = Keyword.get(collector_opts, :collectors)
+        # BAML client API changed to expect map() instead of keyword() for collector options
+        assert is_map(collector_opts)
+        assert Map.has_key?(collector_opts, :collectors)
+        collectors = Map.get(collector_opts, :collectors)
         assert is_list(collectors)
         assert length(collectors) == 1
         [collector] = collectors
@@ -213,9 +258,19 @@ defmodule AshBaml.TelemetryTest do
       config = [enabled: false]
 
       Telemetry.with_telemetry(input, :TestFunction, config, fn collector_opts ->
-        assert collector_opts == []
+        # BAML client expects a map for options, even when empty
+        assert collector_opts == %{}
         {:ok, :fast_path}
       end)
+    end
+
+    test "nil collector_name is accepted and generates auto name" do
+      assert AshBaml.Info.baml_telemetry_collector_name(NilCollectorResource) == nil
+      assert AshBaml.Info.baml_telemetry_enabled?(NilCollectorResource) == true
+    end
+
+    test "omitted collector_name defaults to nil" do
+      assert AshBaml.Info.baml_telemetry_collector_name(DefaultCollectorResource) == nil
     end
   end
 

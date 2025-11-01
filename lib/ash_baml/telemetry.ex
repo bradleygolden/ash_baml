@@ -1,4 +1,6 @@
 defmodule AshBaml.Telemetry do
+  require Logger
+
   @moduledoc """
   Telemetry integration for AshBaml.
 
@@ -92,8 +94,6 @@ defmodule AshBaml.Telemetry do
       )
   """
 
-  require Logger
-
   @doc """
   Wraps a BAML function call with telemetry.
 
@@ -128,13 +128,13 @@ defmodule AshBaml.Telemetry do
           Ash.Resource.record(),
           atom(),
           keyword(),
-          (keyword() -> {:ok, term()} | {:error, term()})
+          (map() -> {:ok, term()} | {:error, term()})
         ) :: {:ok, term()} | {:error, term()}
   def with_telemetry(input, function_name, config, func) do
     if enabled?(input, config) && should_sample?(config) do
       execute_with_telemetry(input, function_name, config, func)
     else
-      func.([])
+      func.(%{})
     end
   end
 
@@ -156,11 +156,14 @@ defmodule AshBaml.Telemetry do
     )
 
     try do
-      result = func.(collectors: [collector])
+      result = func.(%{collectors: [collector]})
 
       duration = System.monotonic_time() - start_time
 
       usage = get_usage(collector)
+      model_name = get_model_name(collector)
+
+      metadata_with_model = Map.put(metadata, :model_name, model_name)
 
       emit_event(
         :stop,
@@ -172,7 +175,7 @@ defmodule AshBaml.Telemetry do
           total_tokens: usage.total_tokens,
           monotonic_time: System.monotonic_time()
         },
-        metadata
+        metadata_with_model
       )
 
       result
@@ -244,8 +247,10 @@ defmodule AshBaml.Telemetry do
   end
 
   defp get_usage(collector) do
-    case BamlElixir.Collector.usage(collector) do
-      %{input_tokens: input, output_tokens: output} = usage when is_map(usage) ->
+    usage_result = BamlElixir.Collector.usage(collector)
+
+    case usage_result do
+      %{"input_tokens" => input, "output_tokens" => output} when is_map(usage_result) ->
         %{
           input_tokens: input || 0,
           output_tokens: output || 0,
@@ -256,8 +261,28 @@ defmodule AshBaml.Telemetry do
         %{input_tokens: 0, output_tokens: 0, total_tokens: 0}
     end
   rescue
-    _ ->
+    exception ->
+      Logger.debug("Failed to extract token usage from collector: #{inspect(exception)}")
       %{input_tokens: 0, output_tokens: 0, total_tokens: 0}
+  end
+
+  defp get_model_name(collector) do
+    log_result = BamlElixir.Collector.last_function_log(collector)
+
+    case log_result do
+      %{"calls" => [%{"request" => %{"body" => body}} | _]} when is_binary(body) ->
+        case Jason.decode(body) do
+          {:ok, %{"model" => model}} when is_binary(model) -> model
+          _ -> nil
+        end
+
+      _ ->
+        nil
+    end
+  rescue
+    exception ->
+      Logger.debug("Failed to extract model name from collector: #{inspect(exception)}")
+      nil
   end
 
   defp build_metadata(input, function_name, collector, config) do
@@ -284,9 +309,11 @@ defmodule AshBaml.Telemetry do
   defp collect_optional_metadata(input, config) do
     allowed = config[:metadata] || []
 
+    context = Map.get(input, :context, %{})
+
     available = %{
-      llm_client: get_in(input, [:context, :llm_client]),
-      stream: get_in(input, [:context, :stream]) || false
+      llm_client: Map.get(context, :llm_client),
+      stream: Map.get(context, :stream, false)
     }
 
     available

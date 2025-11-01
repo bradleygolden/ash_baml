@@ -18,7 +18,7 @@ defmodule AshBaml do
         end
 
         actions do
-          action :chat, MyApp.BamlClient.Reply do
+          action :chat, MyApp.BamlClient.Types.Reply do
             argument :message, :string
             run call_baml(:ChatAgent)
           end
@@ -55,11 +55,11 @@ defmodule AshBaml do
               types: [
                 weather_tool: [
                   type: :struct,
-                  constraints: [instance_of: MyApp.BamlClient.WeatherTool]
+                  constraints: [instance_of: MyApp.BamlClient.Types.WeatherTool]
                 ],
                 calculator_tool: [
                   type: :struct,
-                  constraints: [instance_of: MyApp.BamlClient.CalculatorTool]
+                  constraints: [instance_of: MyApp.BamlClient.Types.CalculatorTool]
                 ]
               ]
             ]

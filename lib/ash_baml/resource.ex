@@ -16,7 +16,7 @@ defmodule AshBaml.Resource do
         end
 
         actions do
-          action :chat, MyApp.BamlClient.Reply do
+          action :chat, MyApp.BamlClient.Types.Reply do
             argument :message, :string
             run call_baml(:ChatAgent)
           end

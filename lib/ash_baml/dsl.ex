@@ -104,7 +104,7 @@ defmodule AshBaml.Dsl do
         """
       ],
       collector_name: [
-        type: {:or, [:string, {:fun, 1}]},
+        type: {:or, [:string, {:fun, 1}, nil]},
         default: nil,
         doc: """
         Custom name for collectors.

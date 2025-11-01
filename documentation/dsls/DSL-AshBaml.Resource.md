@@ -19,7 +19,7 @@ The `call_baml/1` helper macro is automatically available when using this extens
       end
 
       actions do
-        action :chat, MyApp.BamlClient.Reply do
+        action :chat, MyApp.BamlClient.Types.Reply do
           argument :message, :string
           run call_baml(:ChatAgent)
         end
@@ -123,7 +123,7 @@ end
 | [`events`](#baml-telemetry-events){: #baml-telemetry-events } | `list(:start \| :stop \| :exception)` | `[:start, :stop, :exception]` | Which telemetry events to emit. Allowed values: `:start`, `:stop`, `:exception` Default: `[:start, :stop, :exception]` |
 | [`metadata`](#baml-telemetry-metadata){: #baml-telemetry-metadata } | `list(atom)` | `[]` | Additional metadata fields to include in telemetry events. Safe fields (always included): - `:resource` - The Ash resource module - `:action` - The action name - `:function_name` - The BAML function name - `:collector_name` - The collector reference identifier Opt-in fields (must be explicitly listed): - `:llm_client` - The LLM client used - `:stream` - Whether this was a streaming call Default: `[]` (only safe fields included) |
 | [`sample_rate`](#baml-telemetry-sample_rate){: #baml-telemetry-sample_rate } | `float` | `1.0` | Sampling rate for telemetry (0.0 - 1.0). Use lower rates for high-volume operations to reduce overhead. - `1.0` = 100% of calls tracked - `0.1` = 10% of calls tracked - `0.0` = effectively disables telemetry Default: `1.0` |
-| [`collector_name`](#baml-telemetry-collector_name){: #baml-telemetry-collector_name } | `String.t \| (any -> any)` |  | Custom name for collectors. Can be: - A string: `"my-collector"` - A function that receives the input and returns a string:   `fn input -> "#{input.resource}-#{input.action.name}" end` If not provided, a unique name is generated: `"ResourceModule-FunctionName-unique_integer"` Default: `nil` (auto-generated) |
+| [`collector_name`](#baml-telemetry-collector_name){: #baml-telemetry-collector_name } | `String.t \| (any -> any) \| nil` |  | Custom name for collectors. Can be: - A string: `"my-collector"` - A function that receives the input and returns a string:   `fn input -> "#{input.resource}-#{input.action.name}" end` If not provided, a unique name is generated: `"ResourceModule-FunctionName-unique_integer"` Default: `nil` (auto-generated) |
 
 
 
