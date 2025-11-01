@@ -5,9 +5,8 @@ defmodule AshBaml.TelemetryTest do
 
   defmodule NilCollectorResource do
     use Ash.Resource,
-      domain: AshBaml.Test.TestDomain,
-      extensions: [AshBaml.Resource],
-      validate_domain_inclusion?: false
+      domain: nil,
+      extensions: [AshBaml.Resource]
 
     baml do
       client_module(AshBaml.Test.BamlClient)
@@ -28,9 +27,8 @@ defmodule AshBaml.TelemetryTest do
 
   defmodule DefaultCollectorResource do
     use Ash.Resource,
-      domain: AshBaml.Test.TestDomain,
-      extensions: [AshBaml.Resource],
-      validate_domain_inclusion?: false
+      domain: nil,
+      extensions: [AshBaml.Resource]
 
     baml do
       client_module(AshBaml.Test.BamlClient)
