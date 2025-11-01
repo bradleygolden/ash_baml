@@ -18,11 +18,11 @@ defmodule AshBaml.ToolCallingTest do
 
       weather_config = action.constraints[:types][:weather_tool]
       assert weather_config[:type] == Ash.Type.Struct
-      assert weather_config[:constraints][:instance_of] == BamlClient.Types.WeatherTool
+      assert weather_config[:constraints][:instance_of] == BamlClient.WeatherTool
 
       calculator_config = action.constraints[:types][:calculator_tool]
       assert calculator_config[:type] == Ash.Type.Struct
-      assert calculator_config[:constraints][:instance_of] == BamlClient.Types.CalculatorTool
+      assert calculator_config[:constraints][:instance_of] == BamlClient.CalculatorTool
     end
   end
 
