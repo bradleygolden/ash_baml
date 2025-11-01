@@ -111,12 +111,12 @@ defmodule AshBaml.Actions.CallBamlStream do
     end
   end
 
-  defp stream_next({_ref, :done}) do
-    {:halt, :done}
+  defp stream_next({ref, :done}) do
+    {:halt, {ref, :done}}
   end
 
-  defp stream_next({_ref, {:error, _reason}}) do
-    {:halt, :error}
+  defp stream_next({ref, {:error, reason}}) do
+    {:halt, {ref, {:error, reason}}}
   end
 
   # Cleans up stream resources by flushing mailbox messages.
@@ -129,9 +129,15 @@ defmodule AshBaml.Actions.CallBamlStream do
     :ok
   end
 
-  defp flush_stream_messages(ref) do
+  defp flush_stream_messages(ref, max_iterations \\ 10_000) do
+    flush_stream_messages_loop(ref, max_iterations)
+  end
+
+  defp flush_stream_messages_loop(_ref, 0), do: :ok
+
+  defp flush_stream_messages_loop(ref, remaining) do
     receive do
-      {^ref, _, _} -> flush_stream_messages(ref)
+      {^ref, _, _} -> flush_stream_messages_loop(ref, remaining - 1)
     after
       0 -> :ok
     end
