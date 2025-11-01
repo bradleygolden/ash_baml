@@ -4,23 +4,8 @@ defmodule AshBaml.IntegrationTest do
   @moduletag :integration
   @moduletag timeout: 60_000
 
-  # This test uses the actual BAML files and real baml_elixir code generation
-  # It does NOT make real LLM API calls - we'll mock the NIF for now
-
   describe "end-to-end BAML integration" do
     test "can call BAML function through Ash action" do
-      # This test verifies:
-      # 1. BAML files are parsed by baml_elixir
-      # 2. Modules are generated correctly
-      # 3. AshBaml can call them
-      # 4. Results are returned properly
-
-      # Note: In a real test, you'd need OPENAI_API_KEY set
-      # For now, we'll skip if not available
-      # unless System.get_env("OPENAI_API_KEY") do
-      #   IO.puts("Skipping integration test - OPENAI_API_KEY not set")
-      #   :ok
-      # else
       {:ok, result} =
         AshBaml.Test.TestResource
         |> Ash.ActionInput.for_action(:test_action, %{message: "Hello!"})
@@ -33,11 +18,6 @@ defmodule AshBaml.IntegrationTest do
     end
 
     test "can call BAML function with multiple arguments" do
-      # This test verifies that functions with multiple arguments work correctly
-      # - Multiple argument types (string, integer, string)
-      # - Arguments are passed correctly to BAML function
-      # - Response structure matches expected type
-
       {:ok, result} =
         AshBaml.Test.TestResource
         |> Ash.ActionInput.for_action(:multi_arg_action, %{

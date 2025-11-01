@@ -8,10 +8,6 @@ defmodule AshBaml.PerformanceIntegrationTest do
 
   describe "concurrency and performance" do
     test "10 concurrent calls all succeed" do
-      # This test verifies that the system can handle 10 parallel BAML calls
-      # without race conditions, errors, or interference between calls
-      # CRITICAL: Tests cluster safety - no shared mutable state
-
       messages =
         Enum.map(1..10, fn i ->
           "This is test message number #{i}. Please respond briefly."

@@ -4,7 +4,6 @@ defmodule AshBaml.TelemetryIntegrationTest do
   @moduletag :integration
   @moduletag timeout: 60_000
 
-  # Define a test domain for telemetry tests
   defmodule TelemetryTestDomain do
     @moduledoc false
     use Ash.Domain, validate_config_inclusion?: false
@@ -16,7 +15,6 @@ defmodule AshBaml.TelemetryIntegrationTest do
     end
   end
 
-  # Define a test resource with telemetry enabled
   defmodule TelemetryTestResource do
     @moduledoc false
 
@@ -42,7 +40,6 @@ defmodule AshBaml.TelemetryIntegrationTest do
     end
   end
 
-  # Define a test resource with telemetry DISABLED
   defmodule TelemetryDisabledResource do
     @moduledoc false
 
@@ -66,7 +63,6 @@ defmodule AshBaml.TelemetryIntegrationTest do
     end
   end
 
-  # Define a test resource with CUSTOM telemetry prefix
   defmodule CustomPrefixResource do
     @moduledoc false
 
