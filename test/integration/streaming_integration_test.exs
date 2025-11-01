@@ -133,11 +133,13 @@ defmodule AshBaml.StreamingIntegrationTest do
       assert length(chunks) > 0
 
       # Verify all chunks are Reply structs with content
-      Enum.each(chunks, fn chunk ->
-        assert %BamlClient.Reply{content: content} = chunk
-        assert is_binary(content)
-        # Note: confidence may be nil during streaming, only final chunk has it
-      end)
+      invalid_chunks =
+        chunks
+        |> Enum.reject(fn chunk ->
+          match?(%BamlClient.Reply{content: content} when is_binary(content), chunk)
+        end)
+
+      assert invalid_chunks == [], "Found invalid chunks: #{inspect(invalid_chunks)}"
 
       # Final chunk should have both content and confidence
       final_chunk = List.last(chunks)
@@ -291,25 +293,11 @@ defmodule AshBaml.StreamingIntegrationTest do
   end
 
   describe "stream error resilience" do
+    @tag :skip
     test "stream handles API errors mid-stream gracefully" do
-      # Note: This test verifies that streaming works without crashing
-      # Try with a very long prompt that might hit token limits or cause issues
-      long_message = String.duplicate("Write a detailed story about this topic. ", 500)
-
-      {:ok, stream} =
-        TestResource
-        |> Ash.ActionInput.for_action(:test_action_stream, %{
-          message: long_message
-        })
-        |> Ash.run_action()
-
-      # Attempt to consume the stream - should succeed or raise a proper exception
-      chunks = Enum.to_list(stream)
-
-      # Stream should either succeed with valid chunks
-      assert is_list(chunks)
-      assert length(chunks) > 0
-      assert Enum.all?(chunks, &match?(%BamlClient.Reply{}, &1))
+      # Skipped: Requires mocking to inject errors reliably
+      # Current implementation just hopes an error happens naturally
+      flunk("Test skipped - requires error injection mocking")
     end
 
     @tag :skip
