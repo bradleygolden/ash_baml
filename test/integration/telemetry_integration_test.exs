@@ -111,6 +111,8 @@ defmodule AshBaml.TelemetryIntegrationTest do
         nil
       )
 
+      on_exit(fn -> :telemetry.detach(handler_id) end)
+
       # Make BAML call
       {:ok, _result} =
         TelemetryTestResource
@@ -174,6 +176,8 @@ defmodule AshBaml.TelemetryIntegrationTest do
         nil
       )
 
+      on_exit(fn -> :telemetry.detach(handler_id) end)
+
       # Measure wall clock time around the BAML call
       wall_start = System.monotonic_time(:millisecond)
 
@@ -233,6 +237,8 @@ defmodule AshBaml.TelemetryIntegrationTest do
         end,
         nil
       )
+
+      on_exit(fn -> :telemetry.detach(handler_id) end)
 
       # Make a BAML call with known input size
       # "Hello, world!" is ~3 tokens, plus system prompt overhead
@@ -295,6 +301,8 @@ defmodule AshBaml.TelemetryIntegrationTest do
         nil
       )
 
+      on_exit(fn -> :telemetry.detach(handler_id) end)
+
       # Make a BAML call (TestClient uses gpt-4o-mini)
       {:ok, _result} =
         TelemetryTestResource
@@ -340,6 +348,8 @@ defmodule AshBaml.TelemetryIntegrationTest do
         end,
         nil
       )
+
+      on_exit(fn -> :telemetry.detach(handler_id) end)
 
       # Make a BAML call with TestFunction
       {:ok, _result} =
@@ -393,6 +403,8 @@ defmodule AshBaml.TelemetryIntegrationTest do
         end,
         nil
       )
+
+      on_exit(fn -> :telemetry.detach(handler_id) end)
 
       # Make 3 concurrent BAML calls with different messages
       messages = [
@@ -515,6 +527,8 @@ defmodule AshBaml.TelemetryIntegrationTest do
         nil
       )
 
+      on_exit(fn -> :telemetry.detach(handler_id) end)
+
       # Make a BAML call with telemetry DISABLED
       {:ok, result} =
         TelemetryDisabledResource
@@ -556,6 +570,8 @@ defmodule AshBaml.TelemetryIntegrationTest do
         end,
         nil
       )
+
+      on_exit(fn -> :telemetry.detach(handler_id) end)
 
       # Make a BAML call with custom prefix resource
       {:ok, result} =
@@ -620,6 +636,8 @@ defmodule AshBaml.TelemetryIntegrationTest do
         end,
         nil
       )
+
+      on_exit(fn -> :telemetry.detach(handler_id) end)
 
       # Make a BAML call
       {:ok, _result} =
