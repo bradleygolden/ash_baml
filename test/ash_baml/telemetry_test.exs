@@ -219,7 +219,7 @@ defmodule AshBaml.TelemetryTest do
       config = [enabled: true, events: [:stop]]
 
       Telemetry.with_telemetry(input, :TestFunction, config, fn collector_opts ->
-        # BAML client expects a map for options
+        # BAML client API changed to expect map() instead of keyword() for collector options
         assert is_map(collector_opts)
         assert Map.has_key?(collector_opts, :collectors)
         collectors = Map.get(collector_opts, :collectors)
