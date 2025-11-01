@@ -20,10 +20,6 @@ defmodule AshBaml.TypeSystemIntegrationTest do
       assert is_binary(result.content)
       assert String.length(result.content) > 0
       refute result.content == ""
-
-      IO.puts(
-        "String field test: content='#{result.content}' (length: #{String.length(result.content)}) ✓"
-      )
     end
 
     test "integer fields receive integers (not string numbers)" do
@@ -45,8 +41,6 @@ defmodule AshBaml.TypeSystemIntegrationTest do
 
       # Age 25 should be categorized as "adult" (20-64)
       assert String.contains?(String.downcase(result.age_category), "adult")
-
-      IO.puts("Integer field test: age=25 categorized as '#{result.age_category}' ✓")
     end
 
     test "float fields receive float values" do
@@ -62,8 +56,6 @@ defmodule AshBaml.TypeSystemIntegrationTest do
       assert is_float(result.confidence)
       assert result.confidence >= 0.0
       assert result.confidence <= 1.0
-
-      IO.puts("Float field test: confidence=#{result.confidence} ✓")
     end
 
     test "boolean fields receive boolean values" do
@@ -89,8 +81,6 @@ defmodule AshBaml.TypeSystemIntegrationTest do
 
       # Japan is international (assuming US as home country per prompt)
       assert result.is_international == true
-
-      IO.puts("Boolean field test: is_international=#{result.is_international} ✓")
     end
 
     test "array fields receive arrays (not nil, not single values)" do
@@ -121,10 +111,6 @@ defmodule AshBaml.TypeSystemIntegrationTest do
       Enum.each(profile_result.interests, fn interest ->
         assert is_binary(interest)
       end)
-
-      IO.puts(
-        "Array field test: interests=#{inspect(profile_result.interests)} (count: #{length(profile_result.interests)}) ✓"
-      )
     end
 
     test "optional fields can be nil" do
@@ -143,8 +129,6 @@ defmodule AshBaml.TypeSystemIntegrationTest do
 
       # Location should be nil when not provided
       assert result.location == nil || result.location == ""
-
-      IO.puts("Optional field test: location=#{inspect(result.location)} (nil or empty) ✓")
     end
 
     test "optional fields can have values" do
@@ -164,8 +148,6 @@ defmodule AshBaml.TypeSystemIntegrationTest do
       assert result.location != nil
       assert is_binary(result.location)
       assert String.contains?(String.downcase(result.location), "paris")
-
-      IO.puts("Optional field test: location='#{result.location}' ✓")
     end
 
     test "nested object fields work correctly" do
@@ -196,8 +178,6 @@ defmodule AshBaml.TypeSystemIntegrationTest do
                String.contains?(result.formatted_address, "London")
 
       assert String.contains?(result.formatted_address, "UK")
-
-      IO.puts("Nested object test: formatted_address='#{result.formatted_address}' ✓")
     end
   end
 
@@ -215,7 +195,6 @@ defmodule AshBaml.TypeSystemIntegrationTest do
         |> Ash.run_action()
 
       assert %BamlClient.MultiArgResponse{} = result
-      IO.puts("Type coercion test: integer argument accepted ✓")
     end
 
     # Test removed: "string argument requires string (not atom)"
@@ -237,8 +216,6 @@ defmodule AshBaml.TypeSystemIntegrationTest do
       assert %BamlClient.Reply{} = result
       assert is_binary(result.content)
       assert is_float(result.confidence)
-
-      IO.puts("Complex type test: Reply{content: string, confidence: float} ✓")
     end
 
     test "array of strings works correctly" do
@@ -259,8 +236,6 @@ defmodule AshBaml.TypeSystemIntegrationTest do
       Enum.each(result.key_topics, fn topic ->
         assert is_binary(topic)
       end)
-
-      IO.puts("Array of strings test: key_topics=#{inspect(result.key_topics)} ✓")
     end
   end
 end

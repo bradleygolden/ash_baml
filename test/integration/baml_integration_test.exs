@@ -335,7 +335,7 @@ defmodule AshBaml.IntegrationTest do
       assert length(results) == 5
 
       # Verify each result is correct
-      Enum.each(results, fn {i, result, _original_message} ->
+      Enum.each(results, fn {_i, result, _original_message} ->
         # Verify correct response structure
         assert %AshBaml.Test.BamlClient.Reply{} = result
 
@@ -348,9 +348,6 @@ defmodule AshBaml.IntegrationTest do
 
         # Verify confidence is in valid range
         assert result.confidence >= 0.0 and result.confidence <= 1.0
-
-        # Log for debugging
-        IO.puts("Task #{i} completed: #{String.slice(result.content, 0..50)}...")
       end)
 
       # Verify that all tasks completed (none timed out or failed)
@@ -372,13 +369,12 @@ defmodule AshBaml.IntegrationTest do
 
       # Call the same function 3 times with same input
       results =
-        Enum.map(1..3, fn i ->
+        Enum.map(1..3, fn _i ->
           {:ok, result} =
             AshBaml.Test.TestResource
             |> Ash.ActionInput.for_action(:test_action, %{message: input_message})
             |> Ash.run_action()
 
-          IO.puts("Call #{i} completed: #{String.slice(result.content, 0..50)}...")
           result
         end)
 
@@ -414,8 +410,6 @@ defmodule AshBaml.IntegrationTest do
         assert String.length(result.content) > 0
         assert String.length(first.content) > 0
       end)
-
-      IO.puts("Consistency test: All 3 calls returned consistent structure ✓")
     end
   end
 end

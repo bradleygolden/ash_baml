@@ -214,10 +214,6 @@ defmodule AshBaml.TelemetryIntegrationTest do
       assert telemetry_duration_ms <= 10_000,
              "API call duration (#{telemetry_duration_ms}ms) seems too slow"
 
-      IO.puts(
-        "Duration timing: Wall=#{wall_duration}ms, Telemetry=#{telemetry_duration_ms}ms, Overhead=#{overhead}ms ✓"
-      )
-
       # Cleanup
       :telemetry.detach(handler_id)
     end
@@ -279,10 +275,6 @@ defmodule AshBaml.TelemetryIntegrationTest do
                measurements.input_tokens + measurements.output_tokens,
              "Total tokens should equal input + output"
 
-      IO.puts(
-        "Token counts: Input=#{measurements.input_tokens}, Output=#{measurements.output_tokens}, Total=#{measurements.total_tokens} ✓"
-      )
-
       # Cleanup
       :telemetry.detach(handler_id)
     end
@@ -325,8 +317,6 @@ defmodule AshBaml.TelemetryIntegrationTest do
       # Should contain "gpt-4o-mini" (the model configured in test_functions.baml)
       assert String.contains?(metadata.model_name, "gpt-4o-mini"),
              "Expected model name to contain 'gpt-4o-mini', got: #{metadata.model_name}"
-
-      IO.puts("Model name captured: #{metadata.model_name} ✓")
 
       # Cleanup
       :telemetry.detach(handler_id)
@@ -380,10 +370,6 @@ defmodule AshBaml.TelemetryIntegrationTest do
       # Verify both events have the same function name
       assert start_metadata.function_name == stop_metadata.function_name,
              "Function name should be consistent between start and stop events"
-
-      IO.puts(
-        "Function name captured correctly in both events: #{start_metadata.function_name} ✓"
-      )
 
       # Cleanup
       :telemetry.detach(handler_id)
@@ -506,8 +492,6 @@ defmodule AshBaml.TelemetryIntegrationTest do
         assert duration_ms <= 10_000, "Duration #{duration_ms}ms seems too slow"
       end)
 
-      IO.puts("Concurrent telemetry tracking: #{length(start_events)} calls tracked separately ✓")
-
       # Cleanup
       :telemetry.detach(handler_id)
     end
@@ -548,8 +532,6 @@ defmodule AshBaml.TelemetryIntegrationTest do
       # Wait a bit to ensure no events are coming
       refute_receive {^ref, [:ash_baml, :call, :start], _, _}, 500
       refute_receive {^ref, [:ash_baml, :call, :stop], _, _}, 500
-
-      IO.puts("Telemetry disabled: No events emitted as expected ✓")
 
       # Cleanup
       :telemetry.detach(handler_id)
@@ -615,8 +597,6 @@ defmodule AshBaml.TelemetryIntegrationTest do
       # (We should NOT receive events on the default prefix)
       refute_receive {^ref, [:ash_baml, :call, :start], _, _}, 100
       refute_receive {^ref, [:ash_baml, :call, :stop], _, _}, 100
-
-      IO.puts("Custom prefix [:my_app, :llm] works correctly ✓")
 
       # Cleanup
       :telemetry.detach(handler_id)
@@ -707,13 +687,6 @@ defmodule AshBaml.TelemetryIntegrationTest do
       assert start_metadata.collector_name == stop_metadata.collector_name,
              "Collector name should match between start and stop"
 
-      IO.puts("All metadata fields are complete and correct ✓")
-      IO.puts("  resource: #{inspect(stop_metadata.resource)}")
-      IO.puts("  action: #{stop_metadata.action}")
-      IO.puts("  function_name: #{stop_metadata.function_name}")
-      IO.puts("  model_name: #{stop_metadata.model_name}")
-      IO.puts("  collector_name: #{stop_metadata.collector_name}")
-
       # Cleanup
       :telemetry.detach(handler_id)
     end
@@ -766,26 +739,11 @@ defmodule AshBaml.TelemetryIntegrationTest do
       # Allow up to 50% variance due to API jitter, but document the actual overhead
       overhead_percentage = abs(avg_overhead / disabled_avg) * 100
 
-      IO.puts("Telemetry overhead test (#{num_samples} samples):")
-
-      IO.puts(
-        "  With telemetry: #{Float.round(enabled_avg, 1)}ms avg #{inspect(enabled_durations)}"
-      )
-
-      IO.puts(
-        "  Without telemetry: #{Float.round(disabled_avg, 1)}ms avg #{inspect(disabled_durations)}"
-      )
-
-      IO.puts("  Average difference: #{Float.round(avg_overhead, 1)}ms")
-      IO.puts("  Overhead percentage: #{Float.round(overhead_percentage, 1)}%")
-
       # Since telemetry just dispatches events (microseconds of work),
       # most variance is from API jitter, not actual telemetry overhead
-      IO.puts("  ✓ Real telemetry overhead is negligible (event dispatch is ~microseconds)")
-
-      IO.puts(
-        "  ✓ Observed variance (#{Float.round(abs(avg_overhead), 1)}ms) is primarily API jitter, not telemetry cost"
-      )
+      # The overhead percentage calculation is kept for potential assertions
+      # but we don't output it to avoid test pollution
+      assert is_float(overhead_percentage)
     end
   end
 end

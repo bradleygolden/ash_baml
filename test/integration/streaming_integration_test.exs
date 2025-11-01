@@ -50,6 +50,11 @@ defmodule AshBaml.StreamingIntegrationTest do
       # Test using Enum.each - collect chunks in agent
       {:ok, agent} = Agent.start_link(fn -> [] end)
 
+      # Ensure cleanup even if test fails
+      on_exit(fn ->
+        if Process.alive?(agent), do: Agent.stop(agent)
+      end)
+
       stream
       |> Enum.each(fn chunk ->
         Agent.update(agent, fn chunks -> [chunk | chunks] end)
@@ -59,7 +64,8 @@ defmodule AshBaml.StreamingIntegrationTest do
       collected_chunks = Agent.get(agent, & &1)
       assert is_list(collected_chunks)
       assert length(collected_chunks) > 0
-      Agent.stop(agent)
+
+      # Cleanup will happen automatically via on_exit
     end
 
     test "stream completes with final result" do
@@ -286,55 +292,36 @@ defmodule AshBaml.StreamingIntegrationTest do
 
   describe "stream error resilience" do
     test "stream handles API errors mid-stream gracefully" do
-      # Note: This test attempts to trigger an error condition, but with a real API
-      # it's difficult to reliably cause mid-stream errors. This test verifies that
-      # IF an error occurs, it doesn't crash the process and is handled gracefully.
-
+      # Note: This test verifies that streaming works without crashing
       # Try with a very long prompt that might hit token limits or cause issues
       long_message = String.duplicate("Write a detailed story about this topic. ", 500)
 
-      result =
-        try do
-          {:ok, stream} =
-            TestResource
-            |> Ash.ActionInput.for_action(:test_action_stream, %{
-              message: long_message
-            })
-            |> Ash.run_action()
+      {:ok, stream} =
+        TestResource
+        |> Ash.ActionInput.for_action(:test_action_stream, %{
+          message: long_message
+        })
+        |> Ash.run_action()
 
-          # Attempt to consume the stream
-          # If an error occurs mid-stream, it should be caught gracefully
-          chunks = Enum.to_list(stream)
+      # Attempt to consume the stream - should succeed or raise a proper exception
+      chunks = Enum.to_list(stream)
 
-          # If we got here, either no error occurred or it was handled gracefully
-          {:success, chunks}
-        rescue
-          e in [RuntimeError, Ash.Error.Invalid] ->
-            # Errors should be proper Elixir exceptions, not crashes
-            {:error_handled, e}
-        catch
-          # Catch any throws or exits
-          kind, reason ->
-            {:caught, {kind, reason}}
-        end
+      # Stream should either succeed with valid chunks
+      assert is_list(chunks)
+      assert length(chunks) > 0
+      assert Enum.all?(chunks, &match?(%BamlClient.Reply{}, &1))
+    end
 
-      # Verify the result is one of the acceptable outcomes:
-      # 1. Success with valid chunks
-      # 2. Graceful error handling with proper exception
-      case result do
-        {:success, chunks} ->
-          assert is_list(chunks)
-          assert length(chunks) > 0
-          assert Enum.all?(chunks, &match?(%BamlClient.Reply{}, &1))
+    @tag :skip
+    test "stream raises exception on API errors" do
+      # This test requires mocking BAML client to inject errors
+      # Will be implemented when error injection is available
+      # For now, skip to document expected behavior
 
-        {:error_handled, _error} ->
-          # Error was properly raised as an exception - this is acceptable
-          assert true
-
-        {:caught, _} ->
-          # This should not happen - errors should be exceptions, not crashes
-          flunk("Stream crashed instead of raising a proper exception")
-      end
+      # Expected behavior:
+      # - API error during streaming should raise exception
+      # - Exception should be caught by Task
+      # - Caller should receive {:error, exception} tuple
     end
   end
 

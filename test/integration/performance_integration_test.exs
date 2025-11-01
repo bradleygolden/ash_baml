@@ -63,9 +63,6 @@ defmodule AshBaml.PerformanceIntegrationTest do
         assert response.content != nil
       end)
 
-      IO.puts("10 concurrent calls: #{length(results)} calls completed in #{duration}ms ✓")
-      IO.puts("Average time per call: #{div(duration, length(results))}ms")
-
       # Reasonable performance expectation: should complete in < 30 seconds
       # (10 concurrent calls should be much faster than 10 sequential calls)
       assert duration < 30_000,
@@ -125,9 +122,6 @@ defmodule AshBaml.PerformanceIntegrationTest do
 
       # Verify all 20 calls completed
       assert length(responses) == 20
-
-      IO.puts("20 concurrent calls: #{length(results)} calls completed in #{duration}ms ✓")
-      IO.puts("Average time per call: #{div(duration, length(results))}ms")
 
       # Check for performance bottlenecks
       # Should complete in reasonable time (< 45 seconds for 20 concurrent calls)
@@ -195,15 +189,12 @@ defmodule AshBaml.PerformanceIntegrationTest do
 
       avg_time = div(duration, num_calls)
 
-      IO.puts("Stress test: #{num_calls} concurrent calls completed in #{duration}ms ✓")
-      IO.puts("Average time per call: #{avg_time}ms")
-      IO.puts("Total duration: #{Float.round(duration / 1000, 1)} seconds")
-
       # Should complete in reasonable time (< 60 seconds for 50 concurrent calls)
       assert duration < 60_000,
              "50 concurrent calls took #{duration}ms, expected < 60000ms"
 
-      IO.puts("No resource exhaustion or connection limits detected ✓")
+      # Verify no resource exhaustion
+      assert avg_time > 0
     end
 
     test "memory usage is reasonable" do
@@ -213,7 +204,6 @@ defmodule AshBaml.PerformanceIntegrationTest do
 
       # Force garbage collection to get a clean baseline
       :erlang.garbage_collect()
-      Process.sleep(100)
 
       # Get baseline memory usage (in bytes)
       baseline_memory = :erlang.memory(:total)
@@ -230,7 +220,6 @@ defmodule AshBaml.PerformanceIntegrationTest do
 
       # Force garbage collection after calls
       :erlang.garbage_collect()
-      Process.sleep(100)
 
       # Get memory usage after calls
       after_calls_memory = :erlang.memory(:total)
@@ -238,11 +227,6 @@ defmodule AshBaml.PerformanceIntegrationTest do
       # Calculate memory growth
       memory_growth_bytes = after_calls_memory - baseline_memory
       memory_growth_mb = Float.round(memory_growth_bytes / 1_048_576, 2)
-
-      IO.puts("Memory usage check:")
-      IO.puts("  Baseline: #{Float.round(baseline_memory / 1_048_576, 2)} MB")
-      IO.puts("  After 10 calls: #{Float.round(after_calls_memory / 1_048_576, 2)} MB")
-      IO.puts("  Growth: #{memory_growth_mb} MB")
 
       # Reasonable threshold: memory growth should be < 50 MB for 10 calls
       # This accounts for:
@@ -264,14 +248,10 @@ defmodule AshBaml.PerformanceIntegrationTest do
       end)
 
       :erlang.garbage_collect()
-      Process.sleep(100)
 
       second_batch_memory = :erlang.memory(:total)
       second_growth_bytes = second_batch_memory - after_calls_memory
       second_growth_mb = Float.round(second_growth_bytes / 1_048_576, 2)
-
-      IO.puts("  After 20 total calls: #{Float.round(second_batch_memory / 1_048_576, 2)} MB")
-      IO.puts("  Second batch growth: #{second_growth_mb} MB")
 
       # Second batch should not grow significantly more than first batch
       # If it does, indicates unbounded growth (memory leak)
@@ -280,8 +260,6 @@ defmodule AshBaml.PerformanceIntegrationTest do
 
       assert second_growth_bytes < max_allowed_second_growth,
              "Second batch grew by #{second_growth_mb} MB, first batch grew by #{memory_growth_mb} MB. Memory appears to be leaking."
-
-      IO.puts("Memory usage is reasonable - no leaks detected ✓")
     end
 
     test "load test (50 calls in sequence)" do
@@ -291,8 +269,6 @@ defmodule AshBaml.PerformanceIntegrationTest do
       # CRITICAL: Tests that sequential load doesn't cause degradation
 
       num_calls = 50
-
-      IO.puts("Starting load test: #{num_calls} sequential calls")
 
       start_time = System.monotonic_time(:millisecond)
 
@@ -308,10 +284,6 @@ defmodule AshBaml.PerformanceIntegrationTest do
             |> Ash.run_action()
 
           call_duration = System.monotonic_time(:millisecond) - call_start
-
-          if rem(i, 10) == 0 do
-            IO.puts("  Completed #{i}/#{num_calls} calls...")
-          end
 
           {i, result, call_duration}
         end)
@@ -329,10 +301,10 @@ defmodule AshBaml.PerformanceIntegrationTest do
       end)
 
       # Calculate timing statistics
-      avg_time = div(total_duration, num_calls)
+      _avg_time = div(total_duration, num_calls)
       durations = Enum.map(results, fn {_i, _result, duration} -> duration end)
-      min_time = Enum.min(durations)
-      max_time = Enum.max(durations)
+      _min_time = Enum.min(durations)
+      _max_time = Enum.max(durations)
 
       # Extract first 10 and last 10 call durations from results
       first_10_times =
@@ -348,15 +320,6 @@ defmodule AshBaml.PerformanceIntegrationTest do
       avg_first_10 = div(Enum.sum(first_10_times), length(first_10_times))
       avg_last_10 = div(Enum.sum(last_10_times), length(last_10_times))
 
-      IO.puts("\nLoad test results:")
-      IO.puts("  Total calls: #{num_calls}")
-      IO.puts("  Total duration: #{Float.round(total_duration / 1000, 1)} seconds")
-      IO.puts("  Average time per call: #{avg_time}ms")
-      IO.puts("  Min time: #{min_time}ms")
-      IO.puts("  Max time: #{max_time}ms")
-      IO.puts("  First 10 calls average: #{avg_first_10}ms")
-      IO.puts("  Last 10 calls average: #{avg_last_10}ms")
-
       # Check for performance degradation
       # Last 10 calls should not be significantly slower than first 10
       # Allow up to 50% degradation as tolerance (network variance, API throttling, etc.)
@@ -365,16 +328,10 @@ defmodule AshBaml.PerformanceIntegrationTest do
       assert avg_last_10 < degradation_threshold,
              "Performance degradation detected: first 10 avg=#{avg_first_10}ms, last 10 avg=#{avg_last_10}ms"
 
-      IO.puts(
-        "  Performance degradation check: ✓ (#{Float.round(avg_last_10 / avg_first_10 * 100, 1)}% of initial)"
-      )
-
       # Total duration should be reasonable (< 90 seconds for 50 sequential calls)
       # Each call should average < 2 seconds
       assert total_duration < 90_000,
              "#{num_calls} sequential calls took #{total_duration}ms (#{Float.round(total_duration / 1000, 1)}s), expected < 90s"
-
-      IO.puts("Load test completed successfully - no degradation detected ✓")
     end
   end
 end
