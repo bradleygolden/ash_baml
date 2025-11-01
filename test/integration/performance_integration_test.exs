@@ -45,11 +45,8 @@ defmodule AshBaml.PerformanceIntegrationTest do
       end)
 
       responses =
-        Enum.flat_map(results, fn result ->
-          case result do
-            {:ok, {message, {:ok, response}}} -> [{message, response}]
-            _ -> []
-          end
+        Enum.map(results, fn {:ok, {message, {:ok, response}}} ->
+          {message, response}
         end)
 
       Enum.each(responses, fn {_message, response} ->
@@ -107,11 +104,8 @@ defmodule AshBaml.PerformanceIntegrationTest do
       end)
 
       responses =
-        Enum.flat_map(results, fn result ->
-          case result do
-            {:ok, {message, {:ok, response}}} -> [{message, response}]
-            _ -> []
-          end
+        Enum.map(results, fn {:ok, {message, {:ok, response}}} ->
+          {message, response}
         end)
 
       Enum.each(responses, fn {_message, response} ->
@@ -172,11 +166,8 @@ defmodule AshBaml.PerformanceIntegrationTest do
       end)
 
       responses =
-        Enum.flat_map(results, fn result ->
-          case result do
-            {:ok, {message, {:ok, response}}} -> [{message, response}]
-            _ -> []
-          end
+        Enum.map(results, fn {:ok, {message, {:ok, response}}} ->
+          {message, response}
         end)
 
       # Verify all 50 calls completed
