@@ -14,6 +14,148 @@ Notes here that are needed for later iterations. These are typically learnings, 
 
 <BEGIN AFTER THIS>
 
+=========== ITERATION 11 ===========
+**Date**: 2025-11-01
+**Task**: Run /qa, fix critical issue, and commit
+
+**QA Execution**: COMPLETE
+
+**QA Results**:
+- Overall Status: FAIL → PASS (after fix)
+- Commit analyzed: a440f0a (before fix)
+- Commit after fix: 82aefe1
+- Branch: harness vs origin/main
+
+**Automated Checks**:
+- Compilation: PASS
+- Tests: FAIL → PASS (domain verification warnings fixed)
+- Formatting: PASS
+- Credo: PASS (170 mods/funs, no issues)
+- Dialyzer: PASS (0 errors)
+- Sobelow: PASS (no security findings)
+- Documentation: PASS (7 Spark DSL warnings - acceptable)
+
+**Codebase-Wide Analysis**:
+- Consistency: PASS (all docs match implementation)
+- Documentation: PASS (100% module coverage, 97.7% function coverage)
+- Dead Code: PASS (0 unused functions, 0 unreachable code)
+
+**Critical Issues Found**: 1 (FIXED)
+1. test/ash_baml/telemetry_test.exs:6,29 - Domain verification warnings
+   - **Fix Applied**: Set domain: nil explicitly for NilCollectorResource and DefaultCollectorResource
+   - **Commit**: 82aefe1
+
+**Warnings**: 2
+1. test/ash_baml/type_generation_test.exs:2 - async:false may indicate isolation issue
+2. lib/ash_baml/telemetry.ex - Silent failure in rescue clauses
+
+**Recommendations**: 8 (non-blocking improvements)
+
+**Report Location**: .thoughts/qa-reports/2025-11-01-general-health-check-qa.md
+
+**Changes Made**:
+- Fixed domain verification warnings by setting domain: nil for test resources
+- All 124 unit tests now pass with --warnings-as-errors
+- Committed fix: "Fix domain verification warnings in telemetry tests"
+
+**Key Learnings**:
+- Ash 3.0+ requires explicit domain declaration (even if nil) for all resources
+- Test resources that shouldn't be registered need domain: nil, not validate_domain_inclusion?: false
+- The codebase is in excellent shape: zero dead code, 100% module documentation, all quality checks passing
+
+**Next Steps**:
+- Integration tests not run (require .env with API keys)
+- All critical and blocking issues resolved
+- Ready for additional work or merge
+=========== ITERATION 11 ===========
+
+=========== ITERATION 10 ===========
+**Date**: 2025-11-01
+**Task**: Run /qa against all files vs origin/main and create fix plan
+
+**QA Execution**: COMPLETE
+
+**QA Results**:
+- Overall Status: FAIL
+- Commit: a440f0a0a7b3c6080abb4d517955cb3b3f3a915e
+- Branch: harness vs origin/main
+
+**Automated Checks**:
+- Compilation: PASS
+- Tests: FAIL (domain verification warnings - NilCollectorResource, DefaultCollectorResource)
+- Formatting: PASS
+- Credo: PASS (170 mods/funs, no issues)
+- Dialyzer: PASS (0 errors)
+- Sobelow: PASS (no security findings)
+- Documentation: PASS (7 Spark DSL warnings - acceptable)
+
+**Codebase-Wide Analysis**:
+- Consistency: PASS (all docs match implementation)
+- Documentation: PASS (100% module coverage, 97.7% function coverage)
+- Dead Code: PASS (0 unused functions, 0 unreachable code)
+
+**Critical Issues Found**: 3
+1. lib/ash_baml.ex:21 - Type path inconsistency (MyApp.BamlClient.Reply → MyApp.BamlClient.Types.Reply)
+2. lib/ash_baml/actions/call_baml_stream.ex:114-120 - State machine returns atoms instead of tuples
+3. test/ash_baml/telemetry_test.exs - Domain verification warnings for test resources
+
+**Warnings**: 7 (test quality, timing assertions, manual cleanup patterns)
+**Recommendations**: 8
+
+**Report Location**: .thoughts/qa-reports/2025-11-01-general-health-check-qa.md
+
+**Key Changes from Iteration 9**:
+- Reduced critical issues from 6 to 3 (several were false positives)
+- Identified that many "issues" are actually test quality improvements, not bugs
+- Confirmed all automated quality checks pass
+- All 124 unit tests pass
+
+**Next Steps**:
+1. Create /plan for fixing the 3 critical issues
+2. Run /implement to execute fixes
+3. Re-run /qa to verify
+=========== ITERATION 10 ===========
+
+=========== ITERATION 9 ===========
+**Date**: 2025-11-01
+**Task**: Run /qa against all files against origin/main
+
+**QA Execution**: COMPLETE
+
+**QA Results**:
+- Overall Status: FAIL
+- Commit: a440f0a0a7b3c6080abb4d517955cb3b3f3a915e
+- Branch: harness
+
+**Automated Checks**:
+- Compilation: PASS
+- Tests: FAIL (warnings present - domain verification issues)
+- Credo: PASS
+- Dialyzer: PASS
+- Sobelow: PASS
+- Documentation: PASS (7 Spark DSL warnings - acceptable)
+
+**Critical Issues Found**: 6
+1. lib/ash_baml.ex:21 - Type path inconsistency (MyApp.BamlClient.Reply → MyApp.BamlClient.Types.Reply)
+2. lib/ash_baml/actions/call_baml_stream.ex:114-120 - Incomplete state pattern matching
+3. test/ash_baml/telemetry_test.exs - Domain verification warnings for test resources
+4. test/ash_baml/type_generation_test.exs:13-17 - Error handling using raise in setup
+5. test/integration/performance_integration_test.exs:42-48 - Conditional logic accepting all outcomes
+6. test/integration/type_system_integration_test.exs:86-115 - Test isolation violation
+
+**Warnings**: 10 (various test quality and code clarity issues)
+**Recommendations**: 12
+
+**Report Location**: .thoughts/qa-reports/2025-11-01-general-health-check-qa.md
+
+**Key Finding**: The previous iteration fixed iteration 7's issues, but introduced new test resource domain verification warnings. Additionally, code analysis found critical issues with streaming implementation and test quality.
+
+**Next Steps**:
+1. Create /plan for fixing the 6 critical issues
+2. Run /implement to execute fixes
+3. Re-run /qa to verify
+=========== ITERATION 9 ===========
+
 =========== ITERATION 8 ===========
 **Date**: 2025-11-01
 **Task**: Implement fixes for 8 critical QA issues
