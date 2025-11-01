@@ -92,8 +92,6 @@ defmodule AshBaml.Telemetry do
       )
   """
 
-  require Logger
-
   @doc """
   Wraps a BAML function call with telemetry.
 

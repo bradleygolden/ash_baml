@@ -19,7 +19,7 @@ The `call_baml/1` helper macro is automatically available when using this extens
       end
 
       actions do
-        action :chat, MyApp.BamlClient.Reply do
+        action :chat, MyApp.BamlClient.Types.Reply do
           argument :message, :string
           run call_baml(:ChatAgent)
         end

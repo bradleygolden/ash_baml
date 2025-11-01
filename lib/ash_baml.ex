@@ -55,11 +55,11 @@ defmodule AshBaml do
               types: [
                 weather_tool: [
                   type: :struct,
-                  constraints: [instance_of: MyApp.BamlClient.WeatherTool]
+                  constraints: [instance_of: MyApp.BamlClient.Types.WeatherTool]
                 ],
                 calculator_tool: [
                   type: :struct,
-                  constraints: [instance_of: MyApp.BamlClient.CalculatorTool]
+                  constraints: [instance_of: MyApp.BamlClient.Types.CalculatorTool]
                 ]
               ]
             ]
