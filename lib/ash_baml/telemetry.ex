@@ -126,7 +126,7 @@ defmodule AshBaml.Telemetry do
           Ash.Resource.record(),
           atom(),
           keyword(),
-          (keyword() -> {:ok, term()} | {:error, term()})
+          (map() -> {:ok, term()} | {:error, term()})
         ) :: {:ok, term()} | {:error, term()}
   def with_telemetry(input, function_name, config, func) do
     if enabled?(input, config) && should_sample?(config) do

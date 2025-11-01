@@ -84,15 +84,16 @@ defmodule AshBaml.TypeSystemIntegrationTest do
     end
 
     test "array fields receive arrays (not nil, not single values)" do
-      {:ok, _result} =
+      {:ok, result} =
         TestResource
         |> Ash.ActionInput.for_action(:array_args_action, %{
           tags: ["elixir", "programming", "functional"]
         })
         |> Ash.run_action()
 
-      # TagAnalysisResponse doesn't have arrays, but ProfileResponse does
-      # Let's test with a different action
+      assert %BamlClient.TagAnalysisResponse{} = result
+      assert is_binary(result.category)
+
       {:ok, profile_result} =
         TestResource
         |> Ash.ActionInput.for_action(:optional_args_action, %{
@@ -124,11 +125,10 @@ defmodule AshBaml.TypeSystemIntegrationTest do
         })
         |> Ash.run_action()
 
-      # ProfileResponse has location string? (optional) field
       assert %BamlClient.ProfileResponse{} = result
 
-      # Location should be nil when not provided
-      assert result.location == nil || result.location == ""
+      assert result.location in [nil, ""],
+             "Expected location to be nil or empty, got: #{inspect(result.location)}"
     end
 
     test "optional fields can have values" do
