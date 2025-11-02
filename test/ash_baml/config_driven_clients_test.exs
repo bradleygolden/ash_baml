@@ -28,9 +28,9 @@ defmodule AshBaml.ConfigDrivenClientsTest do
     end
   end
 
-  describe "legacy client_module pattern" do
+  describe "manual client_module pattern" do
     test "explicit client_module still works" do
-      defmodule LegacyResource do
+      defmodule ManualClientResource do
         use Ash.Resource,
           domain: nil,
           extensions: [AshBaml.Resource]
@@ -40,8 +40,8 @@ defmodule AshBaml.ConfigDrivenClientsTest do
         end
       end
 
-      assert AshBaml.Info.baml_client_module(LegacyResource) == AshBaml.Test.BamlClient
-      assert AshBaml.Info.baml_client_identifier(LegacyResource) == nil
+      assert AshBaml.Info.baml_client_module(ManualClientResource) == AshBaml.Test.BamlClient
+      assert AshBaml.Info.baml_client_identifier(ManualClientResource) == nil
     end
 
     test "explicit client_module takes precedence over config" do
@@ -93,9 +93,9 @@ defmodule AshBaml.ConfigDrivenClientsTest do
     end
   end
 
-  describe "backward compatibility" do
-    test "legacy client_module pattern continues to work independently" do
-      defmodule BackwardCompatResource do
+  describe "client_module pattern" do
+    test "manual client_module pattern works independently" do
+      defmodule ManualPatternResource do
         use Ash.Resource,
           domain: nil,
           extensions: [AshBaml.Resource]
@@ -105,8 +105,8 @@ defmodule AshBaml.ConfigDrivenClientsTest do
         end
       end
 
-      assert AshBaml.Info.baml_client_identifier(BackwardCompatResource) == nil
-      assert AshBaml.Info.baml_client_module(BackwardCompatResource) == AshBaml.Test.BamlClient
+      assert AshBaml.Info.baml_client_identifier(ManualPatternResource) == nil
+      assert AshBaml.Info.baml_client_module(ManualPatternResource) == AshBaml.Test.BamlClient
     end
   end
 end

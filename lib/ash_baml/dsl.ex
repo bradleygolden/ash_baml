@@ -140,16 +140,10 @@ defmodule AshBaml.Dsl do
     """,
     examples: [
       """
-      # Recommended: config-driven client
+      # Config-driven client (recommended)
       baml do
-        client :support
+        client :default
         import_functions [:AnalyzeTicket]
-      end
-      """,
-      """
-      # Legacy: explicit module
-      baml do
-        client_module MyApp.BamlClient
       end
       """,
       """
@@ -161,6 +155,12 @@ defmodule AshBaml.Dsl do
           enabled true
           metadata [:function_name, :llm_client]
         end
+      end
+      """,
+      """
+      # Manual client module (alternative)
+      baml do
+        client_module MyApp.BamlClient
       end
       """
     ],
@@ -198,8 +198,9 @@ defmodule AshBaml.Dsl do
         doc: """
         The module that uses `BamlElixir.Client` to define BAML functions.
 
-        This is the legacy approach where you manually create a client module file.
-        Consider using `client` with config-based clients instead.
+        This is an alternative approach where you manually create a client module file.
+        For most use cases, consider using `client` with config-based clients instead,
+        which auto-generates the module and centralizes configuration.
 
         Either `client` or `client_module` must be provided, but not both.
         """
