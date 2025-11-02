@@ -30,19 +30,13 @@ function SayHello(name: string) -> Reply {
 }
 ```
 
-### Step 2: Build BAML Client
-
-```bash
-baml build
-```
-
-### Step 3: Generate Ash Types
+### Step 2: Generate Ash Types
 
 ```bash
 mix ash_baml.gen.types MyApp.BamlClient
 ```
 
-### Step 4: Create Ash Resource
+### Step 3: Create Ash Resource
 
 ```elixir
 defmodule MyApp.Assistant do
@@ -57,7 +51,7 @@ defmodule MyApp.Assistant do
 end
 ```
 
-###Step 5: Call the Function
+### Step 4: Call the Function
 
 ```elixir
 {:ok, reply} = MyApp.Assistant

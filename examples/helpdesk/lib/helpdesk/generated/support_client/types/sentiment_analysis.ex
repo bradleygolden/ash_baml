@@ -1,4 +1,4 @@
-defmodule Helpdesk.BamlClient.Types.SentimentAnalysis do
+defmodule Helpdesk.Generated.SupportClient.Types.SentimentAnalysis do
   use Ash.TypedStruct
 
   @moduledoc """
@@ -13,6 +13,6 @@ defmodule Helpdesk.BamlClient.Types.SentimentAnalysis do
     field(:confidence, :float, allow_nil?: false)
     field(:emotional_indicators, {:array, :string}, allow_nil?: false)
     field(:requires_escalation, :boolean, allow_nil?: false)
-    field(:sentiment, Helpdesk.BamlClient.Types.SentimentType, allow_nil?: false)
+    field(:sentiment, Helpdesk.Generated.SupportClient.Types.SentimentType, allow_nil?: false)
   end
 end

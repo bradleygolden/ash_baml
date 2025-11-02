@@ -1,4 +1,4 @@
-defmodule Helpdesk.BamlClient.Types.ResponseSuggestion do
+defmodule Helpdesk.Generated.SupportClient.Types.ResponseSuggestion do
   use Ash.TypedStruct
 
   @moduledoc """
@@ -12,7 +12,11 @@ defmodule Helpdesk.BamlClient.Types.ResponseSuggestion do
   typed_struct do
     field(:next_steps, {:array, :string}, allow_nil?: false)
     field(:requires_manager_review, :boolean, allow_nil?: false)
-    field(:resolution_time, Helpdesk.BamlClient.Types.ResolutionTime, allow_nil?: false)
+
+    field(:resolution_time, Helpdesk.Generated.SupportClient.Types.ResolutionTime,
+      allow_nil?: false
+    )
+
     field(:response_draft, :string, allow_nil?: false)
   end
 end

@@ -3,5 +3,6 @@ defmodule Helpdesk.Support do
 
   resources do
     resource Helpdesk.Support.Ticket
+    resource Helpdesk.Support.TicketAnalyzer
   end
 end

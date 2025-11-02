@@ -36,4 +36,11 @@ config :spark,
     "Ash.Domain": [section_order: [:resources, :policies, :authorization, :domain, :execution]]
   ]
 
+config :helpdesk, :ash_domains, [Helpdesk.Support]
+
+config :ash_baml,
+  clients: [
+    support: {Helpdesk.Generated.SupportClient, baml_src: "baml_src"}
+  ]
+
 import_config "#{config_env()}.exs"

@@ -1,5 +1,5 @@
 function CategorizeTicket(subject: string, description: string) -> TicketCategory {
-  client GPT4Turbo
+  client LocalQwen3
   prompt #"
     Analyze the following support ticket and categorize it:
 
@@ -20,7 +20,7 @@ function CategorizeTicket(subject: string, description: string) -> TicketCategor
 }
 
 function AnalyzeSentiment(text: string) -> SentimentAnalysis {
-  client GPT4Turbo
+  client LocalQwen3
   prompt #"
     Analyze the sentiment of the following customer message:
 
@@ -36,7 +36,7 @@ function AnalyzeSentiment(text: string) -> SentimentAnalysis {
 }
 
 function SuggestResponse(ticket_subject: string, ticket_description: string, customer_name: string) -> ResponseSuggestion {
-  client Claude
+  client LocalQwen3
   prompt #"
     Generate a professional support response for the following ticket:
 

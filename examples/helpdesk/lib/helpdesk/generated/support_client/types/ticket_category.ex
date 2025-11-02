@@ -1,4 +1,4 @@
-defmodule Helpdesk.BamlClient.Types.TicketCategory do
+defmodule Helpdesk.Generated.SupportClient.Types.TicketCategory do
   use Ash.TypedStruct
 
   @moduledoc """
@@ -10,8 +10,8 @@ defmodule Helpdesk.BamlClient.Types.TicketCategory do
   """
 
   typed_struct do
-    field(:category, Helpdesk.BamlClient.Types.TicketCategoryType, allow_nil?: false)
-    field(:priority, Helpdesk.BamlClient.Types.PriorityLevel, allow_nil?: false)
+    field(:category, Helpdesk.Generated.SupportClient.Types.TicketCategoryType, allow_nil?: false)
+    field(:priority, Helpdesk.Generated.SupportClient.Types.PriorityLevel, allow_nil?: false)
     field(:reasoning, :string, allow_nil?: false)
     field(:suggested_assignee, :string, allow_nil?: true)
   end

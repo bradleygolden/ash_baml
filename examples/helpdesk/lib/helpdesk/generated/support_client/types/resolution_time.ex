@@ -1,4 +1,4 @@
-defmodule Helpdesk.BamlClient.Types.ResolutionTime do
+defmodule Helpdesk.Generated.SupportClient.Types.ResolutionTime do
   use Ash.Type.Enum, values: [:immediate, :hours, :days, :needs_investigation]
 
   @moduledoc """

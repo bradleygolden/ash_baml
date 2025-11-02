@@ -99,11 +99,11 @@ defmodule AshBaml.Transformers.DefineClientModules do
       {module_name, opts} ->
         baml_src = Keyword.fetch!(opts, :baml_src)
 
+        define_client(module_name, baml_src)
+
         dsl_state
-        |> Transformer.async_compile(fn ->
-          define_client(module_name, baml_src)
-        end)
         |> Transformer.persist(:baml_generated_client, module_name)
+        |> Transformer.set_option([:baml], :client_module, module_name)
         |> then(&{:ok, &1})
     end
   end
@@ -122,6 +122,10 @@ defmodule AshBaml.Transformers.DefineClientModules do
         """
 
         use BamlElixir.Client, baml_src: unquote(baml_src)
+
+        def __baml_src_path__ do
+          Path.join(File.cwd!(), unquote(baml_src))
+        end
       end,
       Macro.Env.location(__ENV__)
     )

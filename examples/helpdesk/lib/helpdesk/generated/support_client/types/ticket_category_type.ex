@@ -1,4 +1,4 @@
-defmodule Helpdesk.BamlClient.Types.TicketCategoryType do
+defmodule Helpdesk.Generated.SupportClient.Types.TicketCategoryType do
   use Ash.Type.Enum, values: [:bug, :feature_request, :question, :account, :billing]
 
   @moduledoc """

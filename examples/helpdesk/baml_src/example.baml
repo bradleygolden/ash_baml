@@ -2,7 +2,7 @@
 // Delete this file and create your own functions
 
 function ExtractUser(text: string) -> User {
-  client GPT4Turbo
+  client LocalQwen3
   prompt #"
     Extract user information from the following text:
 

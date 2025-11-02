@@ -1,4 +1,4 @@
-defmodule Helpdesk.BamlClient.Types.SentimentType do
+defmodule Helpdesk.Generated.SupportClient.Types.SentimentType do
   use Ash.Type.Enum, values: [:positive, :neutral, :negative, :frustrated, :urgent]
 
   @moduledoc """

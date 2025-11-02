@@ -1,4 +1,4 @@
-defmodule Helpdesk.BamlClient.Types.PriorityLevel do
+defmodule Helpdesk.Generated.SupportClient.Types.PriorityLevel do
   use Ash.Type.Enum, values: [:low, :medium, :high, :urgent]
 
   @moduledoc """
