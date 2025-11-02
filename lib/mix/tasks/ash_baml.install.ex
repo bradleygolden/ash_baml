@@ -1,6 +1,10 @@
 defmodule Mix.Tasks.AshBaml.Install do
   use Igniter.Mix.Task
 
+  alias Igniter.Code.Common
+  alias Igniter.Code.List
+  alias Igniter.Project.Config
+
   @shortdoc "Generates a BAML client module and example BAML files"
 
   @moduledoc """
@@ -9,25 +13,30 @@ defmodule Mix.Tasks.AshBaml.Install do
   ## Examples
 
   ```bash
-  # Use default module name based on app (e.g., MyApp.BamlClient)
-  mix ash_baml.install
+  # Generate config-driven client setup (recommended)
+  mix ash_baml.install --client support --path baml_src/support
 
-  # Specify custom module name
-  mix ash_baml.install --module MyApp.Custom.BamlClient
+  # Generate multiple clients
+  mix ash_baml.install --client support --path baml_src/support
+  mix ash_baml.install --client content --path baml_src/content
 
-  # Specify custom baml_src path
-  mix ash_baml.install --path priv/baml_src
+  # Legacy: Generate standalone client module file
+  mix ash_baml.install --module MyApp.BamlClient --path baml_src
   ```
 
   ## Options
 
-  * `--module` - Optional. The module name for your BAML client. Defaults to AppName.BamlClient where AppName is your application's root module.
-  * `--path` - Optional. Path to the baml_src directory. Defaults to "baml_src"
+  * `--client` - Client identifier (e.g., :support). Recommended approach.
+  * `--module` - Module name for legacy standalone client file
+  * `--path` - Path to baml_src directory. Defaults to "baml_src"
+
+  Note: Specify either `--client` or `--module`, not both.
   """
 
   def info(_argv, _composing_task) do
     %Igniter.Mix.Task.Info{
       schema: [
+        client: :string,
         module: :string,
         path: :string
       ],
@@ -37,27 +46,89 @@ defmodule Mix.Tasks.AshBaml.Install do
 
   @impl Igniter.Mix.Task
   def igniter(igniter) do
+    client_id = igniter.args.options[:client]
+    module_name = igniter.args.options[:module]
     baml_path = igniter.args.options[:path] || "baml_src"
 
-    client_module =
-      case igniter.args.options[:module] do
-        nil ->
-          app_name = Igniter.Project.Application.app_name(igniter)
-          module_base = app_name |> Atom.to_string() |> Macro.camelize()
-          Module.concat([module_base, "BamlClient"])
+    cond do
+      client_id && module_name ->
+        Igniter.add_warning(igniter, """
+        Specify either --client or --module, not both.
 
-        module_name ->
-          Module.concat([module_name])
-      end
+        For config-driven clients (recommended):
+          mix ash_baml.install --client support --path baml_src/support
 
-    igniter
-    |> create_client_module(client_module, baml_path)
-    |> create_baml_directory(baml_path)
-    |> create_example_baml_files(baml_path)
-    |> add_success_notice(client_module, baml_path)
+        For legacy standalone module:
+          mix ash_baml.install --module MyApp.BamlClient --path baml_src
+        """)
+
+      client_id ->
+        install_config_driven_client(igniter, String.to_atom(client_id), baml_path)
+
+      module_name ->
+        install_legacy_client(igniter, Module.concat([module_name]), baml_path)
+
+      true ->
+        Igniter.add_warning(igniter, """
+        Must specify either --client or --module.
+
+        For config-driven clients (recommended):
+          mix ash_baml.install --client support --path baml_src/support
+
+        For legacy standalone module:
+          mix ash_baml.install --module MyApp.BamlClient --path baml_src
+        """)
+    end
   end
 
-  defp create_client_module(igniter, module_name, baml_path) do
+  defp install_config_driven_client(igniter, client_id, baml_path) do
+    app_name = Igniter.Project.Application.app_name(igniter)
+    module_base = app_name |> Atom.to_string() |> Macro.camelize()
+
+    module_name =
+      Module.concat([module_base, "BamlClients", Macro.camelize(to_string(client_id))])
+
+    igniter
+    |> add_client_to_config(client_id, module_name, baml_path)
+    |> create_baml_directory(baml_path)
+    |> create_example_baml_files(baml_path)
+    |> add_config_driven_notice(client_id, module_name, baml_path)
+  end
+
+  defp install_legacy_client(igniter, module_name, baml_path) do
+    igniter
+    |> create_legacy_client_module(module_name, baml_path)
+    |> create_baml_directory(baml_path)
+    |> create_example_baml_files(baml_path)
+    |> add_legacy_notice(module_name, baml_path)
+  end
+
+  defp add_client_to_config(igniter, client_id, module_name, baml_path) do
+    Config.configure(
+      igniter,
+      "config.exs",
+      :ash_baml,
+      [:clients],
+      [{client_id, {module_name, [baml_src: baml_path]}}],
+      updater: fn zipper ->
+        case Common.move_to_cursor_match_in_scope(
+               zipper,
+               "{:clients, __cursor__()}"
+             ) do
+          {:ok, zipper} ->
+            List.append_to_list(
+              zipper,
+              {client_id, {module_name, [baml_src: baml_path]}}
+            )
+
+          :error ->
+            {:ok, zipper}
+        end
+      end
+    )
+  end
+
+  defp create_legacy_client_module(igniter, module_name, baml_path) do
     module_contents = ~s"""
     @moduledoc \"\"\"
     BAML client for #{inspect(module_name)}.
@@ -70,12 +141,7 @@ defmodule Mix.Tasks.AshBaml.Install do
         mix ash_baml.gen.types #{inspect(module_name)}
     \"\"\"
 
-    use BamlElixir.Client,
-      baml_src: "#{baml_path}"
-
-    def __baml_src_path__ do
-      Path.join(File.cwd!(), "#{baml_path}")
-    end
+    use BamlElixir.Client, baml_src: "#{baml_path}"
     """
 
     Igniter.Project.Module.create_module(igniter, module_name, module_contents)
@@ -154,10 +220,42 @@ defmodule Mix.Tasks.AshBaml.Install do
     )
   end
 
-  defp add_success_notice(igniter, module_name, baml_path) do
+  defp add_config_driven_notice(igniter, client_id, module_name, baml_path) do
     notice = """
 
-    BAML client installed successfully!
+    Config-driven BAML client installed successfully!
+
+    Configuration added to config/config.exs:
+      Client ID: :#{client_id}
+      Module: #{inspect(module_name)}
+      BAML source: #{baml_path}/
+
+    Generated:
+      - BAML directory: #{baml_path}/
+      - Example files: clients.baml, example.baml
+
+    The client module will be auto-generated at compile time.
+    No manual client file needed!
+
+    Next steps:
+      1. Configure your LLM API keys in #{baml_path}/clients.baml
+      2. Define your BAML functions in #{baml_path}/
+      3. Generate types: mix ash_baml.gen.types #{inspect(module_name)}
+      4. Use in your Ash resources:
+
+          baml do
+            client :#{client_id}
+            import_functions [:YourFunction]
+          end
+    """
+
+    Igniter.add_notice(igniter, notice)
+  end
+
+  defp add_legacy_notice(igniter, module_name, baml_path) do
+    notice = """
+
+    Legacy BAML client installed successfully!
 
     Generated:
       - Client module: #{inspect(module_name)}
@@ -168,7 +266,14 @@ defmodule Mix.Tasks.AshBaml.Install do
       1. Configure your LLM API keys in #{baml_path}/clients.baml
       2. Define your BAML functions in #{baml_path}/
       3. Generate types: mix ash_baml.gen.types #{inspect(module_name)}
-      4. Use the generated types in your Ash resources
+      4. Use in your Ash resources:
+
+          baml do
+            client_module #{inspect(module_name)}
+            import_functions [:YourFunction]
+          end
+
+    Consider migrating to config-driven clients for less boilerplate.
     """
 
     Igniter.add_notice(igniter, notice)

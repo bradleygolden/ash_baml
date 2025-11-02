@@ -2,15 +2,15 @@ defmodule AshBaml.DslTest do
   use ExUnit.Case, async: true
 
   describe "baml DSL block" do
-    test "requires client_module option" do
-      assert_raise Spark.Error.DslError, fn ->
-        defmodule MissingClientModule do
+    test "requires either client or client_module option" do
+      assert_raise RuntimeError, ~r/BAML client not configured/, fn ->
+        defmodule MissingClient do
           use Ash.Resource,
             domain: nil,
             extensions: [AshBaml.Resource]
 
           baml do
-            # Missing client_module
+            # Missing both client and client_module
           end
         end
       end

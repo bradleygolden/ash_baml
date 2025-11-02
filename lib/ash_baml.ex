@@ -4,10 +4,41 @@ defmodule AshBaml do
 
   ## Usage
 
-  ### Regular BAML Functions
+  ### Config-Driven Clients (Recommended)
 
-  Add `AshBaml.Resource` as an extension to your Ash resources:
+  Configure BAML clients in your application config:
 
+      # config/config.exs
+      config :ash_baml,
+        clients: [
+          support: {MyApp.BamlClients.Support, baml_src: "baml_src/support"},
+          content: {MyApp.BamlClients.Content, baml_src: "baml_src/content"}
+        ]
+
+  Reference them in your resources by identifier:
+
+      defmodule MyApp.Tickets do
+        use Ash.Resource,
+          domain: MyApp.Domain,
+          extensions: [AshBaml.Resource]
+
+        baml do
+          client :support
+          import_functions [:AnalyzeTicket]
+        end
+      end
+
+  Client modules are auto-generated at compile time. No manual client files needed!
+
+  ### Legacy Pattern (Standalone Modules)
+
+  You can still manually create client modules:
+
+      defmodule MyApp.BamlClient do
+        use BamlElixir.Client, baml_src: "baml_src"
+      end
+
+      # In resource
       defmodule MyApp.ChatResource do
         use Ash.Resource,
           domain: MyApp.Domain,
