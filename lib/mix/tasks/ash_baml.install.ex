@@ -1,22 +1,27 @@
 defmodule Mix.Tasks.AshBaml.Install do
   use Igniter.Mix.Task
 
-  @example "mix ash_baml.install --module MyApp.BamlClient"
-
   @shortdoc "Generates a BAML client module and example BAML files"
 
   @moduledoc """
   #{@shortdoc}
 
-  ## Example
+  ## Examples
 
   ```bash
-  #{@example}
+  # Use default module name based on app (e.g., MyApp.BamlClient)
+  mix ash_baml.install
+
+  # Specify custom module name
+  mix ash_baml.install --module MyApp.Custom.BamlClient
+
+  # Specify custom baml_src path
+  mix ash_baml.install --path priv/baml_src
   ```
 
   ## Options
 
-  * `--module` - Required. The module name for your BAML client (e.g., MyApp.BamlClient)
+  * `--module` - Optional. The module name for your BAML client. Defaults to AppName.BamlClient where AppName is your application's root module.
   * `--path` - Optional. Path to the baml_src directory. Defaults to "baml_src"
   """
 
@@ -26,22 +31,24 @@ defmodule Mix.Tasks.AshBaml.Install do
         module: :string,
         path: :string
       ],
-      required: [:module]
+      required: []
     }
   end
 
   @impl Igniter.Mix.Task
   def igniter(igniter) do
-    module_name = igniter.args.options[:module]
     baml_path = igniter.args.options[:path] || "baml_src"
 
-    unless module_name do
-      Mix.shell().error("Error: --module is required")
-      Mix.shell().info(@moduledoc)
-      System.halt(1)
-    end
+    client_module =
+      case igniter.args.options[:module] do
+        nil ->
+          app_name = Igniter.Project.Application.app_name(igniter)
+          module_base = app_name |> Atom.to_string() |> Macro.camelize()
+          Module.concat([module_base, "BamlClient"])
 
-    client_module = Module.concat([module_name])
+        module_name ->
+          Module.concat([module_name])
+      end
 
     igniter
     |> create_client_module(client_module, baml_path)

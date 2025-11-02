@@ -24,8 +24,8 @@ def deps do
   ]
 end
 
-# 2. Install and generate BAML client
-$ mix ash_baml.install --module MyApp.BamlClient
+# 2. Install and generate BAML client (defaults to MyApp.BamlClient)
+$ mix ash_baml.install
 
 # 3. Define a BAML function in baml_src/functions.baml
 function ExtractUser(text: string) -> User {
@@ -75,19 +75,20 @@ end
 Then run the installer to generate your BAML client module:
 
 ```bash
-mix ash_baml.install --module MyApp.BamlClient
+# Use default module name (AppName.BamlClient based on your app)
+mix ash_baml.install
+
+# Or specify a custom module name
+mix ash_baml.install --module MyApp.Custom.BamlClient
+
+# Customize the BAML source path
+mix ash_baml.install --path priv/baml_src
 ```
 
 This will:
-- Generate a BAML client module at the appropriate location
+- Generate a BAML client module (defaults to AppName.BamlClient)
 - Create a `baml_src/` directory with example BAML files
 - Set up the initial configuration for LLM clients
-
-You can customize the BAML source path:
-
-```bash
-mix ash_baml.install --module MyApp.BamlClient --path priv/baml_src
-```
 
 ## Features
 

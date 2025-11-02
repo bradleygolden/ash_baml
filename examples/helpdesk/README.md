@@ -21,7 +21,11 @@ This example demonstrates the recommended AshBaml installation workflow:
 mix deps.get
 
 # Run the installer to generate the BAML client module
-mix ash_baml.install --module Helpdesk.BamlClient
+# The module name defaults to AppName.BamlClient (e.g., Helpdesk.BamlClient)
+mix ash_baml.install
+
+# Or specify a custom module name:
+# mix ash_baml.install --module Helpdesk.Custom.BamlClient
 ```
 
 This creates:
