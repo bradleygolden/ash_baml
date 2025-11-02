@@ -210,7 +210,7 @@ defmodule MyApp.Extractor do
     extensions: [AshBaml.Resource]
 
   baml do
-    client_module MyApp.BamlClient
+    client :default
     import_functions [:ExtractUser]  # Returns MyApp.BamlClient.Types.User
   end
 end

@@ -147,7 +147,7 @@ defmodule MyApp.TaskExtractor do
     extensions: [AshBaml.Resource]
 
   baml do
-    client_module MyApp.BamlClient
+    client :default
     import_functions [:ExtractTasks]
   end
 
@@ -301,7 +301,7 @@ defmodule MyApp.TaskExtractor do
     extensions: [AshBaml.Resource]
 
   baml do
-    client_module MyApp.BamlClient
+    client :default
     import_functions [:ExtractTasks, :SummarizeTasks, :CategorizeTasks]
   end
 

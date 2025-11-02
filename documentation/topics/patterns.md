@@ -38,7 +38,7 @@ defmodule MyApp.ContactExtractor do
     extensions: [AshBaml.Resource]
 
   baml do
-    client_module MyApp.BamlClient
+    client :default
     import_functions [:ExtractContact]
   end
 end
@@ -118,7 +118,7 @@ defmodule MyApp.MessageRouter do
     extensions: [AshBaml.Resource]
 
   baml do
-    client_module MyApp.BamlClient
+    client :default
     import_functions [:ClassifyMessage]
   end
 

@@ -123,7 +123,7 @@ defmodule MyApp.ResearchAgent do
   alias MyApp.BamlClient.Types.{AgentAction, AgentStep, AgentState}
 
   baml do
-    client_module MyApp.BamlClient
+    client :default
     import_functions [:PlanNextStep, :AnalyzeInformation]
   end
 

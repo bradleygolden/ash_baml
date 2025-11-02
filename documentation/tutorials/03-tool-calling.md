@@ -122,7 +122,7 @@ defmodule MyApp.Assistant do
     extensions: [AshBaml.Resource]
 
   baml do
-    client_module MyApp.BamlClient
+    client :default
   end
 
   actions do

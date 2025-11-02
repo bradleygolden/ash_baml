@@ -112,7 +112,7 @@ defmodule MyApp.Assistant do
   use Ash.Resource, extensions: [AshBaml.Resource]
 
   baml do
-    client_module MyApp.BamlClient
+    client :default
     import_functions [:SayHello]
 
     telemetry do
