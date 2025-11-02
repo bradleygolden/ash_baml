@@ -121,6 +121,7 @@ defmodule AshBaml.MixProject do
           AshBaml.Transformers.ImportBamlFunctions
         ],
         "Mix Tasks": [
+          Mix.Tasks.AshBaml.Install,
           Mix.Tasks.AshBaml.Gen.Types
         ]
       ],

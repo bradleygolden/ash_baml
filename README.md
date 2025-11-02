@@ -24,9 +24,12 @@ def deps do
   ]
 end
 
-# 2. Define a BAML function in baml_src/functions.baml
+# 2. Install and generate BAML client
+$ mix ash_baml.install --module MyApp.BamlClient
+
+# 3. Define a BAML function in baml_src/functions.baml
 function ExtractUser(text: string) -> User {
-  client GPT4
+  client GPT4Turbo
   prompt #"Extract user information from: {{ text }}"#
 }
 
@@ -35,10 +38,10 @@ class User {
   email string
 }
 
-# 3. Generate types
+# 4. Generate types
 $ mix ash_baml.gen.types MyApp.BamlClient
 
-# 4. Create an Ash resource
+# 5. Create an Ash resource
 defmodule MyApp.Extractor do
   use Ash.Resource,
     extensions: [AshBaml.Resource]
@@ -49,7 +52,7 @@ defmodule MyApp.Extractor do
   end
 end
 
-# 5. Use it!
+# 6. Use it!
 {:ok, user} = MyApp.Extractor
   |> Ash.ActionInput.for_action(:extract_user, %{text: "Alice alice@example.com"})
   |> Ash.run_action()
@@ -67,6 +70,23 @@ def deps do
     {:ash_baml, "~> 0.1.0"}
   ]
 end
+```
+
+Then run the installer to generate your BAML client module:
+
+```bash
+mix ash_baml.install --module MyApp.BamlClient
+```
+
+This will:
+- Generate a BAML client module at the appropriate location
+- Create a `baml_src/` directory with example BAML files
+- Set up the initial configuration for LLM clients
+
+You can customize the BAML source path:
+
+```bash
+mix ash_baml.install --module MyApp.BamlClient --path priv/baml_src
 ```
 
 ## Features
