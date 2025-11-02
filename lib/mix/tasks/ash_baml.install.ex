@@ -63,7 +63,8 @@ defmodule Mix.Tasks.AshBaml.Install do
         """)
 
       client_id ->
-        install_config_driven_client(igniter, String.to_atom(client_id), baml_path)
+        validated_client_id = validate_client_identifier(client_id)
+        install_config_driven_client(igniter, validated_client_id, baml_path)
 
       module_name ->
         install_legacy_client(igniter, Module.concat([module_name]), baml_path)
@@ -78,6 +79,22 @@ defmodule Mix.Tasks.AshBaml.Install do
         For legacy standalone module:
           mix ash_baml.install --module MyApp.BamlClient --path baml_src
         """)
+    end
+  end
+
+  defp validate_client_identifier(client_id) when is_binary(client_id) do
+    if client_id =~ ~r/^[a-z][a-z0-9_]*$/ do
+      String.to_atom(client_id)
+    else
+      raise """
+      Invalid client identifier: #{inspect(client_id)}
+
+      Client identifiers must:
+      - Start with a lowercase letter
+      - Contain only lowercase letters, numbers, and underscores
+
+      Examples: support, content, main_client
+      """
     end
   end
 

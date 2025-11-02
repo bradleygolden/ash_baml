@@ -88,8 +88,14 @@ defmodule AshBaml.Info do
     clients = Application.get_env(:ash_baml, :clients, [])
 
     case Keyword.get(clients, identifier) do
-      {_module, opts} -> Keyword.fetch!(opts, :baml_src)
-      _ -> nil
+      {_module, opts} ->
+        case Keyword.fetch(opts, :baml_src) do
+          {:ok, path} -> path
+          :error -> nil
+        end
+
+      _ ->
+        nil
     end
   end
 

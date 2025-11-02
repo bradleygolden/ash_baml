@@ -138,12 +138,19 @@ defmodule AshBaml.FunctionIntrospector do
   end
 
   defp module_file_exists?(module) do
-    module
-    |> Module.split()
-    |> Enum.map(&Macro.underscore/1)
-    |> Path.join()
-    |> then(&"lib/#{&1}.ex")
-    |> File.exists?()
+    source_paths = Mix.Project.config()[:source_paths] || ["lib"]
+
+    relative_path =
+      module
+      |> Module.split()
+      |> Enum.map(&Macro.underscore/1)
+      |> Path.join()
+      |> then(&"#{&1}.ex")
+
+    Enum.any?(source_paths, fn source_path ->
+      Path.join(source_path, relative_path)
+      |> File.exists?()
+    end)
   end
 
   defp baml_type_to_ash_type({:primitive, :string}), do: :string

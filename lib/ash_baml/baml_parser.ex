@@ -98,28 +98,36 @@ defmodule AshBaml.BamlParser do
   end
 
   defp extract_path_from_source(client_module) do
-    module_source_path = find_module_source(client_module)
-
-    if module_source_path && File.exists?(module_source_path) do
-      source = File.read!(module_source_path)
-
-      case Regex.run(~r/def\s+__baml_src_path__.*?Path\.join\([^,]+,\s*"([^"]+)"\)/s, source) do
-        [_, path] -> path
-        _ -> nil
-      end
+    with module_source_path when not is_nil(module_source_path) <-
+           find_module_source(client_module),
+         true <- File.exists?(module_source_path),
+         {:ok, source} <- File.read(module_source_path),
+         [_, path] <-
+           Regex.run(~r/def\s+__baml_src_path__.*?Path\.join\([^,]+,\s*"([^"]+)"\)/s, source) do
+      path
+    else
+      _ -> nil
     end
   end
 
   defp find_module_source(module) do
-    path =
+    source_paths = Mix.Project.config()[:source_paths] || ["lib"]
+
+    relative_path =
       module
       |> Module.split()
       |> Enum.map(&Macro.underscore/1)
       |> Path.join()
+      |> then(&"#{&1}.ex")
 
-    Enum.find_value(
-      ["lib/#{path}.ex", "test/#{path}.ex", "test/support/#{Path.basename(path)}.ex"],
-      fn file_path -> File.exists?(file_path) && file_path end
-    )
+    search_paths =
+      Enum.flat_map(source_paths, fn source_path ->
+        [
+          Path.join(source_path, relative_path),
+          Path.join([source_path, "support", Path.basename(relative_path)])
+        ]
+      end)
+
+    Enum.find(search_paths, &File.exists?/1)
   end
 end

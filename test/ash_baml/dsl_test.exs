@@ -3,7 +3,7 @@ defmodule AshBaml.DslTest do
 
   describe "baml DSL block" do
     test "requires either client or client_module option" do
-      assert_raise RuntimeError, ~r/BAML client not configured/, fn ->
+      assert_raise Spark.Error.DslError, ~r/Must specify either :client or :client_module/, fn ->
         defmodule MissingClient do
           use Ash.Resource,
             domain: nil,
@@ -11,6 +11,21 @@ defmodule AshBaml.DslTest do
 
           baml do
             # Missing both client and client_module
+          end
+        end
+      end
+    end
+
+    test "prevents both client and client_module from being specified" do
+      assert_raise Spark.Error.DslError, ~r/Cannot specify both :client and :client_module/, fn ->
+        defmodule BothOptionsResource do
+          use Ash.Resource,
+            domain: nil,
+            extensions: [AshBaml.Resource]
+
+          baml do
+            client(:support)
+            client_module(AshBaml.Test.BamlClient)
           end
         end
       end

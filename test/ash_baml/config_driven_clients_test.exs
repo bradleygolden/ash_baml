@@ -61,7 +61,7 @@ defmodule AshBaml.ConfigDrivenClientsTest do
 
   describe "validation" do
     test "missing both client and client_module raises error" do
-      assert_raise RuntimeError, ~r/BAML client not configured/, fn ->
+      assert_raise Spark.Error.DslError, ~r/Must specify either :client or :client_module/, fn ->
         defmodule MissingBothOptions do
           use Ash.Resource,
             domain: nil,
