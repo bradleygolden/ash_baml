@@ -89,7 +89,7 @@ defmodule AshBaml.BamlParser do
          For explicit client modules, use BamlElixir.Client:
 
              defmodule #{inspect(client_module)} do
-               use BamlElixir.Client, baml_src: "baml_src"
+               use BamlElixir.Client, path: "baml_src"
              end
 
          The __baml_src_path__/0 callback will be generated automatically.

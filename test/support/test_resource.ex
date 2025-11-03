@@ -6,7 +6,7 @@ defmodule AshBaml.Test.TestResource do
     extensions: [AshBaml.Resource]
 
   baml do
-    client_module(AshBaml.Test.BamlClient)
+    client(:test)
   end
 
   actions do

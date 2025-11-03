@@ -169,7 +169,7 @@ defmodule Mix.Tasks.AshBaml.Install do
         mix ash_baml.gen.types #{inspect(module_name)}
     \"\"\"
 
-    use BamlElixir.Client, baml_src: "#{baml_path}"
+    use BamlElixir.Client, path: "#{baml_path}"
     """
 
     Igniter.Project.Module.create_module(igniter, module_name, module_contents)
