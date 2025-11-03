@@ -22,33 +22,47 @@ defmodule AshBaml.Actions.CallBamlFunction do
   """
   @impl true
   def run(input, opts, _context) do
-    client_module = AshBaml.Info.baml_client_module(input.resource)
     function_name = Keyword.fetch!(opts, :function)
-    function_module = Module.concat(client_module, function_name)
+    client_module = AshBaml.Info.baml_client_module(input.resource)
 
-    if Code.ensure_loaded?(function_module) do
-      telemetry_config = build_telemetry_config(input.resource, opts)
-
-      result =
-        AshBaml.Telemetry.with_telemetry(
-          input,
-          function_name,
-          telemetry_config,
-          fn collector_opts ->
-            # BAML client expects arguments as a map
-            function_module.call(input.arguments, collector_opts)
-          end
-        )
-
-      case result do
-        {:ok, data} ->
-          {:ok, wrap_union_result(input, data)}
-
-        error ->
-          error
-      end
+    if is_nil(client_module) do
+      {:error, "BAML client not configured for #{inspect(input.resource)}"}
     else
-      build_module_not_found_error(input.resource, function_name, client_module, function_module)
+      function_module = Module.concat(client_module, function_name)
+
+      if Code.ensure_loaded?(function_module) do
+        execute_baml_function(input, function_name, function_module, opts)
+      else
+        build_module_not_found_error(
+          input.resource,
+          function_name,
+          client_module,
+          function_module
+        )
+      end
+    end
+  end
+
+  defp execute_baml_function(input, function_name, function_module, opts) do
+    telemetry_config = build_telemetry_config(input.resource, opts)
+
+    result =
+      AshBaml.Telemetry.with_telemetry(
+        input,
+        function_name,
+        telemetry_config,
+        fn collector_opts ->
+          # BAML client expects arguments as a map
+          function_module.call(input.arguments, collector_opts)
+        end
+      )
+
+    case result do
+      {:ok, data} ->
+        {:ok, wrap_union_result(input, data)}
+
+      error ->
+        error
     end
   end
 
