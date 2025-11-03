@@ -61,7 +61,7 @@ end
   |> Ash.run_action()
 ```
 
-📚 **[Read the full Getting Started tutorial →](https://hexdocs.pm/ash_baml/01-get-started.html)**
+📚 **[Read the full Getting Started tutorial →](documentation/tutorials/01-get-started.md)**
 
 ## Installation
 
@@ -375,27 +375,27 @@ Full documentation is available on [HexDocs](https://hexdocs.pm/ash_baml).
 
 ### Tutorials
 
-- [Get Started](https://hexdocs.pm/ash_baml/01-get-started.html) - Your first BAML function call
-- [Structured Output](https://hexdocs.pm/ash_baml/02-structured-output.html) - Working with complex types
-- [Tool Calling](https://hexdocs.pm/ash_baml/03-tool-calling.html) - LLM-driven tool selection
-- [Building an Agent](https://hexdocs.pm/ash_baml/04-building-an-agent.html) - Multi-step autonomous agents
+- [Get Started](documentation/tutorials/01-get-started.md) - Your first BAML function call
+- [Structured Output](documentation/tutorials/02-structured-output.md) - Working with complex types
+- [Tool Calling](documentation/tutorials/03-tool-calling.md) - LLM-driven tool selection
+- [Building an Agent](documentation/tutorials/04-building-an-agent.md) - Multi-step autonomous agents
 
 ### Topics
 
-- [Why AshBaml?](https://hexdocs.pm/ash_baml/why-ash-baml.html) - Philosophy and benefits
-- [Type Generation](https://hexdocs.pm/ash_baml/type-generation.html) - BAML to Ash type mapping
-- [Actions](https://hexdocs.pm/ash_baml/actions.html) - Understanding action generation
-- [Telemetry](https://hexdocs.pm/ash_baml/telemetry.html) - Monitoring and observability
-- [Patterns](https://hexdocs.pm/ash_baml/patterns.html) - Common patterns and best practices
+- [Why AshBaml?](documentation/topics/why-ash-baml.md) - Philosophy and benefits
+- [Type Generation](documentation/topics/type-generation.md) - BAML to Ash type mapping
+- [Actions](documentation/topics/actions.md) - Understanding action generation
+- [Telemetry](documentation/topics/telemetry.md) - Monitoring and observability
+- [Patterns](documentation/topics/patterns.md) - Common patterns and best practices
 
 ### How-to Guides
 
-- [Call BAML Functions](https://hexdocs.pm/ash_baml/call-baml-function.html)
-- [Implement Tool Calling](https://hexdocs.pm/ash_baml/implement-tool-calling.html)
-- [Add Streaming](https://hexdocs.pm/ash_baml/add-streaming.html)
-- [Configure Telemetry](https://hexdocs.pm/ash_baml/configure-telemetry.html)
-- [Build Agentic Loop](https://hexdocs.pm/ash_baml/build-agentic-loop.html)
-- [Customize Actions](https://hexdocs.pm/ash_baml/customize-actions.html)
+- [Call BAML Functions](documentation/how-to/call-baml-function.md)
+- [Implement Tool Calling](documentation/how-to/implement-tool-calling.md)
+- [Add Streaming](documentation/how-to/add-streaming.md)
+- [Configure Telemetry](documentation/how-to/configure-telemetry.md)
+- [Build Agentic Loop](documentation/how-to/build-agentic-loop.md)
+- [Customize Actions](documentation/how-to/customize-actions.md)
 
 ## Contributing
 
