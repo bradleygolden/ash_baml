@@ -10,18 +10,18 @@ client<llm> LocalQwen3 {
 }
 
 // Cloud provider clients (commented out - using local model)
-// client<llm> GPT4 {
+// client<llm> GPT5 {
 //   provider openai
 //   options {
-//     model gpt-4
+//     model gpt-5
 //     api_key env.OPENAI_API_KEY
 //   }
 // }
 
-// client<llm> GPT4Turbo {
+// client<llm> GPT5Mini {
 //   provider openai
 //   options {
-//     model gpt-4-turbo-preview
+//     model gpt-5-mini
 //     api_key env.OPENAI_API_KEY
 //   }
 // }
@@ -29,7 +29,7 @@ client<llm> LocalQwen3 {
 // client<llm> Claude {
 //   provider anthropic
 //   options {
-//     model claude-3-5-sonnet-20241022
+//     model claude-4-5-sonnet
 //     api_key env.ANTHROPIC_API_KEY
 //   }
 // }

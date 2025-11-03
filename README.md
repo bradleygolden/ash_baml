@@ -32,7 +32,7 @@ config :ash_baml,
 
 # 3. Define a BAML function in baml_src/functions.baml
 function ExtractUser(text: string) -> User {
-  client GPT4Turbo
+  client GPT5
   prompt #"Extract user information from: {{ text }}"#
 }
 

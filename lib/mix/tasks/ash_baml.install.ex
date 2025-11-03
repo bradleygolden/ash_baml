@@ -190,18 +190,18 @@ defmodule Mix.Tasks.AshBaml.Install do
     // Configure your LLM clients here
     // See: https://docs.boundaryml.com/docs/snippets/clients
 
-    client<llm> GPT4 {
+    client<llm> GPT5 {
       provider openai
       options {
-        model gpt-4
+        model gpt-5
         api_key env.OPENAI_API_KEY
       }
     }
 
-    client<llm> GPT4Turbo {
+    client<llm> GPT5Mini {
       provider openai
       options {
-        model gpt-4-turbo-preview
+        model gpt-5-mini
         api_key env.OPENAI_API_KEY
       }
     }
@@ -209,7 +209,7 @@ defmodule Mix.Tasks.AshBaml.Install do
     client<llm> Claude {
       provider anthropic
       options {
-        model claude-3-5-sonnet-20241022
+        model claude-4-5-sonnet
         api_key env.ANTHROPIC_API_KEY
       }
     }
@@ -226,7 +226,7 @@ defmodule Mix.Tasks.AshBaml.Install do
     // Delete this file and create your own functions
 
     function ExtractUser(text: string) -> User {
-      client GPT4Turbo
+      client GPT5Mini
       prompt #"
         Extract user information from the following text:
 
