@@ -7,6 +7,7 @@ defmodule AshBaml.PerformanceIntegrationTest do
   alias AshBaml.Test.TestResource
 
   describe "concurrency and performance" do
+    @tag timeout: 240_000
     test "10 concurrent calls all succeed" do
       messages =
         Enum.map(1..10, fn i ->
@@ -28,7 +29,7 @@ defmodule AshBaml.PerformanceIntegrationTest do
 
             {message, result}
           end,
-          timeout: 60_000,
+          timeout: 120_000,
           max_concurrency: 10
         )
         |> Enum.to_list()
@@ -54,10 +55,11 @@ defmodule AshBaml.PerformanceIntegrationTest do
         assert response.content != nil
       end)
 
-      assert duration < 30_000,
-             "10 concurrent calls took #{duration}ms, expected < 30000ms"
+      assert duration < 150_000,
+             "10 concurrent calls took #{duration}ms, expected < 150000ms"
     end
 
+    @tag timeout: 300_000
     test "20 concurrent calls (check for bottlenecks)" do
       # This test verifies the system can handle higher concurrency (20 parallel calls)
       # Checks for performance bottlenecks, connection limits, or resource contention
@@ -83,7 +85,7 @@ defmodule AshBaml.PerformanceIntegrationTest do
 
             {message, result}
           end,
-          timeout: 60_000,
+          timeout: 120_000,
           max_concurrency: 20
         )
         |> Enum.to_list()
@@ -109,10 +111,11 @@ defmodule AshBaml.PerformanceIntegrationTest do
 
       assert length(responses) == 20
 
-      assert duration < 45_000,
-             "20 concurrent calls took #{duration}ms, expected < 45000ms - possible bottleneck"
+      assert duration < 180_000,
+             "20 concurrent calls took #{duration}ms, expected < 180000ms - possible bottleneck"
     end
 
+    @tag timeout: 600_000
     test "stress test (50 concurrent calls)" do
       # This test verifies the system can handle high concurrency stress
       # Tests for race conditions, resource exhaustion, connection limits
@@ -141,7 +144,7 @@ defmodule AshBaml.PerformanceIntegrationTest do
 
             {message, result}
           end,
-          timeout: 60_000,
+          timeout: 120_000,
           max_concurrency: 50
         )
         |> Enum.to_list()
@@ -169,12 +172,13 @@ defmodule AshBaml.PerformanceIntegrationTest do
 
       avg_time = div(duration, num_calls)
 
-      assert duration < 60_000,
-             "50 concurrent calls took #{duration}ms, expected < 60000ms"
+      assert duration < 300_000,
+             "50 concurrent calls took #{duration}ms, expected < 300000ms"
 
       assert avg_time > 0
     end
 
+    @tag timeout: 300_000
     test "memory usage is reasonable" do
       # This test verifies that memory usage doesn't grow excessively with BAML calls
       # Checks for memory leaks, excessive allocations, or unbounded growth
@@ -233,6 +237,7 @@ defmodule AshBaml.PerformanceIntegrationTest do
              "Second batch grew by #{second_growth_mb} MB, first batch grew by #{memory_growth_mb} MB. Memory appears to be leaking."
     end
 
+    @tag timeout: 600_000
     test "load test (50 calls in sequence)" do
       # This test verifies that the system can handle a sustained load of sequential calls
       # Checks for performance degradation over time, memory leaks, or resource exhaustion

@@ -124,6 +124,17 @@ defmodule MyApp.BamlClient.Types.Reply do
 end
 ```
 
+## Configure BAML Client
+
+Add client configuration to `config/config.exs`:
+
+```elixir
+config :ash_baml,
+  clients: [
+    default: {MyApp.BamlClient, baml_src: "baml_src"}
+  ]
+```
+
 ## Create Your First AI-Powered Resource
 
 Create `lib/my_app/assistant.ex`:
@@ -135,7 +146,7 @@ defmodule MyApp.Assistant do
     extensions: [AshBaml.Resource]
 
   baml do
-    client_module MyApp.BamlClient
+    client :default
     import_functions [:SayHello]
   end
 

@@ -70,6 +70,7 @@ files_changed: [N]
 - [ ] consistency-checker
 - [ ] documentation-completeness-checker
 - [ ] dead-code-detector
+- [ ] example-app-validator (advisory)
 
 ## Per-File Diff Analysis
 
@@ -91,9 +92,10 @@ files_changed: [N]
 
 1. Automated checks (parallel)
 2. Codebase-wide agents (parallel)
-3. Per-file lib analysis (sequential)
-4. Per-file test analysis (sequential)
-5. Generate report
+3. Example application validation
+4. Per-file lib analysis (sequential)
+5. Per-file test analysis (sequential)
+6. Generate report
 ```
 
 **2.3 Setup TodoWrite**
@@ -102,10 +104,11 @@ files_changed: [N]
 1. [completed] Generate QA plan
 2. [in_progress] Run automated quality checks
 3. [pending] Run codebase-wide analysis
-4. [pending] Analyze changed lib files
-5. [pending] Analyze changed test files
-6. [pending] Generate QA report
-7. [pending] Offer fix plan if needed
+4. [pending] Validate example applications
+5. [pending] Analyze changed lib files
+6. [pending] Analyze changed test files
+7. [pending] Generate QA report
+8. [pending] Offer fix plan if needed
 ```
 
 ### Step 3: Run Automated Quality Checks
@@ -145,6 +148,22 @@ Task(subagent_type="dead-code-detector",
 ```
 
 Wait for all agents to complete.
+
+Mark step complete in TodoWrite.
+
+### Step 4.5: Validate Example Applications
+
+Launch example-app-validator agent to ensure example applications stay synchronized with library changes:
+
+```
+Task(subagent_type="example-app-validator",
+     description="Validate example apps",
+     prompt="Validate all example applications in the examples/ directory. For each example: 1) Verify dependencies and compilation, 2) Run test scripts with real local LLM calls, 3) Check API alignment with library changes (comparing main...HEAD), 4) Report findings with file:line references. Examples are advisory - failures don't block QA.")
+```
+
+Wait for agent to complete.
+
+**Interpretation**: Example validation is **advisory only**. Issues are reported but don't change overall QA status from PASS to FAIL. Flag critical breaks (compilation failures) vs warnings (API updates needed).
 
 Mark step complete in TodoWrite.
 
@@ -303,6 +322,12 @@ Status: [PASS/FAIL]
 
 ### Dead Code Detection
 [Findings from dead-code-detector]
+
+### Example Applications Validation (Advisory)
+
+[Findings from example-app-validator]
+
+**Note**: Example validation is advisory only. Issues reported here don't affect overall QA status but indicate examples may need updates.
 
 ## Per-File Analysis Results
 

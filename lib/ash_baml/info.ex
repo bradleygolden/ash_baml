@@ -11,10 +11,92 @@ defmodule AshBaml.Info do
   alias Spark.Dsl.Extension
 
   @doc """
-  Returns the configured BAML client module for a resource.
+  Returns the client identifier atom if using config-driven clients.
+
+  Returns `nil` if using explicit `client_module`.
+
+  ## Example
+
+      iex> AshBaml.Info.baml_client_identifier(MyApp.ChatResource)
+      :support
+  """
+  @spec baml_client_identifier(Spark.Dsl.t() | map()) :: atom() | nil
+  def baml_client_identifier(resource) do
+    Extension.get_opt(resource, [:baml], :client, nil)
+  end
+
+  @doc """
+  Returns the BAML client module for a resource.
+
+  Resolves from either:
+  - Explicit `client_module` option (legacy)
+  - `client` identifier via application config (recommended)
+
+  ## Example
+
+      iex> AshBaml.Info.baml_client_module(MyApp.ChatResource)
+      MyApp.BamlClients.Support
   """
   def baml_client_module(resource) do
-    Extension.get_opt(resource, [:baml], :client_module, nil)
+    case Extension.get_opt(resource, [:baml], :client_module, nil) do
+      nil ->
+        case baml_client_identifier(resource) do
+          nil -> nil
+          identifier -> resolve_client_module(identifier)
+        end
+
+      module ->
+        module
+    end
+  end
+
+  @doc """
+  Resolves a client identifier to its configured module name.
+
+  Reads from application config:
+
+      config :ash_baml,
+        clients: [
+          support: {MyApp.BamlClients.Support, baml_src: "..."}
+        ]
+
+  ## Example
+
+      iex> AshBaml.Info.resolve_client_module(:support)
+      MyApp.BamlClients.Support
+  """
+  @spec resolve_client_module(atom()) :: module() | nil
+  def resolve_client_module(identifier) do
+    clients = Application.get_env(:ash_baml, :clients, [])
+
+    case Keyword.get(clients, identifier) do
+      {module, _opts} -> module
+      _ -> nil
+    end
+  end
+
+  @doc """
+  Gets the baml_src path for a client identifier from config.
+
+  ## Example
+
+      iex> AshBaml.Info.client_baml_src(:support)
+      "baml_src/support"
+  """
+  @spec client_baml_src(atom()) :: String.t() | nil
+  def client_baml_src(identifier) do
+    clients = Application.get_env(:ash_baml, :clients, [])
+
+    case Keyword.get(clients, identifier) do
+      {_module, opts} ->
+        case Keyword.fetch(opts, :baml_src) do
+          {:ok, path} -> path
+          :error -> nil
+        end
+
+      _ ->
+        nil
+    end
   end
 
   @doc """

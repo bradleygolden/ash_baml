@@ -92,7 +92,7 @@ defmodule AshBaml.FunctionIntrospector do
       {:class, class_name} ->
         type_module = Module.concat(types_module, class_name)
 
-        if Code.ensure_loaded?(type_module) do
+        if module_exists_or_will_compile?(type_module) do
           {:ok, type_module}
         else
           {:error, type_not_generated_error(client_module, class_name, type_module)}
@@ -101,7 +101,7 @@ defmodule AshBaml.FunctionIntrospector do
       {:list, {:class, class_name}} ->
         type_module = Module.concat(types_module, class_name)
 
-        if Code.ensure_loaded?(type_module) do
+        if module_exists_or_will_compile?(type_module) do
           {:ok, {:array, type_module}}
         else
           {:error, type_not_generated_error(client_module, class_name, type_module)}
@@ -132,6 +132,31 @@ defmodule AshBaml.FunctionIntrospector do
   end
 
   # Private helpers
+
+  defp module_exists_or_will_compile?(module) do
+    Code.ensure_loaded?(module) || module_file_exists?(module)
+  end
+
+  defp module_file_exists?(module) do
+    source_paths =
+      if Code.ensure_loaded?(Mix.Project) do
+        Mix.Project.config()[:source_paths] || ["lib"]
+      else
+        ["lib"]
+      end
+
+    relative_path =
+      module
+      |> Module.split()
+      |> Enum.map(&Macro.underscore/1)
+      |> Path.join()
+      |> then(&"#{&1}.ex")
+
+    Enum.any?(source_paths, fn source_path ->
+      Path.join(source_path, relative_path)
+      |> File.exists?()
+    end)
+  end
 
   defp baml_type_to_ash_type({:primitive, :string}), do: :string
   defp baml_type_to_ash_type({:primitive, :int}), do: :integer

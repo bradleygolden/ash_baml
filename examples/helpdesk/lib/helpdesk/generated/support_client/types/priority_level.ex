@@ -1,8 +1,8 @@
-defmodule TodoApp.BamlClient.Types.Priority do
+defmodule Helpdesk.Generated.SupportClient.Types.PriorityLevel do
   use Ash.Type.Enum, values: [:low, :medium, :high, :urgent]
 
   @moduledoc """
-  Generated from BAML enum: Priority
+  Generated from BAML enum: PriorityLevel
   Source: baml_src/...
 
   ## Values

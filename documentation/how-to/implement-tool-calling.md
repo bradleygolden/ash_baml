@@ -76,7 +76,7 @@ defmodule MyApp.Assistant do
   alias MyApp.BamlClient.Types
 
   baml do
-    client_module MyApp.BamlClient
+    client :default
   end
 
   actions do

@@ -23,7 +23,7 @@ defmodule MyApp.Generator do
     extensions: [AshBaml.Resource]
 
   baml do
-    client_module MyApp.BamlClient
+    client :default
     import_functions [:GenerateStory]
   end
 

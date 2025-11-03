@@ -24,9 +24,15 @@ def deps do
   ]
 end
 
-# 2. Define a BAML function in baml_src/functions.baml
+# 2. Configure your BAML client in config/config.exs
+config :ash_baml,
+  clients: [
+    default: {MyApp.BamlClient, baml_src: "baml_src"}
+  ]
+
+# 3. Define a BAML function in baml_src/functions.baml
 function ExtractUser(text: string) -> User {
-  client GPT4
+  client GPT4Turbo
   prompt #"Extract user information from: {{ text }}"#
 }
 
@@ -35,21 +41,21 @@ class User {
   email string
 }
 
-# 3. Generate types
+# 4. Generate types
 $ mix ash_baml.gen.types MyApp.BamlClient
 
-# 4. Create an Ash resource
+# 5. Create an Ash resource
 defmodule MyApp.Extractor do
   use Ash.Resource,
     extensions: [AshBaml.Resource]
 
   baml do
-    client_module MyApp.BamlClient
+    client :default
     import_functions [:ExtractUser]
   end
 end
 
-# 5. Use it!
+# 6. Use it!
 {:ok, user} = MyApp.Extractor
   |> Ash.ActionInput.for_action(:extract_user, %{text: "Alice alice@example.com"})
   |> Ash.run_action()
@@ -67,6 +73,31 @@ def deps do
     {:ash_baml, "~> 0.1.0"}
   ]
 end
+```
+
+Then configure your BAML client in `config/config.exs`:
+
+```elixir
+config :ash_baml,
+  clients: [
+    default: {MyApp.BamlClient, baml_src: "baml_src"}
+  ]
+```
+
+This config-driven approach:
+- Auto-generates the client module at compile time
+- Keeps all client configuration in one place
+- Allows multiple resources to share clients
+- Supports environment-specific overrides
+
+You can also use the installer for quick setup:
+
+```bash
+# Recommended: config-driven client
+mix ash_baml.install --client default
+
+# Alternative: manual client module
+mix ash_baml.install --module MyApp.BamlClient
 ```
 
 ## Features
@@ -127,7 +158,7 @@ defmodule MyApp.Assistant do
     extensions: [AshBaml.Resource]
 
   baml do
-    client_module MyApp.BamlClient
+    client :default
   end
 
   actions do
@@ -191,7 +222,7 @@ defmodule MyApp.ChatResource do
     extensions: [AshBaml.Resource]
 
   baml do
-    client_module MyApp.BamlClient
+    client :default
     import_functions [:ChatAgent, :ExtractTasks]
   end
 
@@ -235,7 +266,7 @@ defmodule MyApp.ChatResource do
     extensions: [AshBaml.Resource]
 
   baml do
-    client_module MyApp.BamlClient
+    client :default
   end
 
   actions do
@@ -268,7 +299,7 @@ defmodule MyApp.AssistantResource do
     extensions: [AshBaml.Resource]
 
   baml do
-    client_module MyApp.BamlClient
+    client :default
   end
 
   actions do
