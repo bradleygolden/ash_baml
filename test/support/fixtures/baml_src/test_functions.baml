@@ -1,11 +1,3 @@
-client<llm> TestClient {
-  provider "openai-generic"
-  options {
-    base_url "http://localhost:11434/v1"
-    model "qwen3:1.7b"
-  }
-}
-
 class Reply {
   content string
   confidence float
