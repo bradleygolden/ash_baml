@@ -292,8 +292,8 @@ defmodule AshBaml.TelemetryIntegrationTest do
       assert is_binary(metadata.model_name),
              "Model name should be a string"
 
-      assert String.contains?(metadata.model_name, "gpt-4o-mini"),
-             "Expected model name to contain 'gpt-4o-mini', got: #{metadata.model_name}"
+      assert String.contains?(metadata.model_name, "qwen3"),
+             "Expected model name to contain 'qwen3', got: #{metadata.model_name}"
 
       :telemetry.detach(handler_id)
     end
@@ -610,7 +610,7 @@ defmodule AshBaml.TelemetryIntegrationTest do
 
       assert Map.has_key?(stop_metadata, :model_name), "Stop metadata missing :model_name"
       assert is_binary(stop_metadata.model_name)
-      assert String.contains?(stop_metadata.model_name, "gpt-4o-mini")
+      assert String.contains?(stop_metadata.model_name, "qwen3")
 
       assert start_metadata.resource == stop_metadata.resource,
              "Resource should match between start and stop"
