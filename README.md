@@ -29,7 +29,7 @@ You implement the agentic loop. You control state, termination, and error handli
 # 1. Add to mix.exs
 def deps do
   [
-    {:ash_baml, "~> 0.1.0"}
+    {:ash_baml, github: "bradleygolden/ash_baml"}
   ]
 end
 
@@ -74,12 +74,14 @@ end
 
 ## Installation
 
+> **Note**: AshBaml is not yet published to Hex. Use the GitHub repository as a dependency.
+
 Add `ash_baml` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
   [
-    {:ash_baml, "~> 0.1.0"}
+    {:ash_baml, github: "bradleygolden/ash_baml"}
   ]
 end
 ```
@@ -108,6 +110,77 @@ mix ash_baml.install --client default
 # Alternative: manual client module
 mix ash_baml.install --module MyApp.BamlClient
 ```
+
+### Building from Source (Custom baml_elixir Fork)
+
+This project uses a forked version of `baml_elixir` ([bradleygolden/baml_elixir](https://github.com/bradleygolden/baml_elixir)) with custom Rust NIF enhancements. To use this fork, you'll need to build the Rust NIF from source.
+
+#### Prerequisites
+
+- Rust and Cargo installed (typically via [rustup](https://rustup.rs/))
+- Rust toolchain accessible in your PATH (usually `~/.cargo/bin/`)
+
+#### Configuration
+
+1. **Add required dependencies to `mix.exs`:**
+
+```elixir
+defp deps do
+  [
+    {:ash_baml, github: "bradleygolden/ash_baml"},
+    {:rustler, "~> 0.0", runtime: false}
+  ]
+end
+```
+
+The `baml_elixir` fork is already configured in `ash_baml`'s dependencies, but you need to add Rustler to enable building from source.
+
+2. **Configure Rustler to build from source in `config/config.exs`:**
+
+```elixir
+import Config
+
+# Force build baml_elixir from source to use the custom fork
+config :rustler_precompiled, :force_build, baml_elixir: true
+```
+
+3. **Install and compile:**
+
+```bash
+# Fetch dependencies
+mix deps.get
+
+# Compile the project (this will build the Rust NIF)
+export PATH="$HOME/.cargo/bin:$PATH"
+mix compile
+```
+
+The first compilation will take several minutes as it builds the Rust NIF and all BAML dependencies. Subsequent compilations will be much faster.
+
+#### Troubleshooting
+
+If you encounter compilation errors:
+
+1. **Verify Cargo is installed:**
+   ```bash
+   cargo --version
+   ```
+
+2. **Clean and rebuild:**
+   ```bash
+   mix deps.clean baml_elixir
+   export PATH="$HOME/.cargo/bin:$PATH"
+   mix deps.get
+   mix compile
+   ```
+
+3. **Check git submodules** (if building the dependency directly):
+   ```bash
+   cd deps/baml_elixir
+   git submodule update --init --recursive
+   ```
+
+The compiled NIF library will be located at `_build/dev/lib/baml_elixir/native/baml_elixir/release/libbaml_elixir.dylib` (or `.so` on Linux).
 
 ## Features
 
@@ -459,6 +532,17 @@ No code changes needed. The same SAP algorithm works everywhere.
 **Choose ash_baml** for custom agentic loops and higher function calling accuracy.
 
 See [full comparison](documentation/topics/why-ash-baml.md#comparison-ash_baml-vs-elixir-alternatives) for detailed analysis.
+
+## Deployment
+
+Deploying applications that use the custom baml_elixir fork requires building Rust NIFs during deployment. See the **[Deployment Guide](DEPLOYMENT.md)** for detailed instructions including:
+
+- Complete Dockerfile example with multi-stage builds
+- Build optimization strategies (layer caching, BuildKit)
+- Troubleshooting common issues
+- Production checklist and security considerations
+
+**Quick summary**: Use Docker with Rust installed in the build stage, compile the NIF and application, then copy the compiled release to a minimal runtime image without build tools.
 
 ## Documentation
 
