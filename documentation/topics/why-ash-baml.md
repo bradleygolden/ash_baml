@@ -278,7 +278,7 @@ A fundamental difference between ash_baml and alternatives is **who controls the
 
 **LangChain/ash_ai**: Provide pre-built agentic loops (`:while_needs_response`, `:until_success`) that automatically handle tool calling iterations. Convenient for standard patterns, but opinionated about control flow.
 
-**req_llm**: Provides only HTTP-level primitives with no loop orchestration (though third-party frameworks like `req_llm_chain` add opinionated loops).
+**req_llm**: Provides only HTTP-level primitives with no loop orchestration.
 
 See [Building an Agent](../tutorials/04-building-an-agent.md) for ash_baml's approach to custom agentic loops.
 
