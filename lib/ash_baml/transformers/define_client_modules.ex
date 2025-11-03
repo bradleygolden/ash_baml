@@ -26,7 +26,7 @@ defmodule AshBaml.Transformers.DefineClientModules do
   Generated module:
 
       defmodule MyApp.BamlClients.Support do
-        use BamlElixir.Client, baml_src: "baml_src/support"
+        use BamlElixir.Client, path: "baml_src/support"
       end
 
   The module is created during compilation and available to subsequent
@@ -190,11 +190,14 @@ defmodule AshBaml.Transformers.DefineClientModules do
 
       e ->
         {:error, "Failed to create BAML client module #{inspect(module_name)}: #{inspect(e)}"}
+    after
+      unmark_creating(creation_key)
     end
   end
 
   defp handle_compile_error(error, module_name) do
-    if String.contains?(error.description, "cannot compile module") and
+    if (String.contains?(error.description, "cannot compile module") or
+          String.contains?(error.description, "cannot define module")) and
          String.contains?(error.description, "currently being defined") do
       :ok
     else
@@ -208,6 +211,10 @@ defmodule AshBaml.Transformers.DefineClientModules do
 
   defp mark_creating(key) do
     :persistent_term.put(key, true)
+  end
+
+  defp unmark_creating(key) do
+    :persistent_term.erase(key)
   end
 
   defp client_not_configured_error(identifier, available_clients) do

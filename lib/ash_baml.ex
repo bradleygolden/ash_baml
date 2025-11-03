@@ -35,7 +35,7 @@ defmodule AshBaml do
   You can still manually create client modules:
 
       defmodule MyApp.BamlClient do
-        use BamlElixir.Client, baml_src: "baml_src"
+        use BamlElixir.Client, path: "baml_src"
       end
 
       # In resource
