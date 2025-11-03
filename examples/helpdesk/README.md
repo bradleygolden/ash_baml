@@ -40,7 +40,7 @@ See `baml_src/helpdesk.baml` for helpdesk-specific BAML functions:
 
 ```baml
 function CategorizeTicket(subject: string, description: string) -> TicketCategory {
-  client GPT4Turbo
+  client GPT5
   prompt #"
     Analyze the following support ticket and categorize it:
 
@@ -160,10 +160,18 @@ This auto-generates actions:
 Before running BAML functions, configure your LLM API keys in `baml_src/clients.baml`:
 
 ```baml
-client<llm> GPT4Turbo {
+client<llm> GPT5 {
   provider openai
   options {
-    model gpt-4-turbo-preview
+    model gpt-5
+    api_key env.OPENAI_API_KEY
+  }
+}
+
+client<llm> GPT5Mini {
+  provider openai
+  options {
+    model gpt-5-mini
     api_key env.OPENAI_API_KEY
   }
 }
@@ -171,7 +179,7 @@ client<llm> GPT4Turbo {
 client<llm> Claude {
   provider anthropic
   options {
-    model claude-3-5-sonnet-20241022
+    model claude-4-5-sonnet
     api_key env.ANTHROPIC_API_KEY
   }
 }

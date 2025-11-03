@@ -147,8 +147,8 @@ defmodule MyApp.CostTracker do
   require Logger
 
   @costs %{
-    "gpt-4" => %{prompt: 0.03, completion: 0.06},
-    "gpt-3.5-turbo" => %{prompt: 0.0015, completion: 0.002}
+    "gpt-5" => %{prompt: 0.003, completion: 0.012},
+    "gpt-5-mini" => %{prompt: 0.0002, completion: 0.0008}
   }
 
   def start_link(_) do
