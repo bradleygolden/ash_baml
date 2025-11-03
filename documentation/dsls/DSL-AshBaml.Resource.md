@@ -30,6 +30,69 @@ The `call_baml/1` helper macro is automatically available when using this extens
 ## baml
 Configure BAML client integration for this resource.
 
+#### Client Configuration
+
+**client** - Client identifier that references a client configured in application config.
+This is the recommended approach for defining BAML clients. Configure your clients in
+config and reference them by identifier:
+
+### config/config.exs
+config :ash_baml,
+clients: [
+support: {MyApp.BamlClients.Support, baml_src: "baml_src/support"},
+content: {MyApp.BamlClients.Content, baml_src: "baml_src/content"}
+]
+
+### In your resource
+baml do
+client :support
+import_functions [:AnalyzeTicket]
+end
+
+The client module will be automatically generated at compile time using the configured
+module name and baml_src path. Multiple resources can share the same client by using
+the same identifier.
+
+**client_module** - The module that uses `BamlElixir.Client` to define BAML functions.
+This is an alternative approach where you manually create a client module file. For most
+use cases, consider using `client` with config-based clients instead, which auto-generates
+the module and centralizes configuration.
+
+Either `client` or `client_module` must be provided, but not both.
+
+#### Importing Functions
+
+**import_functions** - List of BAML function names to import as Ash actions.
+For each function listed, two actions are automatically generated:
+
+1. Regular action: `:function_name` - Returns the complete result
+2. Streaming action: `:function_name_stream` - Returns a Stream
+
+The function names must match BAML function definitions, and their return types must have
+corresponding generated types in `ClientModule.Types`.
+
+Example:
+
+baml do
+client :support
+import_functions [:ExtractTasks, :SummarizeTasks]
+end
+
+This generates 4 actions:
+- `:extract_tasks` - Regular action
+- `:extract_tasks_stream` - Streaming action
+- `:summarize_tasks` - Regular action
+- `:summarize_tasks_stream` - Streaming action
+
+Before importing functions, you must:
+
+1. Define BAML functions in your `baml_src/` directory
+2. Run `mix ash_baml.gen.types YourClient` to generate types
+3. Ensure types exist in `YourClient.Types` namespace
+
+The transformer will validate at compile-time that functions exist in the BAML client,
+return types have been generated, and argument types are valid.
+
 #### Example
 
 baml do
@@ -83,9 +146,9 @@ end
 
 | Name | Type | Default | Docs |
 |------|------|---------|------|
-| [`client`](#baml-client){: #baml-client } | `atom` |  | Client identifier that references a client configured in application config. This is the recommended approach for defining BAML clients. Configure your clients in config and reference them by identifier:     # config/config.exs     config :ash_baml,       clients: [         support: {MyApp.BamlClients.Support, baml_src: "baml_src/support"},         content: {MyApp.BamlClients.Content, baml_src: "baml_src/content"}       ]     # In your resource     baml do       client :support       import_functions [:AnalyzeTicket]     end The client module will be automatically generated at compile time using the configured module name and baml_src path. Multiple resources can share the same client by using the same identifier. Either `client` or `client_module` must be provided, but not both. |
-| [`client_module`](#baml-client_module){: #baml-client_module } | `atom` |  | The module that uses `BamlElixir.Client` to define BAML functions. This is an alternative approach where you manually create a client module file. For most use cases, consider using `client` with config-based clients instead, which auto-generates the module and centralizes configuration. Either `client` or `client_module` must be provided, but not both. |
-| [`import_functions`](#baml-import_functions){: #baml-import_functions } | `list(atom)` | `[]` | List of BAML function names to import as Ash actions. For each function listed, two actions are automatically generated: 1. Regular action: `:function_name` - Returns the complete result 2. Streaming action: `:function_name_stream` - Returns a Stream The function names must match BAML function definitions, and their return types must have corresponding generated types in `ClientModule.Types`. ## Example     baml do       client :support       import_functions [:ExtractTasks, :SummarizeTasks]     end This generates 4 actions: - `:extract_tasks` - Regular action - `:extract_tasks_stream` - Streaming action - `:summarize_tasks` - Regular action - `:summarize_tasks_stream` - Streaming action ## Requirements Before importing functions, you must: 1. Define BAML functions in your `baml_src/` directory 2. Run `mix ash_baml.gen.types YourClient` to generate types 3. Ensure types exist in `YourClient.Types` namespace The transformer will validate at compile-time that: - Functions exist in the BAML client - Return types have been generated - Argument types are valid |
+| [`client`](#baml-client){: #baml-client } | `atom` |  | Client identifier that references a client configured in application config |
+| [`client_module`](#baml-client_module){: #baml-client_module } | `atom` |  | The module that uses `BamlElixir.Client` to define BAML functions |
+| [`import_functions`](#baml-import_functions){: #baml-import_functions } | `list(atom)` | `[]` | List of BAML function names to import as Ash actions |
 
 
 ### baml.telemetry
@@ -93,6 +156,32 @@ Configure telemetry for BAML function calls.
 
 Telemetry is opt-in and disabled by default. When enabled, emits
 `:telemetry` events for observability into LLM interactions.
+
+#### Telemetry Options
+
+**enabled** - When `false`, no collectors are created and no telemetry events
+are emitted, resulting in zero overhead. Default: `false`
+
+**prefix** - Event name prefix for telemetry events. Events will be named
+`prefix ++ [:call, event_type]`. Default: `[:ash_baml]` which produces events like
+`[:ash_baml, :call, :start]`, `[:ash_baml, :call, :stop]`, `[:ash_baml, :call, :exception]`
+
+**events** - Which telemetry events to emit. Allowed values: `:start`, `:stop`, `:exception`.
+Default: `[:start, :stop, :exception]`
+
+**metadata** - Additional metadata fields to include in telemetry events.
+Safe fields (always included): `:resource`, `:action`, `:function_name`, `:collector_name`.
+Opt-in fields (must be explicitly listed): `:llm_client`, `:stream`.
+Default: `[]` (only safe fields included)
+
+**sample_rate** - Sampling rate for telemetry (0.0 - 1.0). Use lower rates for high-volume
+operations to reduce overhead. `1.0` = 100% of calls tracked, `0.1` = 10% of calls tracked,
+`0.0` = effectively disables telemetry. Default: `1.0`
+
+**collector_name** - Custom name for collectors. Can be a string like `"my-collector"` or
+a function that receives the input and returns a string like
+`fn input -> "#{input.resource}-#{input.action.name}" end`. If not provided, a unique name
+is generated: `"ResourceModule-FunctionName-unique_integer"`. Default: `nil` (auto-generated)
 
 #### Events Emitted
 
@@ -129,12 +218,12 @@ end
 
 | Name | Type | Default | Docs |
 |------|------|---------|------|
-| [`enabled`](#baml-telemetry-enabled){: #baml-telemetry-enabled } | `boolean` | `false` | Enable telemetry for BAML function calls. When `false`, no collectors are created and no telemetry events are emitted, resulting in zero overhead. Default: `false` |
-| [`prefix`](#baml-telemetry-prefix){: #baml-telemetry-prefix } | `list(atom)` | `[:ash_baml]` | Event name prefix for telemetry events. Events will be named `prefix ++ [:call, event_type]`. Default: `[:ash_baml]` (events: `[:ash_baml, :call, :start]`, etc.) |
-| [`events`](#baml-telemetry-events){: #baml-telemetry-events } | `list(:start \| :stop \| :exception)` | `[:start, :stop, :exception]` | Which telemetry events to emit. Allowed values: `:start`, `:stop`, `:exception` Default: `[:start, :stop, :exception]` |
-| [`metadata`](#baml-telemetry-metadata){: #baml-telemetry-metadata } | `list(atom)` | `[]` | Additional metadata fields to include in telemetry events. Safe fields (always included): - `:resource` - The Ash resource module - `:action` - The action name - `:function_name` - The BAML function name - `:collector_name` - The collector reference identifier Opt-in fields (must be explicitly listed): - `:llm_client` - The LLM client used - `:stream` - Whether this was a streaming call Default: `[]` (only safe fields included) |
-| [`sample_rate`](#baml-telemetry-sample_rate){: #baml-telemetry-sample_rate } | `float` | `1.0` | Sampling rate for telemetry (0.0 - 1.0). Use lower rates for high-volume operations to reduce overhead. - `1.0` = 100% of calls tracked - `0.1` = 10% of calls tracked - `0.0` = effectively disables telemetry Default: `1.0` |
-| [`collector_name`](#baml-telemetry-collector_name){: #baml-telemetry-collector_name } | `String.t \| (any -> any) \| nil` |  | Custom name for collectors. Can be: - A string: `"my-collector"` - A function that receives the input and returns a string:   `fn input -> "#{input.resource}-#{input.action.name}" end` If not provided, a unique name is generated: `"ResourceModule-FunctionName-unique_integer"` Default: `nil` (auto-generated) |
+| [`enabled`](#baml-telemetry-enabled){: #baml-telemetry-enabled } | `boolean` | `false` | Enable telemetry for BAML function calls |
+| [`prefix`](#baml-telemetry-prefix){: #baml-telemetry-prefix } | `list(atom)` | `[:ash_baml]` | Event name prefix for telemetry events |
+| [`events`](#baml-telemetry-events){: #baml-telemetry-events } | `list(:start \| :stop \| :exception)` | `[:start, :stop, :exception]` | Which telemetry events to emit |
+| [`metadata`](#baml-telemetry-metadata){: #baml-telemetry-metadata } | `list(atom)` | `[]` | Additional metadata fields to include in telemetry events |
+| [`sample_rate`](#baml-telemetry-sample_rate){: #baml-telemetry-sample_rate } | `float` | `1.0` | Sampling rate for telemetry (0.0 - 1.0) |
+| [`collector_name`](#baml-telemetry-collector_name){: #baml-telemetry-collector_name } | `String.t \| (any -> any) \| nil` |  | Custom name for collectors |
 
 
 
