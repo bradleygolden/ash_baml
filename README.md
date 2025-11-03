@@ -8,11 +8,20 @@ Ash integration for [BAML](https://docs.boundaryml.com) (Boundary ML) functions,
 
 ## What is AshBaml?
 
-AshBaml bridges two powerful frameworks:
-- **[Ash Framework](https://hexdocs.pm/ash)**: Resource-based Elixir application framework
-- **[BAML](https://docs.boundaryml.com)**: Type-safe prompt engineering with structured outputs
+**Production-ready AI agents with full control.**
 
-Together, they provide a declarative way to integrate LLMs into your Elixir applications with compile-time safety and runtime reliability.
+After shipping AI agents to production, a pattern became clear: pre-built agent frameworks sacrifice control for convenience. When agents fail, you need complete visibility into state, errors, and decisions. You need to apply standard software engineering practices to AI development—version control, testing, debugging, code review.
+
+AshBaml provides the most flexible foundation for production AI agents by combining:
+- **[Ash Framework](https://hexdocs.pm/ash)**: Composable actions and resources for custom orchestration
+- **[BAML](https://docs.boundaryml.com)**: Schema-first prompts with 91-94% accuracy (vs 57-87% for provider-native)
+
+**Why BAML?**
+- **45+ providers** and hundreds of models with native integration
+- **91-94% accuracy** via Schema-Aligned Parsing (proven on Berkeley benchmarks)
+- **2-4x faster** with 50-80% token reduction vs alternatives
+
+You implement the agentic loop. You control state, termination, and error handling. No magic—just typed primitives and explicit orchestration.
 
 ## Quick Start
 
@@ -368,6 +377,88 @@ case tool_call do
     |> Ash.run_action()
 end
 ```
+
+## Why ash_baml?
+
+### Schema-Aligned Parsing: 91-94% Accuracy
+
+ash_baml leverages **BAML's Schema-Aligned Parsing (SAP)** - a Rust-based algorithm achieving consistently high accuracy across all LLM providers.
+
+**Berkeley Function Calling Leaderboard Results (n=1,000):**
+
+| Model | Provider-Native | BAML SAP | Improvement |
+|-------|----------------|----------|-------------|
+| GPT-4o-mini | 19.8% | **92.4%** | +72.6% |
+| Claude-3-Haiku | 57.3% | **91.7%** | +34.4% |
+| GPT-4o | 87.4% | **93.0%** | +5.6% |
+| Claude-3.5-Sonnet | 78.1% | **94.4%** | +16.3% |
+| Llama-3.1-7b | N/A | **76.8%** | Works! |
+
+**SAP beats provider-native function calling even when native APIs are available.**
+
+### Custom Agentic Loop Control
+
+Unlike libraries with pre-built agent loops, ash_baml provides **typed BAML actions as composable primitives**. You implement orchestration using `Ash.Resource.Actions.Implementation`, giving full control over:
+
+- State management
+- Termination conditions
+- Error handling and recovery
+- Multi-agent coordination
+
+See [Building an Agent](documentation/tutorials/04-building-an-agent.md) for details.
+
+### True Provider Independence
+
+BAML doesn't abstract over provider-native APIs - it **bypasses them entirely** with SAP. Switch providers by changing configuration only:
+
+```baml
+// Works with OpenAI, Anthropic, Gemini, Ollama, 45+ providers
+function ExtractUser(text: string) -> User {
+  client MyClient  // Just change this reference
+  prompt #"Extract user information from: {{ text }}"#
+}
+```
+
+No code changes needed. The same SAP algorithm works everywhere.
+
+## Comparison with Elixir Alternatives
+
+### vs langchain
+
+| Aspect | langchain | ash_baml |
+|--------|-----------|----------|
+| Agent loops | Pre-built (`:while_needs_response`) | **Custom implementation** (full control) |
+| Function calling | Behavior abstraction (8+ providers) | **SAP** (91-94% accuracy, any provider) |
+| Framework | Standalone | **Ash Framework** |
+
+**Choose langchain** for quick agent setup with pre-built loops.
+**Choose ash_baml** for custom orchestration with higher accuracy.
+
+### vs req_llm
+
+| Aspect | req_llm | ash_baml |
+|--------|---------|----------|
+| Provider support | 45 providers, 665+ models | Any provider (SAP-based) |
+| Function calling | Provider-native (variable) | **SAP** (91-94% consistent) |
+| Cost tracking | **Automatic USD** | Manual (telemetry available) |
+| Framework | None (Req plugin) | **Ash Framework** |
+
+**Choose req_llm** for automatic cost tracking and production streaming.
+**Choose ash_baml** for higher accuracy and schema-first prompts.
+
+### vs ash_ai
+
+| Aspect | ash_ai | ash_baml |
+|--------|--------|----------|
+| Agent loops | Uses LangChain (pre-built) | **Custom implementation** (full control) |
+| Function calling | LangChain models (variable) | **SAP** (91-94% consistent) |
+| Vector search | ✅ PostgreSQL | ❌ |
+| MCP server | ✅ IDE integration | ❌ |
+
+**Choose ash_ai** for vector search, RAG, and MCP server integration.
+**Choose ash_baml** for custom agentic loops and higher function calling accuracy.
+
+See [full comparison](documentation/topics/why-ash-baml.md#comparison-ash_baml-vs-elixir-alternatives) for detailed analysis.
 
 ## Documentation
 
