@@ -139,6 +139,17 @@ defmodule Mix.Tasks.AshBaml.Install do
             )
 
           :error ->
+            IO.warn("""
+            Failed to add client configuration to config.exs automatically.
+
+            Please manually add the following to config/config.exs:
+
+                config :ash_baml,
+                  clients: [
+                    #{client_id}: {#{inspect(module_name)}, baml_src: "#{baml_path}"}
+                  ]
+            """)
+
             {:ok, zipper}
         end
       end

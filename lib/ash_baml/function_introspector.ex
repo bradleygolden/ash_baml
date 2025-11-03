@@ -138,7 +138,12 @@ defmodule AshBaml.FunctionIntrospector do
   end
 
   defp module_file_exists?(module) do
-    source_paths = Mix.Project.config()[:source_paths] || ["lib"]
+    source_paths =
+      if Code.ensure_loaded?(Mix.Project) do
+        Mix.Project.config()[:source_paths] || ["lib"]
+      else
+        ["lib"]
+      end
 
     relative_path =
       module

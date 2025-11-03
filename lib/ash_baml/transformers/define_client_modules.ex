@@ -37,6 +37,7 @@ defmodule AshBaml.Transformers.DefineClientModules do
   alias AshBaml.Info
   alias Spark.Dsl.Extension
   alias Spark.Dsl.Transformer
+  alias Spark.Error.DslError
 
   @doc """
   Must run BEFORE ImportBamlFunctions so generated modules are available.
@@ -108,7 +109,7 @@ defmodule AshBaml.Transformers.DefineClientModules do
 
           {:error, reason} ->
             {:error,
-             Spark.Error.DslError.exception(
+             DslError.exception(
                module: Transformer.get_persisted(dsl_state, :module),
                path: [:baml],
                message: reason
