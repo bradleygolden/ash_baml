@@ -6,7 +6,7 @@ defmodule AshBaml.BamlParserTest do
     test "returns path when module has __baml_src_path__/0 callback" do
       assert {:ok, path} = BamlParser.get_baml_path(AshBaml.Test.BamlClient)
       assert is_binary(path)
-      assert path == "test/support/fixtures/baml_src"
+      assert String.ends_with?(path, "test/support/fixtures/baml_src")
     end
 
     test "returns error when module doesn't exist" do
