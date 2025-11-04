@@ -1,8 +1,25 @@
 defmodule AshBaml.Actions.CallBamlFunctionTest do
   use ExUnit.Case, async: false
 
-  alias AshBaml.Test.CallBamlFunction.UnionResponse
-  alias AshBaml.Test.CallBamlFunction.SimpleResponse
+  defmodule UnionResponse do
+    @moduledoc false
+
+    use Ash.Resource, data_layer: :embedded
+
+    attributes do
+      attribute(:message, :string)
+    end
+  end
+
+  defmodule SimpleResponse do
+    @moduledoc false
+
+    use Ash.Resource, data_layer: :embedded
+
+    attributes do
+      attribute(:value, :string)
+    end
+  end
 
   describe "run/3" do
     test "returns error when function module not found" do
