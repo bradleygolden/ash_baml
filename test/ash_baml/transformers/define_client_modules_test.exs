@@ -249,5 +249,47 @@ defmodule AshBaml.Transformers.DefineClientModulesTest do
 
       :persistent_term.erase(creation_key)
     end
+
+    test "raises error when baml_src missing from config" do
+      unique_module =
+        Module.concat([AshBaml.Test, "MissingSrcClient#{System.unique_integer([:positive])}"])
+
+      Application.put_env(:ash_baml, :clients, missing_src: {unique_module, []})
+
+      error =
+        assert_raise RuntimeError, fn ->
+          defmodule MissingSrcResource do
+            use Ash.Resource, domain: nil, extensions: [AshBaml.Resource]
+
+            baml do
+              client(:missing_src)
+            end
+          end
+        end
+
+      assert error.message =~ ":baml_src"
+    end
+
+    test "handles invalid baml_src path gracefully" do
+      unique_module =
+        Module.concat([AshBaml.Test, "InvalidPathClient#{System.unique_integer([:positive])}"])
+
+      Application.put_env(:ash_baml, :clients,
+        invalid_path: {unique_module, baml_src: "nonexistent/path"}
+      )
+
+      error =
+        assert_raise Spark.Error.DslError, fn ->
+          defmodule InvalidPathResource do
+            use Ash.Resource, domain: nil, extensions: [AshBaml.Resource]
+
+            baml do
+              client(:invalid_path)
+            end
+          end
+        end
+
+      assert error.message =~ "Failed to create BAML client module"
+    end
   end
 end
