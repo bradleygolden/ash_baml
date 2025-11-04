@@ -9,6 +9,7 @@ defmodule AshBaml.MixProject do
       version: @version,
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
+      consolidate_protocols: Mix.env() != :test,
       deps: deps(),
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: dialyzer(),
