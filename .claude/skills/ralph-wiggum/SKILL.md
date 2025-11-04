@@ -14,6 +14,7 @@ allowed-tools:
 Run PROMPT.md in infinite loop. You monitor and decide when to stop.
 
 ## Start Ralph
+- Check for `practices/` directory and read relevant practice files to understand project conventions
 - Verify PROMPT.md exists at the root of the project (offer template if not)
 - Note user's goal for evaluation later
 - Run in background: `bash .claude/skills/ralph-wiggum/scripts/ralph.sh` with `run_in_background: true`

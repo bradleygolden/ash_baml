@@ -25,22 +25,5 @@ Steps:
 Note: The orchestrator (Claude Code) will monitor your progress and decide when to stop the loop based on evaluating whether the goal is achieved.
 
 Guidelines:
-  - Structure & Conventions:
-    - Follow naming: `<filename>_test.exs` in test/ matching lib/ structure
-    - Never use Process.sleep - causes flaky tests
-    - Focus on unit tests in test/ash_baml only
 
-  - Test Design:
-    - One behavior per test name
-    - Use pattern matching for assertions: `assert value = func()` not `assert value == func()`
-    - Group variations with for-comprehensions instead of separate tests
-    - Use setup for fixtures, not inline defmodules
-
-  - Avoid Redundancy:
-    - Don't test the same behavior multiple times
-    - Don't check preconditions that will fail anyway (e.g., `File.exists?` before `File.read!`)
-    - Consolidate multiple similar assertions with for-comprehensions
-
-  - Consistency:
-    - Be consistent within each test (all pattern match OR all string match)
-    - Assert on actual values, not types
+Read and follow the testing conventions in `practices/testing.md`.
