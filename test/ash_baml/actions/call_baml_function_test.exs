@@ -245,4 +245,97 @@ defmodule AshBaml.Actions.CallBamlFunctionTest do
       assert {:error, _} = result
     end
   end
+
+  describe "telemetry configuration" do
+    test "can disable telemetry for specific action" do
+      defmodule TelemetryClient do
+        defmodule TelemetryFn do
+          def call(_args, _opts \\ []), do: {:ok, %{result: "ok"}}
+        end
+      end
+
+      defmodule TelemetryResource do
+        use Ash.Resource,
+          domain: nil,
+          extensions: [AshBaml.Resource]
+
+        baml do
+          client_module(TelemetryClient)
+
+          telemetry do
+            enabled(true)
+          end
+        end
+
+        import AshBaml.Helpers
+
+        actions do
+          action :test, :map do
+            run(call_baml(:TelemetryFn, telemetry: false))
+          end
+        end
+      end
+
+      defmodule TelemetryDomain do
+        use Ash.Domain, validate_config_inclusion?: false
+
+        resources do
+          resource(TelemetryResource)
+        end
+      end
+
+      {:ok, result} =
+        TelemetryResource
+        |> Ash.ActionInput.for_action(:test, %{}, domain: TelemetryDomain)
+        |> Ash.run_action()
+
+      assert result == %{result: "ok"}
+    end
+
+    test "can override telemetry config for specific action" do
+      defmodule TelemetryOverrideClient do
+        defmodule OverrideFn do
+          def call(_args, _opts \\ []), do: {:ok, %{result: "ok"}}
+        end
+      end
+
+      defmodule TelemetryOverrideResource do
+        use Ash.Resource,
+          domain: nil,
+          extensions: [AshBaml.Resource]
+
+        baml do
+          client_module(TelemetryOverrideClient)
+
+          telemetry do
+            enabled(true)
+            sample_rate(1.0)
+          end
+        end
+
+        import AshBaml.Helpers
+
+        actions do
+          action :test, :map do
+            run(call_baml(:OverrideFn, telemetry: [sample_rate: 0.5]))
+          end
+        end
+      end
+
+      defmodule TelemetryOverrideDomain do
+        use Ash.Domain, validate_config_inclusion?: false
+
+        resources do
+          resource(TelemetryOverrideResource)
+        end
+      end
+
+      {:ok, result} =
+        TelemetryOverrideResource
+        |> Ash.ActionInput.for_action(:test, %{}, domain: TelemetryOverrideDomain)
+        |> Ash.run_action()
+
+      assert result == %{result: "ok"}
+    end
+  end
 end
