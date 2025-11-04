@@ -89,5 +89,159 @@ defmodule AshBaml.Actions.CallBamlFunctionTest do
 
       assert result == %{result: "success"}
     end
+
+    test "wraps result in union when action returns Ash.Type.Union" do
+      defmodule UnionResponse do
+        use Ash.Resource, data_layer: :embedded
+
+        attributes do
+          attribute(:message, :string)
+        end
+      end
+
+      defmodule UnionClient do
+        defmodule UnionFn do
+          def call(_args, _opts \\ []), do: {:ok, %UnionResponse{message: "test"}}
+        end
+      end
+
+      defmodule UnionResource do
+        use Ash.Resource,
+          domain: nil,
+          extensions: [AshBaml.Resource]
+
+        baml do
+          client_module(UnionClient)
+        end
+
+        import AshBaml.Helpers
+
+        actions do
+          action :test, Ash.Type.Union do
+            constraints(
+              types: [
+                success: [
+                  type: UnionResponse,
+                  tag: :type,
+                  tag_value: :success
+                ]
+              ]
+            )
+
+            run(call_baml(:UnionFn))
+          end
+        end
+      end
+
+      defmodule UnionDomain do
+        use Ash.Domain, validate_config_inclusion?: false
+
+        resources do
+          resource(UnionResource)
+        end
+      end
+
+      {:ok, result} =
+        UnionResource
+        |> Ash.ActionInput.for_action(:test, %{}, domain: UnionDomain)
+        |> Ash.run_action()
+
+      assert %Ash.Union{value: value} = result
+      assert value.__struct__ == UnionResponse
+      assert value.message == "test"
+    end
+
+    test "returns unwrapped result when action is not a union" do
+      defmodule SimpleResponse do
+        use Ash.Resource, data_layer: :embedded
+
+        attributes do
+          attribute(:value, :string)
+        end
+      end
+
+      defmodule SimpleClient do
+        defmodule SimpleFn do
+          def call(_args, _opts \\ []), do: {:ok, %SimpleResponse{value: "direct"}}
+        end
+      end
+
+      defmodule SimpleResource do
+        use Ash.Resource,
+          domain: nil,
+          extensions: [AshBaml.Resource]
+
+        baml do
+          client_module(SimpleClient)
+        end
+
+        import AshBaml.Helpers
+
+        actions do
+          action :test, SimpleResponse do
+            run(call_baml(:SimpleFn))
+          end
+        end
+      end
+
+      defmodule SimpleDomain do
+        use Ash.Domain, validate_config_inclusion?: false
+
+        resources do
+          resource(SimpleResource)
+        end
+      end
+
+      {:ok, result} =
+        SimpleResource
+        |> Ash.ActionInput.for_action(:test, %{}, domain: SimpleDomain)
+        |> Ash.run_action()
+
+      assert result.__struct__ == SimpleResponse
+      assert result.value == "direct"
+    end
+  end
+
+  describe "error handling" do
+    test "returns error when BAML function returns error" do
+      defmodule ErrorClient do
+        defmodule ErrorFn do
+          def call(_args, _opts \\ []), do: {:error, "BAML execution failed"}
+        end
+      end
+
+      defmodule ErrorActionResource do
+        use Ash.Resource,
+          domain: nil,
+          extensions: [AshBaml.Resource]
+
+        baml do
+          client_module(ErrorClient)
+        end
+
+        import AshBaml.Helpers
+
+        actions do
+          action :test, :map do
+            run(call_baml(:ErrorFn))
+          end
+        end
+      end
+
+      defmodule ErrorActionDomain do
+        use Ash.Domain, validate_config_inclusion?: false
+
+        resources do
+          resource(ErrorActionResource)
+        end
+      end
+
+      result =
+        ErrorActionResource
+        |> Ash.ActionInput.for_action(:test, %{}, domain: ErrorActionDomain)
+        |> Ash.run_action()
+
+      assert {:error, _} = result
+    end
   end
 end
