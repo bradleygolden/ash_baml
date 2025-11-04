@@ -9,11 +9,24 @@ defmodule AshBaml.BamlParserTest do
       assert String.ends_with?(path, "test/support/fixtures/baml_src")
     end
 
+    test "extracts path from source file when module exists but not compiled" do
+      assert {:ok, path} = BamlParser.get_baml_path(AshBaml.Test.BamlClient)
+      assert is_binary(path)
+      assert String.ends_with?(path, "baml_src")
+    end
+
     test "returns error when module doesn't exist" do
       assert {:error, message} = BamlParser.get_baml_path(NonExistent.Module)
       assert message =~ "does not implement __baml_src_path__/0"
       assert message =~ "For config-driven clients"
       assert message =~ "For explicit client modules"
+    end
+
+    test "provides helpful error message with module name" do
+      assert {:error, message} = BamlParser.get_baml_path(Some.Unknown.Module)
+      assert message =~ "Some.Unknown.Module"
+      assert message =~ "config :ash_baml"
+      assert message =~ "use BamlElixir.Client"
     end
   end
 
