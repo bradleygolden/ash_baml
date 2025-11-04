@@ -3,6 +3,13 @@ class Reply {
   confidence float
 }
 
+enum Priority {
+  Low
+  Medium
+  High
+  Urgent
+}
+
 function TestFunction(message: string) -> Reply {
   client TestClient
   prompt #"

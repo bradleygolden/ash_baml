@@ -7,6 +7,8 @@ defmodule AshBaml.Actions.CallBamlFunction do
   """
 
   use Ash.Resource.Actions.Implementation
+  require Logger
+  alias AshBaml.Actions.Shared
 
   @doc """
   Executes the BAML function call action.
@@ -26,14 +28,14 @@ defmodule AshBaml.Actions.CallBamlFunction do
     client_module = AshBaml.Info.baml_client_module(input.resource)
 
     if is_nil(client_module) do
-      {:error, "BAML client not configured for #{inspect(input.resource)}"}
+      Shared.build_client_not_configured_error(input.resource)
     else
       function_module = Module.concat(client_module, function_name)
 
       if Code.ensure_loaded?(function_module) do
         execute_baml_function(input, function_name, function_module, opts)
       else
-        build_module_not_found_error(
+        Shared.build_module_not_found_error(
           input.resource,
           function_name,
           client_module,
@@ -82,12 +84,7 @@ defmodule AshBaml.Actions.CallBamlFunction do
   end
 
   defp wrap_union_result(input, result) do
-    action_name =
-      case input.action do
-        %{name: name} -> name
-        name when is_atom(name) -> name
-        _ -> nil
-      end
+    action_name = Shared.get_action_name(input, nil)
 
     case action_name do
       nil ->
@@ -113,21 +110,5 @@ defmodule AshBaml.Actions.CallBamlFunction do
         type_name
       end
     end)
-  end
-
-  defp build_module_not_found_error(resource, function_name, client_module, function_module) do
-    {:error,
-     """
-     BAML function module not found: #{inspect(function_module)}
-
-     Resource: #{inspect(resource)}
-     Function: #{inspect(function_name)}
-     Client Module: #{inspect(client_module)}
-
-     Make sure:
-     1. You have a BAML file with a function named #{function_name}
-     2. Your client module (#{inspect(client_module)}) uses BamlElixir.Client
-     3. The client has successfully parsed your BAML files
-     """}
   end
 end

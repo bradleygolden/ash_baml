@@ -15,6 +15,13 @@ defmodule AshBaml.BamlParserTest do
       assert message =~ "For config-driven clients"
       assert message =~ "For explicit client modules"
     end
+
+    test "provides helpful error message with module name" do
+      assert {:error, message} = BamlParser.get_baml_path(Some.Unknown.Module)
+      assert message =~ "Some.Unknown.Module"
+      assert message =~ "config :ash_baml"
+      assert message =~ "use BamlElixir.Client"
+    end
   end
 
   describe "parse_schema/1" do

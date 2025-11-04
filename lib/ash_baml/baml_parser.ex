@@ -102,7 +102,10 @@ defmodule AshBaml.BamlParser do
            find_module_source(client_module),
          {:ok, source} <- File.read(module_source_path),
          [_, path] <-
-           Regex.run(~r/def\s+__baml_src_path__.*?Path\.join\([^,]+,\s*"([^"]+)"\)/s, source) do
+           Regex.run(
+             ~r/def\s+__baml_src_path__.*?Path\.(?:join|expand)\([^,)]*,?\s*"([^"]+)"\)/s,
+             source
+           ) do
       path
     else
       _ -> nil
@@ -111,10 +114,11 @@ defmodule AshBaml.BamlParser do
 
   defp find_module_source(module) do
     source_paths =
-      if Code.ensure_loaded?(Mix.Project) do
-        Mix.Project.config()[:source_paths] || ["lib"]
+      with true <- Code.ensure_loaded?(Mix.Project),
+           config <- Mix.Project.config() do
+        config[:source_paths] || ["lib"]
       else
-        ["lib"]
+        _ -> ["lib"]
       end
 
     relative_path =

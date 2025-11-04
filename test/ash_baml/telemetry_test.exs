@@ -272,6 +272,89 @@ defmodule AshBaml.TelemetryTest do
     test "omitted collector_name defaults to nil" do
       assert AshBaml.Info.baml_telemetry_collector_name(DefaultCollectorResource) == nil
     end
+
+    test "custom collector_name function is called with input" do
+      input = build_input()
+
+      collector_name_func = fn input ->
+        "custom-#{inspect(input.resource)}"
+      end
+
+      config = [enabled: true, collector_name: collector_name_func, events: [:start]]
+
+      Telemetry.with_telemetry(input, :TestFunction, config, fn _collector_opts ->
+        {:ok, :result}
+      end)
+
+      assert_receive {:telemetry_event, [:ash_baml, :call, :start], _, metadata}
+      assert metadata.collector_name =~ "#Ref<"
+    end
+
+    test "custom collector_name string is used" do
+      input = build_input()
+      config = [enabled: true, collector_name: "my-custom-collector", events: [:start]]
+
+      Telemetry.with_telemetry(input, :TestFunction, config, fn _collector_opts ->
+        {:ok, :result}
+      end)
+
+      assert_receive {:telemetry_event, [:ash_baml, :call, :start], _, metadata}
+      assert metadata.collector_name =~ "#Ref<"
+    end
+
+    test "sampling rate between 0 and 1 probabilistically samples" do
+      input = build_input()
+      config = [enabled: true, sample_rate: 0.5, events: [:start]]
+
+      sample_count =
+        Enum.count(1..100, fn _ ->
+          Telemetry.with_telemetry(input, :TestFunction, config, fn _collector_opts ->
+            {:ok, :result}
+          end)
+
+          receive do
+            {:telemetry_event, _, _, _} -> true
+          after
+            10 -> false
+          end
+        end)
+
+      assert sample_count > 10 and sample_count < 90
+    end
+
+    test "includes optional metadata when configured" do
+      input = %{
+        build_input()
+        | context: %{llm_client: "gpt-4", stream: true}
+      }
+
+      config = [enabled: true, events: [:start], metadata: [:llm_client, :stream]]
+
+      Telemetry.with_telemetry(input, :TestFunction, config, fn _collector_opts ->
+        {:ok, :result}
+      end)
+
+      assert_receive {:telemetry_event, [:ash_baml, :call, :start], _measurements, metadata}
+      assert metadata.llm_client == "gpt-4"
+      assert metadata.stream == true
+    end
+
+    test "filters optional metadata not in config" do
+      input = %{
+        build_input()
+        | context: %{llm_client: "gpt-4", stream: true}
+      }
+
+      config = [enabled: true, events: [:start], metadata: [:llm_client]]
+
+      Telemetry.with_telemetry(input, :TestFunction, config, fn _collector_opts ->
+        {:ok, :result}
+      end)
+
+      assert_receive {:telemetry_event, [:ash_baml, :call, :start], _measurements, metadata}
+      assert metadata.llm_client == "gpt-4"
+      refute Map.has_key?(metadata, :stream)
+    end
   end
 
   # Test helper to build input struct

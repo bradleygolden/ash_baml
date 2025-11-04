@@ -7,6 +7,7 @@ defmodule AshBaml.Actions.CallBamlStream do
   """
 
   use Ash.Resource.Actions.Implementation
+  alias AshBaml.Actions.Shared
 
   @default_stream_timeout 30_000
 
@@ -18,15 +19,25 @@ defmodule AshBaml.Actions.CallBamlStream do
   """
   @impl true
   def run(input, opts, _context) do
-    client_module = AshBaml.Info.baml_client_module(input.resource)
     function_name = Keyword.fetch!(opts, :function)
-    function_module = Module.concat(client_module, function_name)
+    client_module = AshBaml.Info.baml_client_module(input.resource)
 
-    if Code.ensure_loaded?(function_module) do
-      stream = create_stream(function_module, input.arguments)
-      {:ok, stream}
+    if is_nil(client_module) do
+      Shared.build_client_not_configured_error(input.resource)
     else
-      build_module_not_found_error(input.resource, function_name, client_module, function_module)
+      function_module = Module.concat(client_module, function_name)
+
+      if Code.ensure_loaded?(function_module) do
+        stream = create_stream(function_module, input.arguments)
+        {:ok, stream}
+      else
+        Shared.build_module_not_found_error(
+          input.resource,
+          function_name,
+          client_module,
+          function_module
+        )
+      end
     end
   end
 
@@ -100,7 +111,12 @@ defmodule AshBaml.Actions.CallBamlStream do
         {:halt, {ref, stream_pid, {:error, reason}}}
     after
       @default_stream_timeout ->
-        BamlElixir.Stream.cancel(stream_pid, :timeout)
+        try do
+          BamlElixir.Stream.cancel(stream_pid, :timeout)
+        rescue
+          ArgumentError ->
+            :ok
+        end
 
         {:halt,
          {ref, stream_pid,
@@ -131,15 +147,12 @@ defmodule AshBaml.Actions.CallBamlStream do
   # have exited and cancellation is unnecessary (and would fail).
   defp cleanup_stream({ref, stream_pid, status}) do
     if status == :streaming do
-      # Use catch_exit to handle the case where the process exits
-      # between our check and the cancel call (race condition)
       try do
         if Process.alive?(stream_pid) do
           BamlElixir.Stream.cancel(stream_pid, :consumer_stopped)
         end
-      catch
-        :exit, _ ->
-          # Process already exited, cancellation not needed
+      rescue
+        ArgumentError ->
           :ok
       end
     end
@@ -168,29 +181,8 @@ defmodule AshBaml.Actions.CallBamlStream do
   # We emit chunks as long as content has a value, since that's the primary field
   # being streamed. Fields are typically only known when parsing completes.
   defp valid_chunk?(chunk) when is_struct(chunk) do
-    content = Map.get(chunk, :content)
-
-    case content do
-      nil -> false
-      _ -> true
-    end
+    !is_nil(Map.get(chunk, :content))
   end
 
   defp valid_chunk?(_chunk), do: true
-
-  defp build_module_not_found_error(resource, function_name, client_module, function_module) do
-    {:error,
-     """
-     BAML function module not found: #{inspect(function_module)}
-
-     Resource: #{inspect(resource)}
-     Function: #{inspect(function_name)}
-     Client Module: #{inspect(client_module)}
-
-     Make sure:
-     1. You have a BAML file with a function named #{function_name}
-     2. Your client module (#{inspect(client_module)}) uses BamlElixir.Client
-     3. The client has successfully parsed your BAML files
-     """}
-  end
 end

@@ -1,5 +1,6 @@
 defmodule AshBaml.Telemetry do
   require Logger
+  alias AshBaml.Actions.Shared
 
   @moduledoc """
   Telemetry integration for AshBaml.
@@ -250,7 +251,7 @@ defmodule AshBaml.Telemetry do
     usage_result = BamlElixir.Collector.usage(collector)
 
     case usage_result do
-      %{"input_tokens" => input, "output_tokens" => output} when is_map(usage_result) ->
+      %{"input_tokens" => input, "output_tokens" => output} ->
         %{
           input_tokens: input || 0,
           output_tokens: output || 0,
@@ -288,7 +289,7 @@ defmodule AshBaml.Telemetry do
   defp build_metadata(input, function_name, collector, config) do
     base = %{
       resource: input.resource,
-      action: get_action_name(input),
+      action: Shared.get_action_name(input),
       function_name: to_string(function_name),
       collector_name: collector.reference |> :erlang.ref_to_list() |> to_string()
     }
@@ -296,14 +297,6 @@ defmodule AshBaml.Telemetry do
     additional = collect_optional_metadata(input, config)
 
     Map.merge(base, additional)
-  end
-
-  defp get_action_name(input) do
-    case input.action do
-      %{name: name} -> name
-      name when is_atom(name) -> name
-      _ -> :unknown
-    end
   end
 
   defp collect_optional_metadata(input, config) do
