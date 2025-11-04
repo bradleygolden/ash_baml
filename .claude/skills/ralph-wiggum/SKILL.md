@@ -21,6 +21,7 @@ Run PROMPT.md in infinite loop. You monitor and decide when to stop.
 - Save bash_id, tell user it's running
 
 ## Check Progress
+- `BashOutput` with bash_id to get latest output
 - `tail -n 50 SCRATCHPAD.md`
 - `git log --oneline -n 10`
 - Run verification command (e.g., `mix test --cover`)
