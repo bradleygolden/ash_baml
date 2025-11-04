@@ -54,6 +54,10 @@ defmodule AshBaml.Transformers.DefineClientModulesTest do
     end
 
     test "returns error when client identifier not found in config" do
+      Application.put_env(:ash_baml, :clients,
+        test: {AshBaml.Test.BamlClient, baml_src: "test/support/fixtures/baml_src"}
+      )
+
       error =
         assert_raise RuntimeError, fn ->
           defmodule UnknownClientResource do
@@ -150,6 +154,10 @@ defmodule AshBaml.Transformers.DefineClientModulesTest do
     end
 
     test "error message includes available clients when identifier not found" do
+      Application.put_env(:ash_baml, :clients,
+        test: {AshBaml.Test.BamlClient, baml_src: "test/support/fixtures/baml_src"}
+      )
+
       error =
         assert_raise RuntimeError, fn ->
           defmodule AvailableClientsResource do
