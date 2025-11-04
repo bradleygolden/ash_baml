@@ -2,44 +2,7 @@ defmodule AshBaml.HelpersTest do
   use ExUnit.Case, async: true
 
   alias Ash.Resource.Info
-
-  defmodule TestResource do
-    use Ash.Resource,
-      domain: TestDomain,
-      extensions: [AshBaml.Resource]
-
-    baml do
-      client_module(AshBaml.Test.BamlClient)
-    end
-
-    attributes do
-      uuid_primary_key(:id)
-    end
-
-    actions do
-      defaults([:read])
-
-      action :test_call_baml, :string do
-        run(call_baml(:TestFunction))
-      end
-
-      action :test_call_baml_with_opts, :string do
-        run(call_baml(:TestFunction, telemetry: false))
-      end
-
-      action :test_call_baml_stream, AshBaml.Type.Stream do
-        run(call_baml_stream(:TestFunction))
-      end
-    end
-  end
-
-  defmodule TestDomain do
-    use Ash.Domain
-
-    resources do
-      resource(TestResource)
-    end
-  end
+  alias AshBaml.Test.HelpersTestResource, as: TestResource
 
   describe "call_baml/1 macro" do
     test "expands to CallBamlFunction action tuple with function name" do

@@ -1,8 +1,8 @@
 defmodule AshBaml.Actions.CallBamlFunctionTest do
   use ExUnit.Case, async: false
 
-  # Note: These are unit tests with mocked BAML calls
-  # Integration test with real BAML call is separate
+  alias AshBaml.Test.CallBamlFunction.UnionResponse
+  alias AshBaml.Test.CallBamlFunction.SimpleResponse
 
   describe "run/3" do
     test "returns error when function module not found" do
@@ -91,14 +91,6 @@ defmodule AshBaml.Actions.CallBamlFunctionTest do
     end
 
     test "wraps result in union when action returns Ash.Type.Union" do
-      defmodule UnionResponse do
-        use Ash.Resource, data_layer: :embedded
-
-        attributes do
-          attribute(:message, :string)
-        end
-      end
-
       defmodule UnionClient do
         defmodule UnionFn do
           def call(_args, _opts \\ []), do: {:ok, %UnionResponse{message: "test"}}
@@ -152,14 +144,6 @@ defmodule AshBaml.Actions.CallBamlFunctionTest do
     end
 
     test "returns unwrapped result when action is not a union" do
-      defmodule SimpleResponse do
-        use Ash.Resource, data_layer: :embedded
-
-        attributes do
-          attribute(:value, :string)
-        end
-      end
-
       defmodule SimpleClient do
         defmodule SimpleFn do
           def call(_args, _opts \\ []), do: {:ok, %SimpleResponse{value: "direct"}}
