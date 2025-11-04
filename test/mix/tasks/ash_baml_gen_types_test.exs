@@ -170,5 +170,34 @@ defmodule Mix.Tasks.AshBaml.Gen.TypesTest do
       assert output =~ "Generating TypedStruct:"
       assert output =~ "✓"
     end
+
+    test "generates enum modules when present in schema", %{tmp_dir: tmp_dir} do
+      output =
+        capture_io(fn ->
+          Types.run(["AshBaml.Test.BamlClient", "--verbose", "--output-dir", tmp_dir])
+        end)
+
+      assert output =~ "Generating Enum:"
+      assert output =~ "Priority"
+
+      types_dir =
+        Path.join([
+          tmp_dir,
+          "ash_baml",
+          "test",
+          "baml_client",
+          "types"
+        ])
+
+      priority_file = Path.join(types_dir, "priority.ex")
+      assert File.exists?(priority_file)
+
+      content = File.read!(priority_file)
+      assert content =~ "defmodule AshBaml.Test.BamlClient.Types.Priority"
+      assert content =~ "Low"
+      assert content =~ "Medium"
+      assert content =~ "High"
+      assert content =~ "Urgent"
+    end
   end
 end
