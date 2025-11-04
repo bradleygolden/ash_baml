@@ -57,7 +57,6 @@ function PlanNextStep(state: AgentState) -> AgentStep {
 ## Step 2: Generate Types
 
 ```bash
-baml build
 mix ash_baml.gen.types MyApp.BamlClient
 ```
 
