@@ -1,6 +1,18 @@
 defmodule AshBaml.DslTest do
   use ExUnit.Case, async: true
 
+  describe "baml/0" do
+    test "returns the BAML DSL section definition" do
+      section = AshBaml.Dsl.baml()
+      assert %Spark.Dsl.Section{} = section
+      assert section.name == :baml
+      assert section.schema[:client][:type] == :atom
+      assert section.schema[:client_module][:type] == :atom
+      assert section.schema[:import_functions][:type] == {:list, :atom}
+      assert section.schema[:import_functions][:default] == []
+    end
+  end
+
   describe "baml DSL block" do
     test "requires either client or client_module option" do
       assert_raise Spark.Error.DslError, ~r/Must specify either :client or :client_module/, fn ->
