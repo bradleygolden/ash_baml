@@ -186,6 +186,7 @@ The compiled NIF library will be located at `_build/dev/lib/baml_elixir/native/b
 
 - **Auto-Generated Actions**: Automatically generate Ash actions from BAML functions via `import_functions`
 - **Streaming Support**: Both regular and streaming action variants generated automatically
+- **Automatic Stream Cancellation**: Streams automatically cancel LLM generation when consumers exit or when the stream is explicitly closed
 - **Type Safety**: Compile-time validation of BAML function signatures and generated types
 - **Tool Calling Support**: Use union types to handle LLM tool selection
 - **Type Generation**: Generate explicit Ash.TypedStruct modules from BAML schemas
@@ -579,4 +580,3 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-

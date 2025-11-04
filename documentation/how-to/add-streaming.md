@@ -254,6 +254,48 @@ def handle_stream(stream) do
 end
 ```
 
+## Automatic Stream Cancellation
+
+AshBaml automatically cancels the underlying LLM generation when the stream consumer stops or exits. This prevents wasted API calls and token usage.
+
+### How It Works
+
+When a stream is created with `Stream.resource/3`, the cleanup function automatically:
+1. Detects when the consumer process exits or stops consuming
+2. Cancels the underlying BAML streaming process
+3. Stops LLM token generation via Rust TripWire mechanism
+4. Flushes remaining messages from the mailbox
+
+### Benefits
+
+- **Cost savings**: Stops LLM generation when you stop consuming
+- **Resource efficiency**: No hanging processes or orphaned API calls
+- **Automatic**: No manual cleanup code needed
+
+### When Cancellation Triggers
+
+Stream cancellation happens automatically when:
+
+**Process exits or crashes:**
+```elixir
+task = Task.async(fn ->
+  {:ok, stream} = MyApp.Generator
+    |> Ash.ActionInput.for_action(:generate_story_stream, %{prompt: "Long story..."})
+    |> Ash.run_action()
+
+  Enum.each(stream, fn chunk ->
+    send_to_client(chunk)
+  end)
+end)
+
+# If task is killed (e.g., user disconnects), stream automatically cancels
+Task.shutdown(task, :brutal_kill)
+```
+
+### Important Notes
+
+Due to asynchronous message passing, some chunks may already be generated and queued before cancellation takes effect. These chunks are automatically flushed from the mailbox. The benefit is still significant: cancellation stops ongoing generation rather than waiting for the entire response to complete.
+
 ## Custom Stream Implementation
 
 For complete control, implement streaming from scratch:
