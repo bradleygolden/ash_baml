@@ -56,7 +56,6 @@ function SelectTool(message: string) -> WeatherTool | CalculatorTool | SearchToo
 ## Step 2: Generate Types
 
 ```bash
-baml build
 mix ash_baml.gen.types MyApp.BamlClient
 ```
 
@@ -237,7 +236,6 @@ function SelectTool(message: string) -> WeatherTool | CalculatorTool | SearchToo
 ### 2. Regenerate Types
 
 ```bash
-baml build
 mix ash_baml.gen.types MyApp.BamlClient
 ```
 

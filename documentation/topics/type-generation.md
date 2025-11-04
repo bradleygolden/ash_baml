@@ -557,13 +557,10 @@ After updating BAML schemas, regenerate types:
 # 1. Update BAML schema
 vim baml_src/functions.baml
 
-# 2. Rebuild BAML client
-baml build
-
-# 3. Regenerate Ash types
+# 2. Regenerate Ash types
 mix ash_baml.gen.types MyApp.BamlClient
 
-# 4. Verify compilation
+# 3. Verify compilation
 mix compile
 ```
 
