@@ -17,14 +17,15 @@ In this tutorial, you'll create your first AI-powered Ash resource using BAML. B
 
 ## Installation
 
+> **Note**: AshBaml is not yet published to Hex. Use the GitHub repository as a dependency.
+
 Add ash_baml to your dependencies in `mix.exs`:
 
 ```elixir
 def deps do
   [
     {:ash, "~> 3.0"},
-    {:ash_baml, "~> 0.1.0"},
-    {:baml_elixir, "~> 1.0.0-pre.23"}
+    {:ash_baml, github: "bradleygolden/ash_baml"}
   ]
 end
 ```
@@ -37,30 +38,13 @@ mix deps.get
 
 ## Set Up BAML
 
-Initialize BAML in your project:
+Create a `baml_src/` directory in your project root for BAML files:
 
 ```bash
-# Install BAML CLI (if not already installed)
-npm install -g @boundaryml/baml
-
-# Initialize BAML in your project
-baml init
+mkdir -p baml_src
 ```
 
-This creates:
-- `baml_src/` directory for BAML files
-- `baml_src/generators.baml` for client configuration
-
-## Configure BAML Client
-
-Edit `baml_src/generators.baml` to generate an Elixir client:
-
-```baml
-generator elixir {
-  output_type elixir
-  output_dir "../lib/my_app/baml_client"
-}
-```
+This directory will contain your BAML schema definitions (classes, enums, functions, and client configurations).
 
 ## Define Your First BAML Function
 
@@ -93,15 +77,18 @@ function SayHello(name: string) -> Reply {
 
 > **Note**: See [BAML documentation](https://docs.boundaryml.com) for more on BAML syntax, clients, and prompts.
 
-## Generate BAML Client
+## Configure BAML Client
 
-Run the BAML compiler:
+Add client configuration to `config/config.exs`:
 
-```bash
-baml build
+```elixir
+config :ash_baml,
+  clients: [
+    default: {MyApp.BamlClient, baml_src: "baml_src"}
+  ]
 ```
 
-This generates `lib/my_app/baml_client/` with Elixir modules for calling your functions.
+This tells ash_baml to auto-generate a `MyApp.BamlClient` module at compile-time that reads from your `baml_src/` directory.
 
 ## Generate Ash Types
 
@@ -124,16 +111,7 @@ defmodule MyApp.BamlClient.Types.Reply do
 end
 ```
 
-## Configure BAML Client
-
-Add client configuration to `config/config.exs`:
-
-```elixir
-config :ash_baml,
-  clients: [
-    default: {MyApp.BamlClient, baml_src: "baml_src"}
-  ]
-```
+> **Note**: The BAML client module itself is generated automatically at compile-time based on your config. The `mix ash_baml.gen.types` task generates separate Ash type modules for use in your resources.
 
 ## Create Your First AI-Powered Resource
 
@@ -196,8 +174,8 @@ reply
 
 ## What Just Happened?
 
-1. **BAML compiled** your function into an Elixir client
-2. **ash_baml generated** Ash types from BAML schemas
+1. **AshBaml auto-generated** the `MyApp.BamlClient` module at compile-time from your `baml_src/` directory
+2. **You generated** Ash types from BAML schemas using `mix ash_baml.gen.types`
 3. **AshBaml.Resource extension** auto-generated two actions:
    - `:say_hello` - Regular action returning `Reply`
    - `:say_hello_stream` - Streaming action returning `Stream`
