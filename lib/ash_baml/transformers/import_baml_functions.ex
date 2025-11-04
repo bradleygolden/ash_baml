@@ -9,6 +9,27 @@ defmodule AshBaml.Transformers.ImportBamlFunctions do
   3. Generates a regular action (`:function_name`)
   4. Generates a streaming action (`:function_name_stream`)
 
+  ## Streaming Actions with Automatic Cancellation
+
+  Streaming actions automatically cancel the underlying LLM generation when the
+  stream consumer exits or crashes. This prevents wasted API calls and token usage.
+
+  ### Example: Process Exit Triggers Cancellation
+
+      task = Task.async(fn ->
+        {:ok, stream} =
+          MyResource
+          |> Ash.ActionInput.for_action(:generate_story_stream, %{prompt: "..."})
+          |> Ash.run_action()
+
+        Enum.each(stream, fn chunk ->
+          # Process chunks...
+        end)
+      end)
+
+      # If task is killed (e.g., user disconnects), stream automatically cancels
+      Task.shutdown(task, :brutal_kill)
+
   Runs at compile-time and fails fast with helpful error messages.
   """
 
@@ -161,7 +182,6 @@ defmodule AshBaml.Transformers.ImportBamlFunctions do
     }
   end
 
-  # Convert PascalCase BAML function to snake_case action
   defp function_name_to_action_name(function_name) do
     function_name
     |> Atom.to_string()
