@@ -40,85 +40,110 @@ defmodule AshBaml.Actions.CallBamlStream do
 
   # Creates a stream that communicates via message passing with a BAML streaming process.
   #
-  # ## Process Lifecycle
+  # ## Process Lifecycle and Automatic Cleanup
   #
-  # The BAML client's `stream/2` function spawns a background process to handle
-  # streaming responses. This process sends messages to the parent process (self())
-  # using the pattern `{ref, :chunk, data}` or `{ref, :done, result}`.
+  # The BAML client's `stream/2` function returns `{:ok, pid}` representing the streaming
+  # process. This process sends messages to the parent process (self()) using the pattern
+  # `{ref, :chunk, data}` or `{ref, :done, result}`.
   #
-  # ### Known Limitation: Process Cleanup
+  # ### Automatic Stream Cancellation
   #
-  # The BAML Elixir client (v1.0.0-pre.23) does not return a process reference
-  # from `stream/2`, which prevents explicit process termination on early stream
-  # consumption halts. The `cleanup_stream/1` function flushes the mailbox to
-  # prevent message accumulation but cannot terminate the BAML process.
+  # When the stream consumer process exits or the stream is halted early,
+  # the `cleanup_stream/1` function is automatically called by `Stream.resource/3`.
+  # This triggers `BamlElixir.Stream.cancel/1` to stop the underlying LLM generation,
+  # preventing unnecessary API calls and resource usage.
   #
-  # Impact:
-  # - If a stream is created but never fully consumed, the BAML process may
-  #   continue running until it completes or times out (30s default).
-  # - Mailbox cleanup prevents memory leaks from unconsumed messages.
-  # - This is acceptable for typical streaming scenarios where streams are
-  #   consumed to completion or timeout naturally.
+  # Benefits:
+  # - Stream cancellation stops ongoing LLM generation
+  # - Significantly reduces wasted tokens vs generating the entire response
+  # - Automatic cleanup on stream consumer exit or GC
+  # - Graceful cancellation via Rust TripWire mechanism
   #
-  # Future improvement: When BAML Elixir client exposes process references,
-  # update cleanup_stream/1 to explicitly terminate spawned processes.
+  # Note: Due to async message passing, some chunks may already be generated
+  # and queued before cancellation takes effect. These are flushed from the mailbox.
   #
   defp start_streaming(function_module, arguments) do
     parent = self()
     ref = make_ref()
 
-    function_module.stream(arguments, fn
-      {:partial, partial_result} ->
-        send(parent, {ref, :chunk, partial_result})
+    case function_module.stream(arguments, fn
+           {:partial, partial_result} ->
+             send(parent, {ref, :chunk, partial_result})
 
-      {:done, final_result} ->
-        send(parent, {ref, :done, {:ok, final_result}})
+           {:done, final_result} ->
+             send(parent, {ref, :done, {:ok, final_result}})
 
-      {:error, error} ->
-        send(parent, {ref, :done, {:error, error}})
-    end)
+           {:error, error} ->
+             send(parent, {ref, :done, {:error, error}})
+         end) do
+      {:ok, stream_pid} ->
+        {ref, stream_pid, :streaming}
 
-    {ref, :streaming}
+      {:error, reason} ->
+        {ref, nil, {:error, reason}}
+    end
   end
 
-  defp stream_next({ref, :streaming}) do
+  defp stream_next({ref, stream_pid, :streaming}) do
     receive do
       {^ref, :chunk, chunk} ->
         if valid_chunk?(chunk) do
-          {[chunk], {ref, :streaming}}
+          {[chunk], {ref, stream_pid, :streaming}}
         else
-          {[], {ref, :streaming}}
+          {[], {ref, stream_pid, :streaming}}
         end
 
       {^ref, :done, {:ok, final_result}} ->
-        {[final_result], {ref, :done}}
+        {[final_result], {ref, stream_pid, :done}}
 
       {^ref, :done, {:error, reason}} ->
-        {:halt, {ref, {:error, reason}}}
+        {:halt, {ref, stream_pid, {:error, reason}}}
     after
       @default_stream_timeout ->
-        # Stream timeout - BAML process may have crashed or stalled
+        BamlElixir.Stream.cancel(stream_pid, :timeout)
+
         {:halt,
-         {ref,
+         {ref, stream_pid,
           {:error,
            "Stream timeout after #{@default_stream_timeout}ms - BAML process may have crashed"}}}
     end
   end
 
-  defp stream_next({ref, :done}) do
-    {:halt, {ref, :done}}
+  defp stream_next({ref, stream_pid, :done}) do
+    {:halt, {ref, stream_pid, :done}}
   end
 
-  defp stream_next({ref, {:error, reason}}) do
-    {:halt, {ref, {:error, reason}}}
+  defp stream_next({ref, stream_pid, {:error, reason}}) do
+    {:halt, {ref, stream_pid, {:error, reason}}}
   end
 
-  # Cleans up stream resources by flushing mailbox messages.
+  # Cleans up stream resources by canceling the BAML streaming process.
   #
-  # Note: This only flushes messages. It cannot terminate the BAML streaming
-  # process as the client does not expose process references. See module docs
-  # for start_streaming/2 for full context on process lifecycle limitations.
-  defp cleanup_stream({ref, _status}) do
+  # This function is automatically called by Stream.resource/3 when:
+  # - The stream consumer stops early (e.g., Enum.take/2)
+  # - An exception occurs during stream consumption
+  # - The stream consumer process exits
+  #
+  # Canceling the stream triggers the Rust TripWire, immediately stopping
+  # LLM token generation and preventing wasted API calls.
+  #
+  # Note: If the stream has already completed normally, the process will
+  # have exited and cancellation is unnecessary (and would fail).
+  defp cleanup_stream({ref, stream_pid, status}) do
+    if status == :streaming do
+      # Use catch_exit to handle the case where the process exits
+      # between our check and the cancel call (race condition)
+      try do
+        if Process.alive?(stream_pid) do
+          BamlElixir.Stream.cancel(stream_pid, :consumer_stopped)
+        end
+      catch
+        :exit, _ ->
+          # Process already exited, cancellation not needed
+          :ok
+      end
+    end
+
     flush_stream_messages(ref)
     :ok
   end
