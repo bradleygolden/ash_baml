@@ -83,8 +83,9 @@ defmodule AshBaml.CodeWriter do
     - No runtime surprises from hidden generated code
     """
 
-    with :ok <- File.mkdir_p(types_dir),
-         :ok <- maybe_write_readme(readme_path, readme_content) do
+    case File.mkdir_p(types_dir) do
+      :ok -> maybe_write_readme(readme_path, readme_content)
+      error -> error
     end
   end
 
