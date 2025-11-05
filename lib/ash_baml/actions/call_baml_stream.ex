@@ -111,13 +111,6 @@ defmodule AshBaml.Actions.CallBamlStream do
         {:halt, {ref, stream_pid, {:error, reason}}}
     after
       @default_stream_timeout ->
-        try do
-          BamlElixir.Stream.cancel(stream_pid, :timeout)
-        rescue
-          ArgumentError ->
-            :ok
-        end
-
         {:halt,
          {ref, stream_pid,
           {:error,
@@ -133,30 +126,15 @@ defmodule AshBaml.Actions.CallBamlStream do
     {:halt, {ref, stream_pid, {:error, reason}}}
   end
 
-  # Cleans up stream resources by canceling the BAML streaming process.
+  # Cleans up stream resources.
   #
   # This function is automatically called by Stream.resource/3 when:
   # - The stream consumer stops early (e.g., Enum.take/2)
   # - An exception occurs during stream consumption
   # - The stream consumer process exits
   #
-  # Canceling the stream triggers the Rust TripWire, immediately stopping
-  # LLM token generation and preventing wasted API calls.
-  #
-  # Note: If the stream has already completed normally, the process will
-  # have exited and cancellation is unnecessary (and would fail).
-  defp cleanup_stream({ref, stream_pid, status}) do
-    if status == :streaming do
-      try do
-        if Process.alive?(stream_pid) do
-          BamlElixir.Stream.cancel(stream_pid, :consumer_stopped)
-        end
-      rescue
-        ArgumentError ->
-          :ok
-      end
-    end
-
+  # Flushes any remaining messages from the stream to prevent mailbox buildup.
+  defp cleanup_stream({ref, _stream_pid, _status}) do
     flush_stream_messages(ref)
     :ok
   end

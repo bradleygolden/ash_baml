@@ -36,8 +36,7 @@ defmodule AshBaml.MixProject do
   defp deps do
     [
       {:ash, "~> 3.0"},
-      {:baml_elixir,
-       git: "https://github.com/bradleygolden/baml_elixir.git", branch: "main", override: true},
+      {:baml_elixir, "~> 1.0.0-pre.23"},
       {:rustler, "~> 0.0", runtime: false},
       {:jason, "~> 1.4"},
       {:spark, "~> 2.2"},
