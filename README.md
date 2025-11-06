@@ -111,77 +111,6 @@ mix ash_baml.install --client default
 mix ash_baml.install --module MyApp.BamlClient
 ```
 
-### Building from Source (Custom baml_elixir Fork)
-
-This project uses a forked version of `baml_elixir` ([bradleygolden/baml_elixir](https://github.com/bradleygolden/baml_elixir)) with custom Rust NIF enhancements. To use this fork, you'll need to build the Rust NIF from source.
-
-#### Prerequisites
-
-- Rust and Cargo installed (typically via [rustup](https://rustup.rs/))
-- Rust toolchain accessible in your PATH (usually `~/.cargo/bin/`)
-
-#### Configuration
-
-1. **Add required dependencies to `mix.exs`:**
-
-```elixir
-defp deps do
-  [
-    {:ash_baml, github: "bradleygolden/ash_baml"},
-    {:rustler, "~> 0.0", runtime: false}
-  ]
-end
-```
-
-The `baml_elixir` fork is already configured in `ash_baml`'s dependencies, but you need to add Rustler to enable building from source.
-
-2. **Configure Rustler to build from source in `config/config.exs`:**
-
-```elixir
-import Config
-
-# Force build baml_elixir from source to use the custom fork
-config :rustler_precompiled, :force_build, baml_elixir: true
-```
-
-3. **Install and compile:**
-
-```bash
-# Fetch dependencies
-mix deps.get
-
-# Compile the project (this will build the Rust NIF)
-export PATH="$HOME/.cargo/bin:$PATH"
-mix compile
-```
-
-The first compilation will take several minutes as it builds the Rust NIF and all BAML dependencies. Subsequent compilations will be much faster.
-
-#### Troubleshooting
-
-If you encounter compilation errors:
-
-1. **Verify Cargo is installed:**
-   ```bash
-   cargo --version
-   ```
-
-2. **Clean and rebuild:**
-   ```bash
-   mix deps.clean baml_elixir
-   export PATH="$HOME/.cargo/bin:$PATH"
-   mix deps.get
-   mix compile
-   ```
-
-3. **Check git submodules** (if building the dependency directly):
-   ```bash
-   cd deps/baml_elixir
-   git submodule update --init --recursive
-   ```
-
-The compiled NIF library will be located at `_build/dev/lib/baml_elixir/native/baml_elixir/release/libbaml_elixir.dylib` (or `.so` on Linux).
-
 ## Features
 
 - **Auto-Generated Actions**: Automatically generate Ash actions from BAML functions via `import_functions`
@@ -536,14 +465,14 @@ See [full comparison](documentation/topics/why-ash-baml.md#comparison-ash_baml-v
 
 ## Deployment
 
-Deploying applications that use the custom baml_elixir fork requires building Rust NIFs during deployment. See the **[Deployment Guide](DEPLOYMENT.md)** for detailed instructions including:
+Deploying applications that use ash_baml is straightforward since `baml_elixir` comes with precompiled NIFs for common platforms (Linux, macOS, Windows). See the **[Deployment Guide](DEPLOYMENT.md)** for detailed instructions including:
 
-- Complete Dockerfile example with multi-stage builds
-- Build optimization strategies (layer caching, BuildKit)
-- Troubleshooting common issues
+- Complete Dockerfile example for containerized deployment
+- Build optimization strategies
+- Platform-specific considerations
 - Production checklist and security considerations
 
-**Quick summary**: Use Docker with Rust installed in the build stage, compile the NIF and application, then copy the compiled release to a minimal runtime image without build tools.
+**Quick summary**: Standard Elixir deployment practices apply. The precompiled NIFs are included in your release automatically.
 
 ## Documentation
 
