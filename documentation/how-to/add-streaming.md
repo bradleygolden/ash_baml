@@ -254,27 +254,38 @@ def handle_stream(stream) do
 end
 ```
 
-## Automatic Stream Cancellation
+## Stream Cleanup and Message Handling
 
-AshBaml automatically cancels the underlying LLM generation when the stream consumer stops or exits. This prevents wasted API calls and token usage.
+AshBaml automatically cleans up stream resources when the stream consumer stops or exits. This prevents memory leaks and mailbox buildup.
 
 ### How It Works
 
 When a stream is created with `Stream.resource/3`, the cleanup function automatically:
 1. Detects when the consumer process exits or stops consuming
-2. Cancels the underlying BAML streaming process
-3. Stops LLM token generation via Rust TripWire mechanism
-4. Flushes remaining messages from the mailbox
+2. Flushes remaining messages from the mailbox to prevent buildup
+3. Releases stream resources
+
+**Important**: The cleanup does not actively cancel the underlying BAML streaming process. The backend may continue generating tokens briefly after you stop consuming the stream. The cleanup focuses on preventing mailbox overflow in the consumer process.
 
 ### Benefits
 
-- **Cost savings**: Stops LLM generation when you stop consuming
-- **Resource efficiency**: No hanging processes or orphaned API calls
-- **Automatic**: No manual cleanup code needed
+- **Memory safety**: Prevents mailbox buildup from unconsumed messages
+- **Resource cleanup**: Automatic cleanup via Stream.resource/3
+- **No manual cleanup**: Cleanup happens automatically on stream halt or process exit
 
-### When Cancellation Triggers
+### When Cleanup Happens
 
-Stream cancellation happens automatically when:
+Stream cleanup happens automatically when:
+
+**Stream consumer stops early:**
+```elixir
+{:ok, stream} = MyApp.Generator
+  |> Ash.ActionInput.for_action(:generate_story_stream, %{prompt: "Long story..."})
+  |> Ash.run_action()
+
+# Taking only first 5 chunks triggers cleanup for remaining messages
+Enum.take(stream, 5)
+```
 
 **Process exits or crashes:**
 ```elixir
@@ -288,13 +299,22 @@ task = Task.async(fn ->
   end)
 end)
 
-# If task is killed (e.g., user disconnects), stream automatically cancels
+# If task is killed (e.g., user disconnects), stream cleanup happens automatically
 Task.shutdown(task, :brutal_kill)
 ```
 
+### Cost Considerations
+
+Since stream cleanup does not actively cancel the underlying LLM generation:
+
+- **Backend may continue briefly**: The BAML backend may generate additional tokens after you stop consuming
+- **Already-queued chunks are discarded**: Messages in flight are flushed from the mailbox
+- **For cost control**: Consider using token limits in your BAML client configuration rather than relying on early stream termination
+- **Process termination helps**: When the consumer process fully terminates, message flow eventually stops
+
 ### Important Notes
 
-Due to asynchronous message passing, some chunks may already be generated and queued before cancellation takes effect. These chunks are automatically flushed from the mailbox. The benefit is still significant: cancellation stops ongoing generation rather than waiting for the entire response to complete.
+Due to asynchronous message passing, the backend may generate and queue additional chunks even after your consumer stops. These chunks are automatically flushed from the mailbox to prevent memory issues. Stream cleanup is about mailbox hygiene, not cost optimization.
 
 ## Custom Stream Implementation
 

@@ -9,10 +9,10 @@ defmodule AshBaml.Transformers.ImportBamlFunctions do
   3. Generates a regular action (`:function_name`)
   4. Generates a streaming action (`:function_name_stream`)
 
-  ## Streaming Actions with Automatic Cancellation
+  ## Streaming Actions with Automatic Cleanup
 
-  Streaming actions automatically cancel the underlying LLM generation when the
-  stream consumer exits or crashes. This prevents wasted API calls and token usage.
+  Streaming actions automatically clean up stream resources when the stream consumer
+  exits or crashes. This prevents mailbox buildup and memory leaks.
 
   ### Example: Process Exit Triggers Cancellation
 
@@ -27,7 +27,7 @@ defmodule AshBaml.Transformers.ImportBamlFunctions do
         end)
       end)
 
-      # If task is killed (e.g., user disconnects), stream automatically cancels
+      # If task is killed (e.g., user disconnects), stream cleanup happens automatically
       Task.shutdown(task, :brutal_kill)
 
   Runs at compile-time and fails fast with helpful error messages.
