@@ -49,30 +49,6 @@ defmodule AshBaml.Actions.CallBamlStream do
     )
   end
 
-  # Creates a stream that communicates via message passing with a BAML streaming process.
-  #
-  # ## Process Lifecycle and Automatic Cleanup
-  #
-  # The BAML client's `stream/2` function returns `{:ok, pid}` representing the streaming
-  # process. This process sends messages to the parent process (self()) using the pattern
-  # `{ref, :chunk, data}` or `{ref, :done, result}`.
-  #
-  # ### Automatic Stream Cancellation
-  #
-  # When the stream consumer process exits or the stream is halted early,
-  # the `cleanup_stream/1` function is automatically called by `Stream.resource/3`.
-  # This triggers `BamlElixir.Stream.cancel/1` to stop the underlying LLM generation,
-  # preventing unnecessary API calls and resource usage.
-  #
-  # Benefits:
-  # - Stream cancellation stops ongoing LLM generation
-  # - Significantly reduces wasted tokens vs generating the entire response
-  # - Automatic cleanup on stream consumer exit or GC
-  # - Graceful cancellation via Rust TripWire mechanism
-  #
-  # Note: Due to async message passing, some chunks may already be generated
-  # and queued before cancellation takes effect. These are flushed from the mailbox.
-  #
   defp start_streaming(function_module, arguments) do
     parent = self()
     ref = make_ref()
