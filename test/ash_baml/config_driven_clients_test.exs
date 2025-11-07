@@ -12,7 +12,7 @@ defmodule AshBaml.ConfigDrivenClientsTest do
 
     test "client identifier raises error when config is missing" do
       error =
-        assert_raise RuntimeError, fn ->
+        assert_raise Spark.Error.DslError, fn ->
           defmodule MissingConfigResource do
             use Ash.Resource,
               domain: nil,
@@ -76,7 +76,7 @@ defmodule AshBaml.ConfigDrivenClientsTest do
 
     test "transformer provides helpful error for missing config" do
       error =
-        assert_raise RuntimeError, fn ->
+        assert_raise Spark.Error.DslError, fn ->
           defmodule MissingConfigClient do
             use Ash.Resource,
               domain: nil,

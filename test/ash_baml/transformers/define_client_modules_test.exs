@@ -59,7 +59,7 @@ defmodule AshBaml.Transformers.DefineClientModulesTest do
       )
 
       error =
-        assert_raise RuntimeError, fn ->
+        assert_raise Spark.Error.DslError, fn ->
           defmodule UnknownClientResource do
             use Ash.Resource, domain: nil, extensions: [AshBaml.Resource]
 
@@ -159,7 +159,7 @@ defmodule AshBaml.Transformers.DefineClientModulesTest do
       )
 
       error =
-        assert_raise RuntimeError, fn ->
+        assert_raise Spark.Error.DslError, fn ->
           defmodule AvailableClientsResource do
             use Ash.Resource, domain: nil, extensions: [AshBaml.Resource]
 
@@ -177,7 +177,7 @@ defmodule AshBaml.Transformers.DefineClientModulesTest do
       Application.put_env(:ash_baml, :clients, [])
 
       error =
-        assert_raise RuntimeError, fn ->
+        assert_raise Spark.Error.DslError, fn ->
           defmodule NoClientsConfiguredResource do
             use Ash.Resource, domain: nil, extensions: [AshBaml.Resource]
 
@@ -257,7 +257,7 @@ defmodule AshBaml.Transformers.DefineClientModulesTest do
       Application.put_env(:ash_baml, :clients, missing_src: {unique_module, []})
 
       error =
-        assert_raise RuntimeError, fn ->
+        assert_raise Spark.Error.DslError, fn ->
           defmodule MissingSrcResource do
             use Ash.Resource, domain: nil, extensions: [AshBaml.Resource]
 
