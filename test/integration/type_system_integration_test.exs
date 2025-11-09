@@ -8,13 +8,15 @@ defmodule AshBaml.TypeSystemIntegrationTest do
 
   describe "type system validation with real API calls" do
     test "string fields receive string values (not nil, not other types)" do
-      {:ok, result} =
+      {:ok, response} =
         TestResource
         |> Ash.ActionInput.for_action(:test_action, %{
           message: "Hello, world!"
         })
         |> Ash.run_action()
 
+      assert %AshBaml.Response{} = response
+      result = response.data
       assert %BamlClient.Reply{} = result
       assert is_binary(result.content)
       assert String.length(result.content) > 0
@@ -22,7 +24,7 @@ defmodule AshBaml.TypeSystemIntegrationTest do
     end
 
     test "integer fields receive integers (not string numbers)" do
-      {:ok, result} =
+      {:ok, response} =
         TestResource
         |> Ash.ActionInput.for_action(:multi_arg_action, %{
           name: "Alice",
@@ -31,6 +33,8 @@ defmodule AshBaml.TypeSystemIntegrationTest do
         })
         |> Ash.run_action()
 
+      assert %AshBaml.Response{} = response
+      result = response.data
       assert %BamlClient.MultiArgResponse{} = result
       assert is_binary(result.greeting)
       assert is_binary(result.description)
@@ -39,13 +43,15 @@ defmodule AshBaml.TypeSystemIntegrationTest do
     end
 
     test "float fields receive float values" do
-      {:ok, result} =
+      {:ok, response} =
         TestResource
         |> Ash.ActionInput.for_action(:test_action, %{
           message: "Give me a confidence score"
         })
         |> Ash.run_action()
 
+      assert %AshBaml.Response{} = response
+      result = response.data
       assert %BamlClient.Reply{} = result
       assert is_float(result.confidence)
       assert result.confidence >= 0.0
@@ -53,7 +59,7 @@ defmodule AshBaml.TypeSystemIntegrationTest do
     end
 
     test "boolean fields receive boolean values" do
-      {:ok, result} =
+      {:ok, response} =
         TestResource
         |> Ash.ActionInput.for_action(:nested_object_action, %{
           user: %{
@@ -69,25 +75,29 @@ defmodule AshBaml.TypeSystemIntegrationTest do
         })
         |> Ash.run_action()
 
+      assert %AshBaml.Response{} = response
+      result = response.data
       assert %BamlClient.NestedObjectResponse{} = result
       assert is_boolean(result.is_international)
       assert result.is_international == true
     end
 
     test "array fields receive arrays (not nil, not single values)" do
-      {:ok, result} =
+      {:ok, response} =
         TestResource
         |> Ash.ActionInput.for_action(:array_args_action, %{
           tags: ["elixir", "programming", "functional"]
         })
         |> Ash.run_action()
 
+      assert %AshBaml.Response{} = response
+      result = response.data
       assert %BamlClient.TagAnalysisResponse{} = result
       assert is_binary(result.summary)
       assert is_integer(result.tag_count)
       assert result.tag_count == 3
 
-      {:ok, profile_result} =
+      {:ok, profile_response} =
         TestResource
         |> Ash.ActionInput.for_action(:optional_args_action, %{
           name: "Charlie",
@@ -96,6 +106,8 @@ defmodule AshBaml.TypeSystemIntegrationTest do
         })
         |> Ash.run_action()
 
+      assert %AshBaml.Response{} = profile_response
+      profile_result = profile_response.data
       assert %BamlClient.ProfileResponse{} = profile_result
       assert is_list(profile_result.interests)
       assert length(profile_result.interests) > 0
@@ -106,7 +118,7 @@ defmodule AshBaml.TypeSystemIntegrationTest do
     end
 
     test "optional fields can be nil" do
-      {:ok, result} =
+      {:ok, response} =
         TestResource
         |> Ash.ActionInput.for_action(:optional_args_action, %{
           name: "David",
@@ -115,6 +127,8 @@ defmodule AshBaml.TypeSystemIntegrationTest do
         })
         |> Ash.run_action()
 
+      assert %AshBaml.Response{} = response
+      result = response.data
       assert %BamlClient.ProfileResponse{} = result
 
       assert result.location in [nil, ""],
@@ -122,7 +136,7 @@ defmodule AshBaml.TypeSystemIntegrationTest do
     end
 
     test "optional fields can have values" do
-      {:ok, result} =
+      {:ok, response} =
         TestResource
         |> Ash.ActionInput.for_action(:optional_args_action, %{
           name: "Eve",
@@ -131,6 +145,8 @@ defmodule AshBaml.TypeSystemIntegrationTest do
         })
         |> Ash.run_action()
 
+      assert %AshBaml.Response{} = response
+      result = response.data
       assert %BamlClient.ProfileResponse{} = result
       assert result.location != nil
       assert is_binary(result.location)
@@ -138,7 +154,7 @@ defmodule AshBaml.TypeSystemIntegrationTest do
     end
 
     test "nested object fields work correctly" do
-      {:ok, result} =
+      {:ok, response} =
         TestResource
         |> Ash.ActionInput.for_action(:nested_object_action, %{
           user: %{
@@ -154,6 +170,8 @@ defmodule AshBaml.TypeSystemIntegrationTest do
         })
         |> Ash.run_action()
 
+      assert %AshBaml.Response{} = response
+      result = response.data
       assert %BamlClient.NestedObjectResponse{} = result
       assert is_binary(result.formatted_address)
       assert is_binary(result.distance_category)
@@ -168,7 +186,7 @@ defmodule AshBaml.TypeSystemIntegrationTest do
 
   describe "type coercion behavior" do
     test "integer argument accepts integer values" do
-      {:ok, result} =
+      {:ok, response} =
         TestResource
         |> Ash.ActionInput.for_action(:multi_arg_action, %{
           name: "Test",
@@ -177,35 +195,38 @@ defmodule AshBaml.TypeSystemIntegrationTest do
         })
         |> Ash.run_action()
 
+      assert %AshBaml.Response{} = response
+      result = response.data
       assert %BamlClient.MultiArgResponse{} = result
     end
-
-    # Reason: Ash's :string type automatically coerces atoms to strings
-    # This is correct framework behavior, not a validation failure
   end
 
   describe "complex type combinations" do
     test "struct with multiple field types works correctly" do
-      {:ok, result} =
+      {:ok, response} =
         TestResource
         |> Ash.ActionInput.for_action(:test_action, %{
           message: "Complex type test"
         })
         |> Ash.run_action()
 
+      assert %AshBaml.Response{} = response
+      result = response.data
       assert %BamlClient.Reply{} = result
       assert is_binary(result.content)
       assert is_float(result.confidence)
     end
 
     test "array of strings works correctly" do
-      {:ok, result} =
+      {:ok, response} =
         TestResource
         |> Ash.ActionInput.for_action(:long_input_action, %{
           long_text: String.duplicate("word ", 100)
         })
         |> Ash.run_action()
 
+      assert %AshBaml.Response{} = response
+      result = response.data
       assert %BamlClient.LongInputResponse{} = result
       assert is_binary(result.summary)
       assert is_integer(result.word_count)

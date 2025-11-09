@@ -66,6 +66,9 @@ defmodule AshBaml.Actions.CallBamlStream do
       {:ok, stream_pid} ->
         {ref, stream_pid, :streaming}
 
+      stream_pid when is_pid(stream_pid) ->
+        {ref, stream_pid, :streaming}
+
       {:error, reason} ->
         {ref, nil, {:error, reason}}
     end

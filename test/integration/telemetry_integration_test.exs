@@ -474,13 +474,15 @@ defmodule AshBaml.TelemetryIntegrationTest do
 
       on_exit(fn -> :telemetry.detach(handler_id) end)
 
-      {:ok, result} =
+      {:ok, response} =
         TelemetryDisabledResource
         |> Ash.ActionInput.for_action(:test_disabled, %{
           message: "This should not emit telemetry events"
         })
         |> Ash.run_action()
 
+      assert %AshBaml.Response{} = response
+      result = response.data
       assert is_struct(result)
       assert result.content != nil
       assert is_float(result.confidence)
@@ -510,13 +512,15 @@ defmodule AshBaml.TelemetryIntegrationTest do
 
       on_exit(fn -> :telemetry.detach(handler_id) end)
 
-      {:ok, result} =
+      {:ok, response} =
         CustomPrefixResource
         |> Ash.ActionInput.for_action(:test_custom_prefix, %{
           message: "Testing custom prefix"
         })
         |> Ash.run_action()
 
+      assert %AshBaml.Response{} = response
+      result = response.data
       assert is_struct(result)
       assert result.content != nil
 

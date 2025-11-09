@@ -276,12 +276,15 @@ defmodule AshBaml.StreamingIntegrationTest do
       message = "Say exactly: Hello from BAML"
 
       # Get non-streaming result
-      {:ok, non_stream_result} =
+      {:ok, non_stream_response} =
         TestResource
         |> Ash.ActionInput.for_action(:test_function, %{
           message: message
         })
         |> Ash.run_action()
+
+      assert %AshBaml.Response{} = non_stream_response
+      non_stream_result = non_stream_response.data
 
       # Get streaming result
       {:ok, stream} =

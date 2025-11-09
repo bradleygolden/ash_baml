@@ -48,7 +48,7 @@ defmodule AshBaml.Actions.CallBamlFunction do
   defp execute_baml_function(input, function_name, function_module, opts) do
     telemetry_config = build_telemetry_config(input.resource, opts)
 
-    result =
+    {result, collector} =
       AshBaml.Telemetry.with_telemetry(
         input,
         function_name,
@@ -61,7 +61,9 @@ defmodule AshBaml.Actions.CallBamlFunction do
 
     case result do
       {:ok, data} ->
-        {:ok, wrap_union_result(input, data)}
+        wrapped_data = wrap_union_result(input, data)
+        response = AshBaml.Response.new(wrapped_data, collector)
+        {:ok, response}
 
       error ->
         error

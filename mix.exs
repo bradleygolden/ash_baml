@@ -67,7 +67,6 @@ defmodule AshBaml.MixProject do
       extra_section: "GUIDES",
       extras: [
         {"README.md", title: "Home"},
-        "CHANGELOG.md",
         # DSL Documentation (auto-generated)
         {"documentation/dsls/DSL-AshBaml.Resource.md", title: "DSL: AshBaml.Resource"},
         # Tutorials
@@ -128,7 +127,6 @@ defmodule AshBaml.MixProject do
         ]
       ],
       skip_undefined_reference_warnings_on: [
-        "CHANGELOG.md",
         "README.md"
       ],
       before_closing_head_tag: fn
@@ -154,7 +152,7 @@ defmodule AshBaml.MixProject do
         "BAML Documentation" => "https://docs.boundaryml.com",
         "Ash Framework" => "https://hexdocs.pm/ash"
       },
-      files: ~w(lib .formatter.exs mix.exs README.md CHANGELOG.md LICENSE)
+      files: ~w(lib .formatter.exs mix.exs README.md LICENSE)
     ]
   end
 
