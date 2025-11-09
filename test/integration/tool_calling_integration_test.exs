@@ -8,13 +8,15 @@ defmodule AshBaml.ToolCallingIntegrationTest do
 
   describe "complete tool calling workflow" do
     test "full workflow: select tool -> dispatch -> execute (weather)" do
-      {:ok, tool_call} =
+      {:ok, response} =
         ToolTestResource
         |> Ash.ActionInput.for_action(:select_tool, %{
           message: "What's the weather like in Tokyo?"
         })
         |> Ash.run_action()
 
+      assert %AshBaml.Response{} = response
+      tool_call = response.data
       assert %Ash.Union{type: :weather_tool, value: weather_tool} = tool_call
       assert weather_tool.city == "Tokyo"
 
@@ -31,13 +33,15 @@ defmodule AshBaml.ToolCallingIntegrationTest do
     end
 
     test "full workflow: select tool -> dispatch -> execute (calculator)" do
-      {:ok, tool_call} =
+      {:ok, response} =
         ToolTestResource
         |> Ash.ActionInput.for_action(:select_tool, %{
           message: "Calculate 10 + 20 + 30"
         })
         |> Ash.run_action()
 
+      assert %AshBaml.Response{} = response
+      tool_call = response.data
       assert %Ash.Union{type: :calculator_tool, value: calc_tool} = tool_call
       assert calc_tool.operation == "add"
       assert calc_tool.numbers == [10.0, 20.0, 30.0]
@@ -54,16 +58,17 @@ defmodule AshBaml.ToolCallingIntegrationTest do
     end
 
     test "ambiguous prompt selects valid tool" do
-      # LLM output is inherently non-deterministic for ambiguous prompts
       ambiguous_message = "What about 72 degrees?"
 
-      {:ok, tool_call} =
+      {:ok, response} =
         ToolTestResource
         |> Ash.ActionInput.for_action(:select_tool, %{
           message: ambiguous_message
         })
         |> Ash.run_action()
 
+      assert %AshBaml.Response{} = response
+      tool_call = response.data
       assert %Ash.Union{} = tool_call
 
       assert tool_call.type in [:weather_tool, :calculator_tool],
@@ -71,13 +76,15 @@ defmodule AshBaml.ToolCallingIntegrationTest do
     end
 
     test "tool with all fields populated (weather)" do
-      {:ok, tool_call} =
+      {:ok, response} =
         ToolTestResource
         |> Ash.ActionInput.for_action(:select_tool, %{
           message: "What's the temperature in Seattle in celsius?"
         })
         |> Ash.run_action()
 
+      assert %AshBaml.Response{} = response
+      tool_call = response.data
       assert %Ash.Union{type: :weather_tool, value: weather_tool} = tool_call
 
       assert weather_tool.city != nil
@@ -91,13 +98,15 @@ defmodule AshBaml.ToolCallingIntegrationTest do
     end
 
     test "tool with all fields populated (calculator)" do
-      {:ok, tool_call} =
+      {:ok, response} =
         ToolTestResource
         |> Ash.ActionInput.for_action(:select_tool, %{
           message: "Multiply 3.5 times 2.0 and 4.0"
         })
         |> Ash.run_action()
 
+      assert %AshBaml.Response{} = response
+      tool_call = response.data
       assert %Ash.Union{type: :calculator_tool, value: calc_tool} = tool_call
 
       assert calc_tool.operation != nil
@@ -120,13 +129,15 @@ defmodule AshBaml.ToolCallingIntegrationTest do
     end
 
     test "3+ tool options in union (timer tool)" do
-      {:ok, tool_call} =
+      {:ok, response} =
         ToolTestResource
         |> Ash.ActionInput.for_action(:select_tool, %{
           message: "Set a timer for 5 minutes called 'tea brewing'"
         })
         |> Ash.run_action()
 
+      assert %AshBaml.Response{} = response
+      tool_call = response.data
       assert %Ash.Union{type: :timer_tool, value: timer_tool} = tool_call
 
       assert timer_tool.duration_seconds != nil
@@ -141,7 +152,6 @@ defmodule AshBaml.ToolCallingIntegrationTest do
     end
 
     test "concurrent tool selection calls (cluster-safe)" do
-      # CRITICAL: This tests cluster safety - no shared mutable state or race conditions
       messages = [
         "What's the weather in Tokyo?",
         "Calculate 100 + 200",
@@ -156,12 +166,12 @@ defmodule AshBaml.ToolCallingIntegrationTest do
         messages
         |> Task.async_stream(
           fn message ->
-            {:ok, tool_call} =
+            {:ok, response} =
               ToolTestResource
               |> Ash.ActionInput.for_action(:select_tool, %{message: message})
               |> Ash.run_action()
 
-            {message, tool_call}
+            {message, response.data}
           end,
           timeout: 30_000,
           max_concurrency: 5
@@ -292,13 +302,15 @@ defmodule AshBaml.ToolCallingIntegrationTest do
 
   describe "enum constraints validation" do
     test "LLM respects enum constraints in tool selection" do
-      {:ok, tool_call} =
+      {:ok, response} =
         ToolTestResource
         |> Ash.ActionInput.for_action(:select_tool, %{
           message: "What is 100 plus 50 plus 25?"
         })
         |> Ash.run_action()
 
+      assert %AshBaml.Response{} = response
+      tool_call = response.data
       assert %Ash.Union{type: :calculator_tool, value: calc_tool} = tool_call
 
       assert calc_tool.operation in ["add", "subtract", "multiply", "divide"]

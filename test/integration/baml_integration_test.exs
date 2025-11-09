@@ -6,18 +6,20 @@ defmodule AshBaml.IntegrationTest do
 
   describe "end-to-end BAML integration" do
     test "can call BAML function through Ash action" do
-      {:ok, result} =
+      {:ok, response} =
         AshBaml.Test.TestResource
         |> Ash.ActionInput.for_action(:test_action, %{message: "Hello!"})
         |> Ash.run_action()
 
+      assert %AshBaml.Response{} = response
+      result = response.data
       assert %AshBaml.Test.BamlClient.Reply{} = result
       assert is_binary(result.content)
       assert is_float(result.confidence)
     end
 
     test "can call BAML function with multiple arguments" do
-      {:ok, result} =
+      {:ok, response} =
         AshBaml.Test.TestResource
         |> Ash.ActionInput.for_action(:multi_arg_action, %{
           name: "Alice",
@@ -26,6 +28,8 @@ defmodule AshBaml.IntegrationTest do
         })
         |> Ash.run_action()
 
+      assert %AshBaml.Response{} = response
+      result = response.data
       assert %AshBaml.Test.BamlClient.MultiArgResponse{} = result
 
       assert is_binary(result.greeting)
@@ -39,7 +43,7 @@ defmodule AshBaml.IntegrationTest do
     end
 
     test "can call BAML function with optional arguments" do
-      {:ok, result_with_location} =
+      {:ok, response_with_location} =
         AshBaml.Test.TestResource
         |> Ash.ActionInput.for_action(:optional_args_action, %{
           name: "Bob",
@@ -48,13 +52,15 @@ defmodule AshBaml.IntegrationTest do
         })
         |> Ash.run_action()
 
+      assert %AshBaml.Response{} = response_with_location
+      result_with_location = response_with_location.data
       assert %AshBaml.Test.BamlClient.ProfileResponse{} = result_with_location
       assert is_binary(result_with_location.bio)
       assert is_list(result_with_location.interests)
       assert is_binary(result_with_location.location)
       assert result_with_location.location == "San Francisco"
 
-      {:ok, result_without_location} =
+      {:ok, response_without_location} =
         AshBaml.Test.TestResource
         |> Ash.ActionInput.for_action(:optional_args_action, %{
           name: "Charlie",
@@ -62,6 +68,8 @@ defmodule AshBaml.IntegrationTest do
         })
         |> Ash.run_action()
 
+      assert %AshBaml.Response{} = response_without_location
+      result_without_location = response_without_location.data
       assert %AshBaml.Test.BamlClient.ProfileResponse{} = result_without_location
       assert is_binary(result_without_location.bio)
       assert is_list(result_without_location.interests)
@@ -71,11 +79,13 @@ defmodule AshBaml.IntegrationTest do
     test "can call BAML function with array arguments" do
       tags = ["elixir", "programming", "functional", "erlang", "beam"]
 
-      {:ok, result} =
+      {:ok, response} =
         AshBaml.Test.TestResource
         |> Ash.ActionInput.for_action(:array_args_action, %{tags: tags})
         |> Ash.run_action()
 
+      assert %AshBaml.Response{} = response
+      result = response.data
       assert %AshBaml.Test.BamlClient.TagAnalysisResponse{} = result
 
       assert is_binary(result.summary)
@@ -99,11 +109,13 @@ defmodule AshBaml.IntegrationTest do
         }
       }
 
-      {:ok, result} =
+      {:ok, response} =
         AshBaml.Test.TestResource
         |> Ash.ActionInput.for_action(:nested_object_action, %{user: user})
         |> Ash.run_action()
 
+      assert %AshBaml.Response{} = response
+      result = response.data
       assert %AshBaml.Test.BamlClient.NestedObjectResponse{} = result
 
       assert is_binary(result.formatted_address)
@@ -162,11 +174,13 @@ defmodule AshBaml.IntegrationTest do
 
       assert String.length(long_text) > 2000
 
-      {:ok, result} =
+      {:ok, response} =
         AshBaml.Test.TestResource
         |> Ash.ActionInput.for_action(:long_input_action, %{long_text: long_text})
         |> Ash.run_action()
 
+      assert %AshBaml.Response{} = response
+      result = response.data
       assert %AshBaml.Test.BamlClient.LongInputResponse{} = result
 
       assert is_binary(result.summary)
@@ -193,13 +207,15 @@ defmodule AshBaml.IntegrationTest do
       - Less than < and greater than >
       """
 
-      {:ok, result} =
+      {:ok, response} =
         AshBaml.Test.TestResource
         |> Ash.ActionInput.for_action(:special_chars_action, %{
           text_with_special_chars: special_text
         })
         |> Ash.run_action()
 
+      assert %AshBaml.Response{} = response
+      result = response.data
       assert %AshBaml.Test.BamlClient.SpecialCharsResponse{} = result
 
       assert is_binary(result.received_text)
@@ -224,12 +240,12 @@ defmodule AshBaml.IntegrationTest do
           Task.async(fn ->
             message = "Concurrent test message #{i}"
 
-            {:ok, result} =
+            {:ok, response} =
               AshBaml.Test.TestResource
               |> Ash.ActionInput.for_action(:test_action, %{message: message})
               |> Ash.run_action()
 
-            {i, result, message}
+            {i, response.data, message}
           end)
         end)
 
@@ -256,12 +272,12 @@ defmodule AshBaml.IntegrationTest do
 
       results =
         Enum.map(1..3, fn _i ->
-          {:ok, result} =
+          {:ok, response} =
             AshBaml.Test.TestResource
             |> Ash.ActionInput.for_action(:test_action, %{message: input_message})
             |> Ash.run_action()
 
-          result
+          response.data
         end)
 
       assert length(results) == 3
