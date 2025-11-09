@@ -97,6 +97,96 @@ Emitted when a BAML function call fails.
 }
 ```
 
+## Response Usage Tracking
+
+In addition to telemetry events, BAML function calls return an `AshBaml.Response` struct that includes usage metadata alongside the result data. This enables programmatic access to token usage without attaching telemetry handlers.
+
+### Response Structure
+
+Every successful BAML function call returns:
+
+```elixir
+{:ok, %AshBaml.Response{
+  data: term(),           # Your BAML function result
+  usage: %{               # Token usage metadata
+    input_tokens: 10,
+    output_tokens: 5,
+    total_tokens: 15
+  },
+  collector: reference()  # Internal collector reference
+}}
+```
+
+### Accessing Usage Data
+
+Extract usage information from responses:
+
+```elixir
+{:ok, response} = MyApp.Assistant
+  |> Ash.ActionInput.for_action(:say_hello, %{name: "Alice"})
+  |> Ash.run_action()
+
+# Access the result data
+result = response.data
+# or
+result = AshBaml.Response.unwrap(response)
+
+# Access token usage
+usage = response.usage
+# => %{input_tokens: 10, output_tokens: 5, total_tokens: 15}
+
+# Or use the helper
+usage = AshBaml.Response.usage(response)
+```
+
+### Integration with Observability Systems
+
+The Response wrapper enables integration with observability systems like AshAgent:
+
+```elixir
+defmodule MyApp.Agent do
+  use AshAgent
+
+  def response_usage(%AshBaml.Response{usage: usage}), do: usage
+  def response_usage(_), do: nil
+end
+```
+
+This allows cost tracking, rate limiting, and usage analytics at the application level without relying solely on telemetry events.
+
+### Usage vs Telemetry
+
+**Response usage** is best for:
+- Immediate cost calculations in-request
+- Conditional logic based on token usage
+- Returning usage info to API clients
+- Single-call usage inspection
+
+**Telemetry events** are best for:
+- Aggregated metrics across many calls
+- Long-term monitoring and alerting
+- Integration with APM tools (Datadog, Honeycomb, etc.)
+- Tracking failures and exceptions
+
+Use both together for comprehensive observability:
+
+```elixir
+def expensive_operation(input) do
+  # Make BAML call
+  {:ok, response} = MyApp.Assistant
+    |> Ash.ActionInput.for_action(:analyze, input)
+    |> Ash.run_action()
+
+  # Check usage immediately
+  if response.usage.total_tokens > 10_000 do
+    Logger.warning("High token usage: #{response.usage.total_tokens} tokens")
+  end
+
+  # Return both result and usage
+  {:ok, response.data, response.usage}
+end
+```
+
 ## Metadata Configuration
 
 By default, telemetry events include only **safe metadata fields**:

@@ -65,9 +65,12 @@ defmodule MyApp.Extractor do
 end
 
 # 6. Use it!
-{:ok, user} = MyApp.Extractor
+{:ok, response} = MyApp.Extractor
   |> Ash.ActionInput.for_action(:extract_user, %{text: "Alice alice@example.com"})
   |> Ash.run_action()
+
+user = response.data
+IO.inspect(response.usage)  # Token usage: %{input_tokens: 10, output_tokens: 5, total_tokens: 15}
 ```
 
 📚 **[Read the full Getting Started tutorial →](documentation/tutorials/01-get-started.md)**
