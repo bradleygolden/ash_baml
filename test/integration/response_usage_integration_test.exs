@@ -55,17 +55,14 @@ defmodule AshBaml.ResponseUsageIntegrationTest do
         })
         |> Ash.run_action()
 
-      # Verify it's a Response struct
       assert %AshBaml.Response{} = response
 
-      # Verify data field contains the BAML result
       assert is_struct(response.data)
       assert Map.has_key?(response.data, :content)
       assert Map.has_key?(response.data, :confidence)
       assert is_binary(response.data.content)
       assert is_float(response.data.confidence)
 
-      # Verify usage field contains token counts
       assert is_map(response.usage)
       assert Map.has_key?(response.usage, :input_tokens)
       assert Map.has_key?(response.usage, :output_tokens)
@@ -75,16 +72,13 @@ defmodule AshBaml.ResponseUsageIntegrationTest do
       assert is_integer(response.usage.output_tokens)
       assert is_integer(response.usage.total_tokens)
 
-      # Verify token counts are positive
       assert response.usage.input_tokens > 0
       assert response.usage.output_tokens > 0
       assert response.usage.total_tokens > 0
 
-      # Verify total = input + output
       assert response.usage.total_tokens ==
                response.usage.input_tokens + response.usage.output_tokens
 
-      # Verify collector is present
       assert response.collector != nil
     end
 
@@ -96,7 +90,6 @@ defmodule AshBaml.ResponseUsageIntegrationTest do
         })
         |> Ash.run_action()
 
-      # Unwrap should extract the data field
       data = AshBaml.Response.unwrap(response)
 
       assert is_struct(data)
@@ -113,10 +106,7 @@ defmodule AshBaml.ResponseUsageIntegrationTest do
         })
         |> Ash.run_action()
 
-      # First unwrap
       data1 = AshBaml.Response.unwrap(response)
-
-      # Second unwrap should return same data (idempotent)
       data2 = AshBaml.Response.unwrap(data1)
 
       assert data1 == data2
@@ -163,15 +153,12 @@ defmodule AshBaml.ResponseUsageIntegrationTest do
       short_usage = AshBaml.Response.usage(short_response)
       long_usage = AshBaml.Response.usage(long_response)
 
-      # Longer input should have more input tokens
       assert long_usage.input_tokens > short_usage.input_tokens,
              "Long message (#{long_usage.input_tokens} tokens) should have more input tokens than short message (#{short_usage.input_tokens} tokens)"
 
-      # Output tokens might vary, but both should be positive
       assert short_usage.output_tokens > 0
       assert long_usage.output_tokens > 0
 
-      # Total tokens should reflect the difference
       assert long_usage.total_tokens > short_usage.total_tokens,
              "Long message total (#{long_usage.total_tokens}) should exceed short message total (#{short_usage.total_tokens})"
     end
@@ -186,21 +173,16 @@ defmodule AshBaml.ResponseUsageIntegrationTest do
 
       usage = response.usage
 
-      # Input tokens should be reasonable for this query
-      # "What is the capital of France?" ≈ 7 tokens + system prompt
       assert usage.input_tokens >= 10, "Input tokens (#{usage.input_tokens}) seems too low"
 
       assert usage.input_tokens <= 200,
              "Input tokens (#{usage.input_tokens}) seems too high for simple query"
 
-      # Output tokens should be reasonable for a simple answer
-      # Expected: structured response with city name + confidence
       assert usage.output_tokens > 0, "Output tokens should be positive"
 
       assert usage.output_tokens <= 500,
              "Output tokens (#{usage.output_tokens}) seems too high for simple response"
 
-      # Total should be sum
       assert usage.total_tokens == usage.input_tokens + usage.output_tokens
     end
 
@@ -227,7 +209,6 @@ defmodule AshBaml.ResponseUsageIntegrationTest do
 
       assert length(responses) == 3
 
-      # Each response should have its own usage data
       usages = Enum.map(responses, &AshBaml.Response.usage/1)
 
       Enum.each(usages, fn usage ->
@@ -238,13 +219,11 @@ defmodule AshBaml.ResponseUsageIntegrationTest do
         assert usage.total_tokens > 0
       end)
 
-      # Each response should have different collectors
       collectors = Enum.map(responses, & &1.collector)
       assert length(Enum.uniq(collectors)) == 3, "Each call should have unique collector"
     end
 
     test "usage tracking works with telemetry enabled" do
-      # Verify that Response wrapper and telemetry can coexist
       test_pid = self()
       ref = make_ref()
       handler_id = "test-response-telemetry-#{:erlang.ref_to_list(ref)}"
@@ -267,18 +246,13 @@ defmodule AshBaml.ResponseUsageIntegrationTest do
         })
         |> Ash.run_action()
 
-      # Response should have usage
       response_usage = AshBaml.Response.usage(response)
       assert is_map(response_usage)
 
-      # Telemetry should also fire with same usage data
       assert_receive {^ref, :telemetry, telemetry_measurements}, 5000
 
-      # Both should report the same token counts
       assert response_usage.input_tokens == telemetry_measurements.input_tokens
-
       assert response_usage.output_tokens == telemetry_measurements.output_tokens
-
       assert response_usage.total_tokens == telemetry_measurements.total_tokens
 
       :telemetry.detach(handler_id)
@@ -294,20 +268,17 @@ defmodule AshBaml.ResponseUsageIntegrationTest do
         })
         |> Ash.run_action()
 
-      # This simple call should be under budget
       if response.usage.total_tokens > max_tokens do
         flunk(
           "Expected call to be under budget (#{max_tokens}), got #{response.usage.total_tokens} tokens"
         )
       end
 
-      # Verify we can use usage for budget decisions
       assert is_integer(response.usage.total_tokens)
       assert response.usage.total_tokens > 0
     end
 
     test "usage data enables cost calculation" do
-      # Mock pricing: $0.003 per 1K input tokens, $0.012 per 1K output tokens
       input_price_per_1k = 0.003
       output_price_per_1k = 0.012
 
@@ -320,20 +291,15 @@ defmodule AshBaml.ResponseUsageIntegrationTest do
 
       usage = response.usage
 
-      # Calculate cost from usage
       input_cost = usage.input_tokens / 1000 * input_price_per_1k
       output_cost = usage.output_tokens / 1000 * output_price_per_1k
       total_cost = input_cost + output_cost
 
-      # Verify cost calculation is reasonable
       assert is_float(total_cost)
       assert total_cost > 0
       assert total_cost < 1.0, "Cost for simple call should be well under $1"
 
-      # Typically this call costs $0.0001-0.001
-      assert total_cost >= 0.00001,
-             "Cost (#{total_cost}) seems unreasonably low"
-
+      assert total_cost >= 0.00001, "Cost (#{total_cost}) seems unreasonably low"
       assert total_cost <= 0.01, "Cost (#{total_cost}) seems unreasonably high"
     end
   end
