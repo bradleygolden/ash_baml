@@ -139,20 +139,33 @@ usage = response.usage
 usage = AshBaml.Response.usage(response)
 ```
 
-### Integration with Observability Systems
+### Integration with Application Logic
 
-The Response wrapper enables integration with observability systems like AshAgent:
+The Response wrapper enables programmatic integration with your application logic:
 
 ```elixir
-defmodule MyApp.Agent do
-  use AshAgent
+defmodule MyApp.LLMService do
+  def call_with_budget(action_input, max_tokens) do
+    {:ok, response} = action_input |> Ash.run_action()
 
-  def response_usage(%AshBaml.Response{usage: usage}), do: usage
-  def response_usage(_), do: nil
+    # Check token usage against budget
+    if response.usage.total_tokens > max_tokens do
+      {:error, :budget_exceeded, response.usage}
+    else
+      {:ok, response.data, response.usage}
+    end
+  end
+
+  def track_cost(response) do
+    # Calculate cost based on usage
+    cost = calculate_cost(response.usage)
+    MyApp.CostTracker.record(cost)
+    response
+  end
 end
 ```
 
-This allows cost tracking, rate limiting, and usage analytics at the application level without relying solely on telemetry events.
+This enables cost tracking, rate limiting, and usage analytics at the application level without relying solely on telemetry events.
 
 ### Usage vs Telemetry
 

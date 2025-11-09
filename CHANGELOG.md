@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Token usage tracking via `response.usage` containing `input_tokens`, `output_tokens`, and `total_tokens`
 - `AshBaml.Response.unwrap/1` helper function for extracting data from wrapped responses
 - `AshBaml.Response.usage/1` function for accessing usage metadata
-- Integration support for observability systems like AshAgent's `response_usage/1`
+- Programmatic access to token usage for cost tracking and observability
 
 ### Changed
 
