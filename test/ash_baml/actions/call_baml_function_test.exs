@@ -99,12 +99,14 @@ defmodule AshBaml.Actions.CallBamlFunctionTest do
         end
       end
 
-      {:ok, result} =
+      {:ok, response} =
         WorkingResource
         |> Ash.ActionInput.for_action(:test, %{}, domain: WorkingDomain)
         |> Ash.run_action()
 
-      assert result == %{result: "success"}
+      assert %AshBaml.Response{} = response
+      assert response.data == %{result: "success"}
+      assert %{input_tokens: _, output_tokens: _, total_tokens: _} = response.usage
     end
 
     test "wraps result in union when action returns Ash.Type.Union" do
@@ -150,14 +152,16 @@ defmodule AshBaml.Actions.CallBamlFunctionTest do
         end
       end
 
-      {:ok, result} =
+      {:ok, response} =
         UnionResource
         |> Ash.ActionInput.for_action(:test, %{}, domain: UnionDomain)
         |> Ash.run_action()
 
-      assert %Ash.Union{value: value} = result
+      assert %AshBaml.Response{} = response
+      assert %Ash.Union{value: value} = response.data
       assert value.__struct__ == UnionResponse
       assert value.message == "test"
+      assert %{input_tokens: _, output_tokens: _, total_tokens: _} = response.usage
     end
 
     test "returns unwrapped result when action is not a union" do
@@ -193,13 +197,15 @@ defmodule AshBaml.Actions.CallBamlFunctionTest do
         end
       end
 
-      {:ok, result} =
+      {:ok, response} =
         SimpleResource
         |> Ash.ActionInput.for_action(:test, %{}, domain: SimpleDomain)
         |> Ash.run_action()
 
-      assert result.__struct__ == SimpleResponse
-      assert result.value == "direct"
+      assert %AshBaml.Response{} = response
+      assert response.data.__struct__ == SimpleResponse
+      assert response.data.value == "direct"
+      assert %{input_tokens: _, output_tokens: _, total_tokens: _} = response.usage
     end
   end
 
@@ -284,12 +290,13 @@ defmodule AshBaml.Actions.CallBamlFunctionTest do
         end
       end
 
-      {:ok, result} =
+      {:ok, response} =
         TelemetryResource
         |> Ash.ActionInput.for_action(:test, %{}, domain: TelemetryDomain)
         |> Ash.run_action()
 
-      assert result == %{result: "ok"}
+      assert %AshBaml.Response{} = response
+      assert response.data == %{result: "ok"}
     end
 
     test "can override telemetry config for specific action" do
@@ -330,12 +337,13 @@ defmodule AshBaml.Actions.CallBamlFunctionTest do
         end
       end
 
-      {:ok, result} =
+      {:ok, response} =
         TelemetryOverrideResource
         |> Ash.ActionInput.for_action(:test, %{}, domain: TelemetryOverrideDomain)
         |> Ash.run_action()
 
-      assert result == %{result: "ok"}
+      assert %AshBaml.Response{} = response
+      assert response.data == %{result: "ok"}
     end
   end
 end

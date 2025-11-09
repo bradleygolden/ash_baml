@@ -84,12 +84,13 @@ defmodule AshBaml.TelemetryTest do
       input = build_input()
       config = [enabled: true, events: [:start, :stop, :exception]]
 
-      result =
+      {result, collector} =
         Telemetry.with_telemetry(input, :TestFunction, config, fn _collector_opts ->
           {:ok, :test_result}
         end)
 
       assert result == {:ok, :test_result}
+      assert %BamlElixir.Collector{} = collector
 
       assert_receive {:telemetry_event, [:ash_baml, :call, :start], measurements, metadata}
       assert Map.has_key?(measurements, :monotonic_time)
@@ -108,12 +109,13 @@ defmodule AshBaml.TelemetryTest do
       input = build_input()
       config = [enabled: false, events: [:start, :stop, :exception]]
 
-      result =
+      {result, collector} =
         Telemetry.with_telemetry(input, :TestFunction, config, fn _collector_opts ->
           {:ok, :test_result}
         end)
 
       assert result == {:ok, :test_result}
+      assert %BamlElixir.Collector{} = collector
 
       refute_receive {:telemetry_event, _, _, _}, 100
     end
@@ -152,9 +154,10 @@ defmodule AshBaml.TelemetryTest do
       input = build_input()
       config = [enabled: true, prefix: [:my_app, :ai], events: [:start]]
 
-      Telemetry.with_telemetry(input, :TestFunction, config, fn _collector_opts ->
-        {:ok, :result}
-      end)
+      {_result, _collector} =
+        Telemetry.with_telemetry(input, :TestFunction, config, fn _collector_opts ->
+          {:ok, :result}
+        end)
 
       assert_receive {:telemetry_event, [:my_app, :ai, :call, :start], _, _}
     end
@@ -163,9 +166,10 @@ defmodule AshBaml.TelemetryTest do
       input = build_input()
       config = [enabled: true, events: [:stop]]
 
-      Telemetry.with_telemetry(input, :TestFunction, config, fn _collector_opts ->
-        {:ok, :result}
-      end)
+      {_result, _collector} =
+        Telemetry.with_telemetry(input, :TestFunction, config, fn _collector_opts ->
+          {:ok, :result}
+        end)
 
       refute_receive {:telemetry_event, [:ash_baml, :call, :start], _, _}, 100
       assert_receive {:telemetry_event, [:ash_baml, :call, :stop], _, _}
@@ -175,9 +179,10 @@ defmodule AshBaml.TelemetryTest do
       input = build_input()
       config = [enabled: true, events: [:start], metadata: [:llm_client, :stream]]
 
-      Telemetry.with_telemetry(input, :TestFunction, config, fn _collector_opts ->
-        {:ok, :result}
-      end)
+      {_result, _collector} =
+        Telemetry.with_telemetry(input, :TestFunction, config, fn _collector_opts ->
+          {:ok, :result}
+        end)
 
       assert_receive {:telemetry_event, [:ash_baml, :call, :start], _measurements, metadata}
       assert Map.has_key?(metadata, :resource)
@@ -191,9 +196,10 @@ defmodule AshBaml.TelemetryTest do
       config = [enabled: true, sample_rate: 0.0, events: [:start]]
 
       for _ <- 1..10 do
-        Telemetry.with_telemetry(input, :TestFunction, config, fn _collector_opts ->
-          {:ok, :result}
-        end)
+        {_result, _collector} =
+          Telemetry.with_telemetry(input, :TestFunction, config, fn _collector_opts ->
+            {:ok, :result}
+          end)
       end
 
       refute_receive {:telemetry_event, _, _, _}, 100
@@ -241,27 +247,32 @@ defmodule AshBaml.TelemetryTest do
       config = [enabled: true, events: [:stop]]
 
       # Even if collector fails, should not crash
-      result =
+      {result, collector} =
         Telemetry.with_telemetry(input, :TestFunction, config, fn _collector_opts ->
           {:ok, :result}
         end)
 
       assert result == {:ok, :result}
+      assert %BamlElixir.Collector{} = collector
       assert_receive {:telemetry_event, [:ash_baml, :call, :stop], measurements, _}
       assert measurements.input_tokens >= 0
       assert measurements.output_tokens >= 0
       assert measurements.total_tokens >= 0
     end
 
-    test "fast path returns empty collector opts when disabled" do
+    test "fast path returns collector opts when disabled" do
       input = build_input()
       config = [enabled: false]
 
-      Telemetry.with_telemetry(input, :TestFunction, config, fn collector_opts ->
-        # BAML client expects a map for options, even when empty
-        assert collector_opts == %{}
-        {:ok, :fast_path}
-      end)
+      {result, collector} =
+        Telemetry.with_telemetry(input, :TestFunction, config, fn collector_opts ->
+          # BAML client expects collectors even when telemetry disabled
+          assert %{collectors: [%BamlElixir.Collector{}]} = collector_opts
+          {:ok, :fast_path}
+        end)
+
+      assert result == {:ok, :fast_path}
+      assert %BamlElixir.Collector{} = collector
     end
 
     test "nil collector_name is accepted and generates auto name" do

@@ -37,7 +37,7 @@ defmodule AshBaml.Response do
               total_tokens: non_neg_integer()
             }
             | nil,
-          collector: reference() | nil
+          collector: %BamlElixir.Collector{reference: reference()} | nil
         }
 
   @doc """
@@ -52,7 +52,6 @@ defmodule AshBaml.Response do
 
   Returns a `%AshBaml.Response{}` struct with extracted usage information.
   """
-  @spec new(term(), reference() | nil) :: t()
   def new(data, collector) do
     %__MODULE__{
       data: data,

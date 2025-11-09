@@ -111,12 +111,13 @@ defmodule AshBaml.Telemetry do
 
   ## Returns
 
-  Returns the result of `func.()`, which should be `{:ok, result}` or
-  `{:error, reason}`.
+  Returns a tuple `{result, collector}` where result is `{:ok, term()}` or
+  `{:error, term()}` from the function call, and collector is the
+  `BamlElixir.Collector` reference used for the call.
 
   ## Examples
 
-      result = AshBaml.Telemetry.with_telemetry(
+      {result, collector} = AshBaml.Telemetry.with_telemetry(
         input,
         :ChatAgent,
         config,
@@ -125,22 +126,20 @@ defmodule AshBaml.Telemetry do
         end
       )
   """
-  @spec with_telemetry(
-          Ash.Resource.record(),
-          atom(),
-          keyword(),
-          (map() -> {:ok, term()} | {:error, term()})
-        ) :: {:ok, term()} | {:error, term()}
   def with_telemetry(input, function_name, config, func) do
-    if enabled?(input, config) && should_sample?(config) do
-      execute_with_telemetry(input, function_name, config, func)
-    else
-      func.(%{})
-    end
+    collector = create_collector(input, function_name, config)
+
+    result =
+      if enabled?(input, config) && should_sample?(config) do
+        execute_with_telemetry(input, function_name, config, func, collector)
+      else
+        func.(%{collectors: [collector]})
+      end
+
+    {result, collector}
   end
 
-  defp execute_with_telemetry(input, function_name, config, func) do
-    collector = create_collector(input, function_name, config)
+  defp execute_with_telemetry(input, function_name, config, func, collector) do
     metadata = build_metadata(input, function_name, collector, config)
 
     start_time = System.monotonic_time()
