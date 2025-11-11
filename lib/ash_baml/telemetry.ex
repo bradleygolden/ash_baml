@@ -282,25 +282,6 @@ defmodule AshBaml.Telemetry do
       %{input_tokens: 0, output_tokens: 0, total_tokens: 0}
   end
 
-  defp get_model_name(collector) do
-    log_result = BamlElixir.Collector.last_function_log(collector)
-
-    case log_result do
-      %{"calls" => [%{"request" => %{"body" => body}} | _]} when is_binary(body) ->
-        case Jason.decode(body) do
-          {:ok, %{"model" => model}} when is_binary(model) -> model
-          _ -> nil
-        end
-
-      _ ->
-        nil
-    end
-  rescue
-    exception ->
-      Logger.debug("Failed to extract model name from collector: #{inspect(exception)}")
-      nil
-  end
-
   defp get_observability_data(collector) do
     function_log = BamlElixir.Collector.last_function_log(collector)
 
