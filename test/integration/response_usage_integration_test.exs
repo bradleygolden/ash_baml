@@ -302,5 +302,33 @@ defmodule AshBaml.ResponseUsageIntegrationTest do
       assert total_cost >= 0.00001, "Cost (#{total_cost}) seems unreasonably low"
       assert total_cost <= 0.01, "Cost (#{total_cost}) seems unreasonably high"
     end
+
+    test "response includes observability metadata" do
+      {:ok, response} =
+        ResponseTestResource
+        |> Ash.ActionInput.for_action(:test_response, %{
+          message: "Test observability"
+        })
+        |> Ash.run_action()
+
+      assert %AshBaml.Response{} = response
+
+      assert is_binary(response.model_name) or is_nil(response.model_name)
+      assert is_binary(response.provider) or is_nil(response.provider)
+      assert is_binary(response.client_name) or is_nil(response.client_name)
+      assert is_binary(response.function_name) or is_nil(response.function_name)
+      assert is_binary(response.request_id) or is_nil(response.request_id)
+
+      if response.timing do
+        assert is_map(response.timing)
+        assert is_number(response.timing.duration_ms)
+        assert response.timing.duration_ms > 0
+      end
+
+      if response.num_attempts do
+        assert is_integer(response.num_attempts)
+        assert response.num_attempts >= 1
+      end
+    end
   end
 end

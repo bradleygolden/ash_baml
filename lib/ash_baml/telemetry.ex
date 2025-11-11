@@ -56,6 +56,16 @@ defmodule AshBaml.Telemetry do
         collector_name: "MyApp.Assistant-ChatAgent-12345"
       }
 
+  The `:stop` event additionally includes observability metadata:
+
+      %{
+        model_name: "gpt-4",
+        provider: "openai",
+        client_name: "GPT4Client",
+        num_attempts: 1,
+        request_id: "req_abc123"
+      }
+
   Additional metadata can be configured via the DSL.
 
   ## Privacy
@@ -161,9 +171,15 @@ defmodule AshBaml.Telemetry do
       duration = System.monotonic_time() - start_time
 
       usage = get_usage(collector)
-      model_name = get_model_name(collector)
+      observability_data = get_observability_data(collector)
 
-      metadata_with_model = Map.put(metadata, :model_name, model_name)
+      metadata_with_observability =
+        metadata
+        |> Map.put(:model_name, observability_data.model_name)
+        |> Map.put(:provider, observability_data.provider)
+        |> Map.put(:client_name, observability_data.client_name)
+        |> Map.put(:num_attempts, observability_data.num_attempts)
+        |> Map.put(:request_id, observability_data.request_id)
 
       emit_event(
         :stop,
@@ -175,7 +191,7 @@ defmodule AshBaml.Telemetry do
           total_tokens: usage.total_tokens,
           monotonic_time: System.monotonic_time()
         },
-        metadata_with_model
+        metadata_with_observability
       )
 
       result
@@ -283,6 +299,50 @@ defmodule AshBaml.Telemetry do
     exception ->
       Logger.debug("Failed to extract model name from collector: #{inspect(exception)}")
       nil
+  end
+
+  defp get_observability_data(collector) do
+    function_log = BamlElixir.Collector.last_function_log(collector)
+
+    %{
+      model_name: extract_model_name_from_log(function_log),
+      provider: get_in(function_log, ["calls", Access.at(0), "provider"]),
+      client_name: get_in(function_log, ["calls", Access.at(0), "client_name"]),
+      num_attempts:
+        case Map.get(function_log || %{}, "calls") do
+          calls when is_list(calls) -> length(calls)
+          _ -> nil
+        end,
+      request_id: Map.get(function_log || %{}, "id")
+    }
+  rescue
+    exception ->
+      Logger.debug("Failed to extract observability data from collector: #{inspect(exception)}")
+
+      %{
+        model_name: nil,
+        provider: nil,
+        client_name: nil,
+        num_attempts: nil,
+        request_id: nil
+      }
+  end
+
+  defp extract_model_name_from_log(nil), do: nil
+
+  defp extract_model_name_from_log(function_log) do
+    case get_in(function_log, ["calls", Access.at(0), "request", "body"]) do
+      body when is_binary(body) ->
+        case Jason.decode(body) do
+          {:ok, %{"model" => model}} when is_binary(model) -> model
+          _ -> nil
+        end
+
+      _ ->
+        nil
+    end
+  rescue
+    _ -> nil
   end
 
   defp build_metadata(input, function_name, collector, config) do
