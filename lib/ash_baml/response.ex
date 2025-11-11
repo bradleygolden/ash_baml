@@ -228,20 +228,22 @@ defmodule AshBaml.Response do
   defp extract_timing(nil), do: nil
 
   defp extract_timing(function_log) do
-    with timing when is_map(timing) <- Map.get(function_log, "timing") do
-      %{
-        duration_ms: Map.get(timing, "duration_ms"),
-        start_time_utc_ms: Map.get(timing, "start_time_utc_ms"),
-        time_to_first_token_ms: Map.get(timing, "time_to_first_token_ms")
-      }
-      |> Enum.reject(fn {_k, v} -> is_nil(v) end)
-      |> Enum.into(%{})
-      |> case do
-        map when map == %{} -> nil
-        map -> map
-      end
-    else
-      _ -> nil
+    case Map.get(function_log, "timing") do
+      timing when is_map(timing) ->
+        %{
+          duration_ms: Map.get(timing, "duration_ms"),
+          start_time_utc_ms: Map.get(timing, "start_time_utc_ms"),
+          time_to_first_token_ms: Map.get(timing, "time_to_first_token_ms")
+        }
+        |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+        |> Enum.into(%{})
+        |> case do
+          map when map == %{} -> nil
+          map -> map
+        end
+
+      _ ->
+        nil
     end
   rescue
     exception ->
