@@ -103,6 +103,9 @@ defmodule AshBaml.ClientBuilder do
 
       :ok
     rescue
+      e in ArgumentError ->
+        handle_argument_error(e, module_name)
+
       e in CompileError ->
         handle_compile_error(e, module_name)
 
@@ -110,6 +113,17 @@ defmodule AshBaml.ClientBuilder do
         {:error, "Failed to create BAML client module #{inspect(module_name)}: #{inspect(e)}"}
     after
       unmark_creating(creation_key)
+    end
+  end
+
+  defp handle_argument_error(error, module_name) do
+    error_message = Exception.message(error)
+
+    if String.contains?(error_message, "cannot define module") and
+         String.contains?(error_message, "currently being defined") do
+      :ok
+    else
+      {:error, "Failed to create BAML client module #{inspect(module_name)}: #{inspect(error)}"}
     end
   end
 
