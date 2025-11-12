@@ -134,6 +134,8 @@ defmodule AshBaml.TypeGenerator do
     Module.concat(base_module, name)
   end
 
+  defp baml_type_to_elixir_type({:map, _key_type, _value_type}, _base_module), do: :map
+
   defp baml_type_to_elixir_type(_, _base_module), do: :any
 
   defp primitive_to_elixir(:string), do: :string
