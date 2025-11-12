@@ -54,7 +54,6 @@ defmodule AshBaml.Actions.CallBamlFunction do
         function_name,
         telemetry_config,
         fn collector_opts ->
-          # BAML client expects arguments as a map
           function_module.call(input.arguments, collector_opts)
         end
       )

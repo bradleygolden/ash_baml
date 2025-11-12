@@ -284,11 +284,12 @@ defmodule AshBaml.Telemetry do
 
   defp get_observability_data(collector) do
     function_log = BamlElixir.Collector.last_function_log(collector)
+    call = get_selected_or_first_call(function_log)
 
     %{
-      model_name: extract_model_name_from_log(function_log),
-      provider: get_in(function_log, ["calls", Access.at(0), "provider"]),
-      client_name: get_in(function_log, ["calls", Access.at(0), "client_name"]),
+      model_name: extract_model_name_from_log(call),
+      provider: Map.get(call || %{}, "provider"),
+      client_name: Map.get(call || %{}, "client_name"),
       num_attempts:
         case Map.get(function_log || %{}, "calls") do
           calls when is_list(calls) -> length(calls)
@@ -309,10 +310,19 @@ defmodule AshBaml.Telemetry do
       }
   end
 
+  defp get_selected_or_first_call(nil), do: nil
+
+  defp get_selected_or_first_call(function_log) do
+    calls = Map.get(function_log, "calls", [])
+
+    Enum.find(calls, fn call -> Map.get(call, "selected") == true end) ||
+      List.first(calls)
+  end
+
   defp extract_model_name_from_log(nil), do: nil
 
-  defp extract_model_name_from_log(function_log) do
-    case get_in(function_log, ["calls", Access.at(0), "request", "body"]) do
+  defp extract_model_name_from_log(call) when is_map(call) do
+    case get_in(call, ["request", "body"]) do
       body when is_binary(body) ->
         case Jason.decode(body) do
           {:ok, %{"model" => model}} when is_binary(model) -> model
@@ -325,6 +335,8 @@ defmodule AshBaml.Telemetry do
   rescue
     _ -> nil
   end
+
+  defp extract_model_name_from_log(_), do: nil
 
   defp build_metadata(input, function_name, collector, config) do
     base = %{

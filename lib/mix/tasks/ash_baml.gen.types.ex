@@ -138,7 +138,6 @@ defmodule Mix.Tasks.AshBaml.Gen.Types do
         write_or_preview(module_code, target_module, output_dir, dry_run?, verbose?)
       end)
 
-    # Generate enum types
     enum_results =
       Enum.map(enums, fn {enum_name, variants} ->
         target_module = Module.concat(types_module, enum_name)

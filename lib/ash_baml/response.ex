@@ -189,7 +189,9 @@ defmodule AshBaml.Response do
   defp extract_model_name(nil), do: nil
 
   defp extract_model_name(function_log) do
-    case get_in(function_log, ["calls", Access.at(0), "request", "body"]) do
+    call = get_selected_or_first_call(function_log)
+
+    case get_in(call, ["request", "body"]) do
       body when is_binary(body) ->
         case Jason.decode(body) do
           {:ok, %{"model" => model}} when is_binary(model) -> model
@@ -208,7 +210,8 @@ defmodule AshBaml.Response do
   defp extract_provider(nil), do: nil
 
   defp extract_provider(function_log) do
-    get_in(function_log, ["calls", Access.at(0), "provider"])
+    call = get_selected_or_first_call(function_log)
+    Map.get(call || %{}, "provider")
   rescue
     exception ->
       Logger.debug("Failed to extract provider from function log: #{inspect(exception)}")
@@ -218,11 +221,21 @@ defmodule AshBaml.Response do
   defp extract_client_name(nil), do: nil
 
   defp extract_client_name(function_log) do
-    get_in(function_log, ["calls", Access.at(0), "client_name"])
+    call = get_selected_or_first_call(function_log)
+    Map.get(call || %{}, "client_name")
   rescue
     exception ->
       Logger.debug("Failed to extract client name from function log: #{inspect(exception)}")
       nil
+  end
+
+  defp get_selected_or_first_call(nil), do: nil
+
+  defp get_selected_or_first_call(function_log) do
+    calls = Map.get(function_log, "calls", [])
+
+    Enum.find(calls, fn call -> Map.get(call, "selected") == true end) ||
+      List.first(calls)
   end
 
   defp extract_timing(nil), do: nil
