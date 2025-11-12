@@ -100,7 +100,6 @@ defmodule AshBaml.Telemetry do
 
   ## Example
 
-      # In application.ex
       :telemetry.attach(
         "log-token-usage",
         [:ash_baml, :call, :stop],

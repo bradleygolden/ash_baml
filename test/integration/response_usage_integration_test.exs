@@ -132,7 +132,6 @@ defmodule AshBaml.ResponseUsageIntegrationTest do
     end
 
     test "usage varies with input size" do
-      # Short message
       {:ok, short_response} =
         ResponseTestResource
         |> Ash.ActionInput.for_action(:test_short_message, %{
@@ -140,7 +139,6 @@ defmodule AshBaml.ResponseUsageIntegrationTest do
         })
         |> Ash.run_action()
 
-      # Long message
       long_message = String.duplicate("This is a longer test message. ", 10)
 
       {:ok, long_response} =

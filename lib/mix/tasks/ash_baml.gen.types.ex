@@ -29,13 +29,11 @@ defmodule Mix.Tasks.AshBaml.Gen.Types do
 
   Example:
 
-      # BAML class
       class WeatherTool {
         city string
         units string
       }
 
-      # Generated module
       defmodule MyApp.BamlClient.Types.WeatherTool do
         use Ash.TypedStruct
 

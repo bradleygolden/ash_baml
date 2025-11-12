@@ -32,10 +32,7 @@ defmodule AshBaml.Response do
       response.num_attempts   # => 1
       response.function_name  # => "ChatAgent"
 
-      # Extract just the data
       data = AshBaml.Response.unwrap(response)
-
-      # Get usage for observability
       usage = AshBaml.Response.usage(response)
   """
 
