@@ -17,6 +17,9 @@ defmodule AshBaml.Response do
   - `:num_attempts` - Number of LLM call attempts (tracks retries/fallbacks)
   - `:function_name` - BAML function name that was called
   - `:request_id` - Unique identifier for this request
+  - `:raw_response` - Raw LLM text output before BAML parsing
+  - `:tags` - Custom metadata tags map
+  - `:log_type` - Type of call: "call" or "stream"
 
   ## Example
 
@@ -48,7 +51,10 @@ defmodule AshBaml.Response do
     :timing,
     :num_attempts,
     :function_name,
-    :request_id
+    :request_id,
+    :raw_response,
+    :tags,
+    :log_type
   ]
 
   @type t :: %__MODULE__{
@@ -73,7 +79,10 @@ defmodule AshBaml.Response do
             | nil,
           num_attempts: non_neg_integer() | nil,
           function_name: String.t() | nil,
-          request_id: String.t() | nil
+          request_id: String.t() | nil,
+          raw_response: String.t() | nil,
+          tags: map() | nil,
+          log_type: String.t() | nil
         }
 
   @doc """
@@ -101,7 +110,10 @@ defmodule AshBaml.Response do
       timing: extract_timing(function_log),
       num_attempts: extract_num_attempts(function_log),
       function_name: extract_function_name(function_log),
-      request_id: extract_request_id(function_log)
+      request_id: extract_request_id(function_log),
+      raw_response: extract_raw_response(function_log),
+      tags: extract_tags(function_log),
+      log_type: extract_log_type(function_log)
     }
   end
 
@@ -294,6 +306,39 @@ defmodule AshBaml.Response do
   rescue
     exception ->
       Logger.debug("Failed to extract request_id from function log: #{inspect(exception)}")
+      nil
+  end
+
+  defp extract_raw_response(nil), do: nil
+
+  defp extract_raw_response(function_log) do
+    Map.get(function_log, "raw_llm_response")
+  rescue
+    exception ->
+      Logger.debug("Failed to extract raw_response from function log: #{inspect(exception)}")
+      nil
+  end
+
+  defp extract_tags(nil), do: nil
+
+  defp extract_tags(function_log) do
+    case Map.get(function_log, "tags") do
+      tags when is_map(tags) and map_size(tags) > 0 -> tags
+      _ -> nil
+    end
+  rescue
+    exception ->
+      Logger.debug("Failed to extract tags from function log: #{inspect(exception)}")
+      nil
+  end
+
+  defp extract_log_type(nil), do: nil
+
+  defp extract_log_type(function_log) do
+    Map.get(function_log, "log_type")
+  rescue
+    exception ->
+      Logger.debug("Failed to extract log_type from function log: #{inspect(exception)}")
       nil
   end
 end

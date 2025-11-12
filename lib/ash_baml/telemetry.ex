@@ -63,7 +63,21 @@ defmodule AshBaml.Telemetry do
         provider: "openai",
         client_name: "GPT4Client",
         num_attempts: 1,
-        request_id: "req_abc123"
+        request_id: "req_abc123",
+        raw_response: "The capital of France is Paris.",
+        tags: %{"environment" => "production"},
+        log_type: "call",
+        http_request: %{
+          url: "https://api.openai.com/v1/chat/completions",
+          method: "POST",
+          headers: %{"content-type" => "application/json"},
+          body: "{...}"
+        },
+        http_response: %{
+          status_code: 200,
+          headers: %{"content-type" => "application/json"},
+          body: "{...}"
+        }
       }
 
   Additional metadata can be configured via the DSL.
@@ -180,6 +194,11 @@ defmodule AshBaml.Telemetry do
         |> Map.put(:client_name, observability_data.client_name)
         |> Map.put(:num_attempts, observability_data.num_attempts)
         |> Map.put(:request_id, observability_data.request_id)
+        |> Map.put(:raw_response, observability_data.raw_response)
+        |> Map.put(:tags, observability_data.tags)
+        |> Map.put(:log_type, observability_data.log_type)
+        |> Map.put(:http_request, observability_data.http_request)
+        |> Map.put(:http_response, observability_data.http_response)
 
       emit_event(
         :stop,
@@ -295,7 +314,12 @@ defmodule AshBaml.Telemetry do
           calls when is_list(calls) -> length(calls)
           _ -> nil
         end,
-      request_id: Map.get(function_log || %{}, "id")
+      request_id: Map.get(function_log || %{}, "id"),
+      raw_response: Map.get(function_log || %{}, "raw_llm_response"),
+      tags: extract_tags_from_log(function_log),
+      log_type: Map.get(function_log || %{}, "log_type"),
+      http_request: extract_http_request(call),
+      http_response: extract_http_response(call)
     }
   rescue
     exception ->
@@ -306,7 +330,12 @@ defmodule AshBaml.Telemetry do
         provider: nil,
         client_name: nil,
         num_attempts: nil,
-        request_id: nil
+        request_id: nil,
+        raw_response: nil,
+        tags: nil,
+        log_type: nil,
+        http_request: nil,
+        http_response: nil
       }
   end
 
@@ -337,6 +366,70 @@ defmodule AshBaml.Telemetry do
   end
 
   defp extract_model_name_from_log(_), do: nil
+
+  defp extract_tags_from_log(nil), do: nil
+
+  defp extract_tags_from_log(function_log) do
+    case Map.get(function_log, "tags") do
+      tags when is_map(tags) and map_size(tags) > 0 -> tags
+      _ -> nil
+    end
+  rescue
+    _ -> nil
+  end
+
+  defp extract_http_request(nil), do: nil
+
+  defp extract_http_request(call) when is_map(call) do
+    case Map.get(call, "request") do
+      request when is_map(request) ->
+        %{
+          url: Map.get(request, "url"),
+          method: Map.get(request, "method"),
+          headers: Map.get(request, "headers"),
+          body: Map.get(request, "body")
+        }
+        |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+        |> Enum.into(%{})
+        |> case do
+          map when map == %{} -> nil
+          map -> map
+        end
+
+      _ ->
+        nil
+    end
+  rescue
+    _ -> nil
+  end
+
+  defp extract_http_request(_), do: nil
+
+  defp extract_http_response(nil), do: nil
+
+  defp extract_http_response(call) when is_map(call) do
+    case Map.get(call, "response") do
+      response when is_map(response) ->
+        %{
+          status_code: Map.get(response, "status_code"),
+          headers: Map.get(response, "headers"),
+          body: Map.get(response, "body")
+        }
+        |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+        |> Enum.into(%{})
+        |> case do
+          map when map == %{} -> nil
+          map -> map
+        end
+
+      _ ->
+        nil
+    end
+  rescue
+    _ -> nil
+  end
+
+  defp extract_http_response(_), do: nil
 
   defp build_metadata(input, function_name, collector, config) do
     base = %{

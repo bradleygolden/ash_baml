@@ -20,6 +20,9 @@ defmodule AshBaml.ResponseTest do
       assert response.num_attempts == nil
       assert response.function_name == nil
       assert response.request_id == nil
+      assert response.raw_response == nil
+      assert response.tags == nil
+      assert response.log_type == nil
     end
 
     test "creates Response struct with all fields defined" do
@@ -37,6 +40,9 @@ defmodule AshBaml.ResponseTest do
       assert Map.has_key?(response, :num_attempts)
       assert Map.has_key?(response, :function_name)
       assert Map.has_key?(response, :request_id)
+      assert Map.has_key?(response, :raw_response)
+      assert Map.has_key?(response, :tags)
+      assert Map.has_key?(response, :log_type)
     end
   end
 
@@ -88,7 +94,10 @@ defmodule AshBaml.ResponseTest do
         timing: nil,
         num_attempts: nil,
         function_name: nil,
-        request_id: nil
+        request_id: nil,
+        raw_response: nil,
+        tags: nil,
+        log_type: nil
       }
 
       assert %Response{} = response

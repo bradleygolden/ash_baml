@@ -318,6 +318,8 @@ defmodule AshBaml.ResponseUsageIntegrationTest do
       assert is_binary(response.client_name) or is_nil(response.client_name)
       assert is_binary(response.function_name) or is_nil(response.function_name)
       assert is_binary(response.request_id) or is_nil(response.request_id)
+      assert is_binary(response.raw_response) or is_nil(response.raw_response)
+      assert is_binary(response.log_type) or is_nil(response.log_type)
 
       if response.timing do
         assert is_map(response.timing)
@@ -328,6 +330,10 @@ defmodule AshBaml.ResponseUsageIntegrationTest do
       if response.num_attempts do
         assert is_integer(response.num_attempts)
         assert response.num_attempts >= 1
+      end
+
+      if response.tags do
+        assert is_map(response.tags)
       end
     end
   end
