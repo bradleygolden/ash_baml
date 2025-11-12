@@ -56,6 +56,30 @@ defmodule AshBaml.Telemetry do
         collector_name: "MyApp.Assistant-ChatAgent-12345"
       }
 
+  The `:stop` event additionally includes observability metadata:
+
+      %{
+        model_name: "gpt-4",
+        provider: "openai",
+        client_name: "GPT4Client",
+        num_attempts: 1,
+        request_id: "req_abc123",
+        raw_response: "The capital of France is Paris.",
+        tags: %{"environment" => "production"},
+        log_type: "call",
+        http_request: %{
+          url: "https://api.openai.com/v1/chat/completions",
+          method: "POST",
+          headers: %{"content-type" => "application/json"},
+          body: "{...}"
+        },
+        http_response: %{
+          status_code: 200,
+          headers: %{"content-type" => "application/json"},
+          body: "{...}"
+        }
+      }
+
   Additional metadata can be configured via the DSL.
 
   ## Privacy
@@ -76,7 +100,6 @@ defmodule AshBaml.Telemetry do
 
   ## Example
 
-      # In application.ex
       :telemetry.attach(
         "log-token-usage",
         [:ash_baml, :call, :stop],
@@ -161,9 +184,20 @@ defmodule AshBaml.Telemetry do
       duration = System.monotonic_time() - start_time
 
       usage = get_usage(collector)
-      model_name = get_model_name(collector)
+      observability_data = get_observability_data(collector)
 
-      metadata_with_model = Map.put(metadata, :model_name, model_name)
+      metadata_with_observability =
+        metadata
+        |> Map.put(:model_name, observability_data.model_name)
+        |> Map.put(:provider, observability_data.provider)
+        |> Map.put(:client_name, observability_data.client_name)
+        |> Map.put(:num_attempts, observability_data.num_attempts)
+        |> Map.put(:request_id, observability_data.request_id)
+        |> Map.put(:raw_response, observability_data.raw_response)
+        |> Map.put(:tags, observability_data.tags)
+        |> Map.put(:log_type, observability_data.log_type)
+        |> Map.put(:http_request, observability_data.http_request)
+        |> Map.put(:http_response, observability_data.http_response)
 
       emit_event(
         :stop,
@@ -175,7 +209,7 @@ defmodule AshBaml.Telemetry do
           total_tokens: usage.total_tokens,
           monotonic_time: System.monotonic_time()
         },
-        metadata_with_model
+        metadata_with_observability
       )
 
       result
@@ -266,11 +300,58 @@ defmodule AshBaml.Telemetry do
       %{input_tokens: 0, output_tokens: 0, total_tokens: 0}
   end
 
-  defp get_model_name(collector) do
-    log_result = BamlElixir.Collector.last_function_log(collector)
+  defp get_observability_data(collector) do
+    function_log = BamlElixir.Collector.last_function_log(collector)
+    call = get_selected_or_first_call(function_log)
 
-    case log_result do
-      %{"calls" => [%{"request" => %{"body" => body}} | _]} when is_binary(body) ->
+    %{
+      model_name: extract_model_name_from_log(call),
+      provider: Map.get(call || %{}, "provider"),
+      client_name: Map.get(call || %{}, "client_name"),
+      num_attempts:
+        case Map.get(function_log || %{}, "calls") do
+          calls when is_list(calls) -> length(calls)
+          _ -> nil
+        end,
+      request_id: Map.get(function_log || %{}, "id"),
+      raw_response: Map.get(function_log || %{}, "raw_llm_response"),
+      tags: extract_tags_from_log(function_log),
+      log_type: Map.get(function_log || %{}, "log_type"),
+      http_request: extract_http_request(call),
+      http_response: extract_http_response(call)
+    }
+  rescue
+    exception ->
+      Logger.debug("Failed to extract observability data from collector: #{inspect(exception)}")
+
+      %{
+        model_name: nil,
+        provider: nil,
+        client_name: nil,
+        num_attempts: nil,
+        request_id: nil,
+        raw_response: nil,
+        tags: nil,
+        log_type: nil,
+        http_request: nil,
+        http_response: nil
+      }
+  end
+
+  defp get_selected_or_first_call(nil), do: nil
+
+  defp get_selected_or_first_call(function_log) do
+    calls = Map.get(function_log, "calls", [])
+
+    Enum.find(calls, fn call -> Map.get(call, "selected") == true end) ||
+      List.first(calls)
+  end
+
+  defp extract_model_name_from_log(nil), do: nil
+
+  defp extract_model_name_from_log(call) when is_map(call) do
+    case get_in(call, ["request", "body"]) do
+      body when is_binary(body) ->
         case Jason.decode(body) do
           {:ok, %{"model" => model}} when is_binary(model) -> model
           _ -> nil
@@ -280,10 +361,74 @@ defmodule AshBaml.Telemetry do
         nil
     end
   rescue
-    exception ->
-      Logger.debug("Failed to extract model name from collector: #{inspect(exception)}")
-      nil
+    _ -> nil
   end
+
+  defp extract_model_name_from_log(_), do: nil
+
+  defp extract_tags_from_log(nil), do: nil
+
+  defp extract_tags_from_log(function_log) do
+    case Map.get(function_log, "tags") do
+      tags when is_map(tags) and map_size(tags) > 0 -> tags
+      _ -> nil
+    end
+  rescue
+    _ -> nil
+  end
+
+  defp extract_http_request(nil), do: nil
+
+  defp extract_http_request(call) when is_map(call) do
+    case Map.get(call, "request") do
+      request when is_map(request) ->
+        %{
+          url: Map.get(request, "url"),
+          method: Map.get(request, "method"),
+          headers: Map.get(request, "headers"),
+          body: Map.get(request, "body")
+        }
+        |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+        |> Enum.into(%{})
+        |> case do
+          map when map == %{} -> nil
+          map -> map
+        end
+
+      _ ->
+        nil
+    end
+  rescue
+    _ -> nil
+  end
+
+  defp extract_http_request(_), do: nil
+
+  defp extract_http_response(nil), do: nil
+
+  defp extract_http_response(call) when is_map(call) do
+    case Map.get(call, "response") do
+      response when is_map(response) ->
+        %{
+          status_code: Map.get(response, "status_code"),
+          headers: Map.get(response, "headers"),
+          body: Map.get(response, "body")
+        }
+        |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+        |> Enum.into(%{})
+        |> case do
+          map when map == %{} -> nil
+          map -> map
+        end
+
+      _ ->
+        nil
+    end
+  rescue
+    _ -> nil
+  end
+
+  defp extract_http_response(_), do: nil
 
   defp build_metadata(input, function_name, collector, config) do
     base = %{

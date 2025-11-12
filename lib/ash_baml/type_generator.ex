@@ -123,14 +123,10 @@ defmodule AshBaml.TypeGenerator do
     do: baml_type_to_elixir_type(inner, base_module)
 
   defp baml_type_to_elixir_type({:class, name}, base_module) do
-    # Convert BAML class name to full module name
-    # e.g., "Task" with base TodoApp.BamlClient.Types -> TodoApp.BamlClient.Types.Task
     Module.concat(base_module, name)
   end
 
   defp baml_type_to_elixir_type({:enum, name}, base_module) do
-    # Convert BAML enum name to full module name
-    # e.g., "Priority" with base TodoApp.BamlClient.Types -> TodoApp.BamlClient.Types.Priority
     Module.concat(base_module, name)
   end
 

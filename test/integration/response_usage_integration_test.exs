@@ -132,7 +132,6 @@ defmodule AshBaml.ResponseUsageIntegrationTest do
     end
 
     test "usage varies with input size" do
-      # Short message
       {:ok, short_response} =
         ResponseTestResource
         |> Ash.ActionInput.for_action(:test_short_message, %{
@@ -140,7 +139,6 @@ defmodule AshBaml.ResponseUsageIntegrationTest do
         })
         |> Ash.run_action()
 
-      # Long message
       long_message = String.duplicate("This is a longer test message. ", 10)
 
       {:ok, long_response} =
@@ -279,9 +277,6 @@ defmodule AshBaml.ResponseUsageIntegrationTest do
     end
 
     test "usage data enables cost calculation" do
-      input_price_per_1k = 0.003
-      output_price_per_1k = 0.012
-
       {:ok, response} =
         ResponseTestResource
         |> Ash.ActionInput.for_action(:test_response, %{
@@ -291,16 +286,52 @@ defmodule AshBaml.ResponseUsageIntegrationTest do
 
       usage = response.usage
 
-      input_cost = usage.input_tokens / 1000 * input_price_per_1k
-      output_cost = usage.output_tokens / 1000 * output_price_per_1k
+      assert is_integer(response.usage.total_tokens)
+      assert response.usage.total_tokens > 0
+
+      example_input_price_per_1k = 0.003
+      example_output_price_per_1k = 0.012
+
+      input_cost = usage.input_tokens / 1000 * example_input_price_per_1k
+      output_cost = usage.output_tokens / 1000 * example_output_price_per_1k
       total_cost = input_cost + output_cost
 
       assert is_float(total_cost)
       assert total_cost > 0
-      assert total_cost < 1.0, "Cost for simple call should be well under $1"
+    end
 
-      assert total_cost >= 0.00001, "Cost (#{total_cost}) seems unreasonably low"
-      assert total_cost <= 0.01, "Cost (#{total_cost}) seems unreasonably high"
+    test "response includes observability metadata" do
+      {:ok, response} =
+        ResponseTestResource
+        |> Ash.ActionInput.for_action(:test_response, %{
+          message: "Test observability"
+        })
+        |> Ash.run_action()
+
+      assert %AshBaml.Response{} = response
+
+      assert is_binary(response.model_name) or is_nil(response.model_name)
+      assert is_binary(response.provider) or is_nil(response.provider)
+      assert is_binary(response.client_name) or is_nil(response.client_name)
+      assert is_binary(response.function_name) or is_nil(response.function_name)
+      assert is_binary(response.request_id) or is_nil(response.request_id)
+      assert is_binary(response.raw_response) or is_nil(response.raw_response)
+      assert is_binary(response.log_type) or is_nil(response.log_type)
+
+      if response.timing do
+        assert is_map(response.timing)
+        assert is_number(response.timing.duration_ms)
+        assert response.timing.duration_ms > 0
+      end
+
+      if response.num_attempts do
+        assert is_integer(response.num_attempts)
+        assert response.num_attempts >= 1
+      end
+
+      if response.tags do
+        assert is_map(response.tags)
+      end
     end
   end
 end

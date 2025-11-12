@@ -10,23 +10,49 @@ defmodule AshBaml.Response do
   - `:data` - The actual BAML function result (struct or primitive)
   - `:usage` - Token usage map with `:input_tokens`, `:output_tokens`, `:total_tokens`
   - `:collector` - The BamlElixir.Collector reference used for the call
+  - `:model_name` - LLM model name (e.g., "gpt-4", "claude-3-opus")
+  - `:provider` - LLM provider (e.g., "openai", "anthropic")
+  - `:client_name` - BAML client name used for the call
+  - `:timing` - Timing information map with `:duration_ms`, `:start_time_utc_ms`, `:time_to_first_token_ms`
+  - `:num_attempts` - Number of LLM call attempts (tracks retries/fallbacks)
+  - `:function_name` - BAML function name that was called
+  - `:request_id` - Unique identifier for this request
+  - `:raw_response` - Raw LLM text output before BAML parsing
+  - `:tags` - Custom metadata tags map
+  - `:log_type` - Type of call: "call" or "stream"
 
   ## Example
 
       response = AshBaml.Response.new(result, collector)
-      response.data        # => %ChatResponse{message: "Hello!"}
-      response.usage       # => %{input_tokens: 10, output_tokens: 5, total_tokens: 15}
+      response.data           # => %ChatResponse{message: "Hello!"}
+      response.usage          # => %{input_tokens: 10, output_tokens: 5, total_tokens: 15}
+      response.model_name     # => "gpt-4"
+      response.provider       # => "openai"
+      response.timing         # => %{duration_ms: 234, start_time_utc_ms: 1699123456789}
+      response.num_attempts   # => 1
+      response.function_name  # => "ChatAgent"
 
-      # Extract just the data
       data = AshBaml.Response.unwrap(response)
-
-      # Get usage for observability
       usage = AshBaml.Response.usage(response)
   """
 
   require Logger
 
-  defstruct [:data, :usage, :collector]
+  defstruct [
+    :data,
+    :usage,
+    :collector,
+    :model_name,
+    :provider,
+    :client_name,
+    :timing,
+    :num_attempts,
+    :function_name,
+    :request_id,
+    :raw_response,
+    :tags,
+    :log_type
+  ]
 
   @type t :: %__MODULE__{
           data: term(),
@@ -37,7 +63,23 @@ defmodule AshBaml.Response do
               total_tokens: non_neg_integer()
             }
             | nil,
-          collector: %BamlElixir.Collector{reference: reference()} | nil
+          collector: %BamlElixir.Collector{reference: reference()} | nil,
+          model_name: String.t() | nil,
+          provider: String.t() | nil,
+          client_name: String.t() | nil,
+          timing:
+            %{
+              duration_ms: number(),
+              start_time_utc_ms: number(),
+              time_to_first_token_ms: number() | nil
+            }
+            | nil,
+          num_attempts: non_neg_integer() | nil,
+          function_name: String.t() | nil,
+          request_id: String.t() | nil,
+          raw_response: String.t() | nil,
+          tags: map() | nil,
+          log_type: String.t() | nil
         }
 
   @doc """
@@ -53,10 +95,22 @@ defmodule AshBaml.Response do
   Returns a `%AshBaml.Response{}` struct with extracted usage information.
   """
   def new(data, collector) do
+    function_log = get_function_log(collector)
+
     %__MODULE__{
       data: data,
       usage: extract_usage(collector),
-      collector: collector
+      collector: collector,
+      model_name: extract_model_name(function_log),
+      provider: extract_provider(function_log),
+      client_name: extract_client_name(function_log),
+      timing: extract_timing(function_log),
+      num_attempts: extract_num_attempts(function_log),
+      function_name: extract_function_name(function_log),
+      request_id: extract_request_id(function_log),
+      raw_response: extract_raw_response(function_log),
+      tags: extract_tags(function_log),
+      log_type: extract_log_type(function_log)
     }
   end
 
@@ -128,6 +182,160 @@ defmodule AshBaml.Response do
   rescue
     exception ->
       Logger.debug("Failed to extract token usage from collector: #{inspect(exception)}")
+      nil
+  end
+
+  defp get_function_log(nil), do: nil
+
+  defp get_function_log(collector) do
+    BamlElixir.Collector.last_function_log(collector)
+  rescue
+    exception ->
+      Logger.debug("Failed to get function log from collector: #{inspect(exception)}")
+      nil
+  end
+
+  defp extract_model_name(nil), do: nil
+
+  defp extract_model_name(function_log) do
+    call = get_selected_or_first_call(function_log)
+
+    case get_in(call, ["request", "body"]) do
+      body when is_binary(body) ->
+        case Jason.decode(body) do
+          {:ok, %{"model" => model}} when is_binary(model) -> model
+          _ -> nil
+        end
+
+      _ ->
+        nil
+    end
+  rescue
+    exception ->
+      Logger.debug("Failed to extract model name from function log: #{inspect(exception)}")
+      nil
+  end
+
+  defp extract_provider(nil), do: nil
+
+  defp extract_provider(function_log) do
+    call = get_selected_or_first_call(function_log)
+    Map.get(call || %{}, "provider")
+  rescue
+    exception ->
+      Logger.debug("Failed to extract provider from function log: #{inspect(exception)}")
+      nil
+  end
+
+  defp extract_client_name(nil), do: nil
+
+  defp extract_client_name(function_log) do
+    call = get_selected_or_first_call(function_log)
+    Map.get(call || %{}, "client_name")
+  rescue
+    exception ->
+      Logger.debug("Failed to extract client name from function log: #{inspect(exception)}")
+      nil
+  end
+
+  defp get_selected_or_first_call(nil), do: nil
+
+  defp get_selected_or_first_call(function_log) do
+    calls = Map.get(function_log, "calls", [])
+
+    Enum.find(calls, fn call -> Map.get(call, "selected") == true end) ||
+      List.first(calls)
+  end
+
+  defp extract_timing(nil), do: nil
+
+  defp extract_timing(function_log) do
+    case Map.get(function_log, "timing") do
+      timing when is_map(timing) ->
+        %{
+          duration_ms: Map.get(timing, "duration_ms"),
+          start_time_utc_ms: Map.get(timing, "start_time_utc_ms"),
+          time_to_first_token_ms: Map.get(timing, "time_to_first_token_ms")
+        }
+        |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+        |> Enum.into(%{})
+        |> case do
+          map when map == %{} -> nil
+          map -> map
+        end
+
+      _ ->
+        nil
+    end
+  rescue
+    exception ->
+      Logger.debug("Failed to extract timing from function log: #{inspect(exception)}")
+      nil
+  end
+
+  defp extract_num_attempts(nil), do: nil
+
+  defp extract_num_attempts(function_log) do
+    case Map.get(function_log, "calls") do
+      calls when is_list(calls) -> length(calls)
+      _ -> nil
+    end
+  rescue
+    exception ->
+      Logger.debug("Failed to extract num_attempts from function log: #{inspect(exception)}")
+      nil
+  end
+
+  defp extract_function_name(nil), do: nil
+
+  defp extract_function_name(function_log) do
+    Map.get(function_log, "function_name")
+  rescue
+    exception ->
+      Logger.debug("Failed to extract function_name from function log: #{inspect(exception)}")
+      nil
+  end
+
+  defp extract_request_id(nil), do: nil
+
+  defp extract_request_id(function_log) do
+    Map.get(function_log, "id")
+  rescue
+    exception ->
+      Logger.debug("Failed to extract request_id from function log: #{inspect(exception)}")
+      nil
+  end
+
+  defp extract_raw_response(nil), do: nil
+
+  defp extract_raw_response(function_log) do
+    Map.get(function_log, "raw_llm_response")
+  rescue
+    exception ->
+      Logger.debug("Failed to extract raw_response from function log: #{inspect(exception)}")
+      nil
+  end
+
+  defp extract_tags(nil), do: nil
+
+  defp extract_tags(function_log) do
+    case Map.get(function_log, "tags") do
+      tags when is_map(tags) and map_size(tags) > 0 -> tags
+      _ -> nil
+    end
+  rescue
+    exception ->
+      Logger.debug("Failed to extract tags from function log: #{inspect(exception)}")
+      nil
+  end
+
+  defp extract_log_type(nil), do: nil
+
+  defp extract_log_type(function_log) do
+    Map.get(function_log, "log_type")
+  rescue
+    exception ->
+      Logger.debug("Failed to extract log_type from function log: #{inspect(exception)}")
       nil
   end
 end
