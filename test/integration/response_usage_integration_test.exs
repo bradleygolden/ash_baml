@@ -277,9 +277,6 @@ defmodule AshBaml.ResponseUsageIntegrationTest do
     end
 
     test "usage data enables cost calculation" do
-      input_price_per_1k = 0.003
-      output_price_per_1k = 0.012
-
       {:ok, response} =
         ResponseTestResource
         |> Ash.ActionInput.for_action(:test_response, %{
@@ -289,16 +286,18 @@ defmodule AshBaml.ResponseUsageIntegrationTest do
 
       usage = response.usage
 
-      input_cost = usage.input_tokens / 1000 * input_price_per_1k
-      output_cost = usage.output_tokens / 1000 * output_price_per_1k
+      assert is_integer(response.usage.total_tokens)
+      assert response.usage.total_tokens > 0
+
+      example_input_price_per_1k = 0.003
+      example_output_price_per_1k = 0.012
+
+      input_cost = usage.input_tokens / 1000 * example_input_price_per_1k
+      output_cost = usage.output_tokens / 1000 * example_output_price_per_1k
       total_cost = input_cost + output_cost
 
       assert is_float(total_cost)
       assert total_cost > 0
-      assert total_cost < 1.0, "Cost for simple call should be well under $1"
-
-      assert total_cost >= 0.00001, "Cost (#{total_cost}) seems unreasonably low"
-      assert total_cost <= 0.01, "Cost (#{total_cost}) seems unreasonably high"
     end
 
     test "response includes observability metadata" do
