@@ -30,11 +30,7 @@ defmodule AshBaml.ClientBuilder do
 
           _ ->
             {:error,
-             """
-             BAML client #{inspect(identifier)} is configured to use #{inspect(module_name)}
-             but no :baml_src was provided, so the module cannot be auto-generated.
-             Provide :baml_src or predefine #{inspect(module_name)} manually.
-             """}
+             "BAML client #{inspect(identifier)} is configured to use #{inspect(module_name)} but no :baml_src was provided. Provide :baml_src or predefine #{inspect(module_name)} manually."}
         end
     end
   end
@@ -142,21 +138,10 @@ defmodule AshBaml.ClientBuilder do
   defp client_not_configured_error(identifier, available_clients) do
     available =
       case available_clients do
-        [] -> "No clients configured"
-        clients -> "Available: #{inspect(Keyword.keys(clients))}"
+        [] -> "No clients configured."
+        clients -> "Available: #{inspect(Keyword.keys(clients))}."
       end
 
-    """
-    BAML client :#{identifier} not found in application config.
-
-    #{available}
-
-    Add to config/config.exs:
-
-        config :ash_baml,
-          clients: [
-            #{identifier}: {MyApp.BamlClient, baml_src: "baml_src"}
-          ]
-    """
+    "BAML client :#{identifier} not found in application config. #{available} Add to config/config.exs: config :ash_baml, clients: [#{identifier}: {MyApp.BamlClient, baml_src: \"baml_src\"}]"
   end
 end
