@@ -10,6 +10,7 @@ defmodule AshBaml.MixProject do
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
       consolidate_protocols: Mix.env() != :test,
+      preferred_cli_env: [precommit: :test],
       deps: deps(),
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: dialyzer(),
@@ -54,7 +55,7 @@ defmodule AshBaml.MixProject do
       # Ignore Mix.Task and Mix.shell since they're runtime-only build tools
       plt_add_apps: [:mix],
       # Suppress warnings about Mix functions that Dialyzer can't find
-      flags: [:error_handling, :underspecs]
+      flags: [:error_handling, :underspecs, :no_unknown]
     ]
   end
 
@@ -158,6 +159,14 @@ defmodule AshBaml.MixProject do
 
   defp aliases do
     [
+      precommit: [
+        "compile --warnings-as-errors",
+        "format --check-formatted",
+        "credo --strict",
+        "dialyzer --format github",
+        "sobelow --exit",
+        "test --warnings-as-errors"
+      ],
       docs: [
         "spark.cheat_sheets --extensions AshBaml.Resource",
         "docs",
