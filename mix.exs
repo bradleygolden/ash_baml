@@ -43,7 +43,7 @@ defmodule AshBaml.MixProject do
       {:spark, "~> 2.2"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
-      {:ex_doc, "~> 0.34", only: :dev, runtime: false},
+      {:ex_doc, "~> 0.34", only: [:dev, :test], runtime: false},
       {:igniter, "~> 0.3", only: [:dev, :test], runtime: false},
       {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false}
@@ -52,10 +52,7 @@ defmodule AshBaml.MixProject do
 
   defp dialyzer do
     [
-      # Ignore Mix.Task and Mix.shell since they're runtime-only build tools
       plt_add_apps: [:mix],
-      # Suppress warnings about Mix functions that Dialyzer can't find
-      flags: [:error_handling, :underspecs, :no_unknown]
     ]
   end
 
