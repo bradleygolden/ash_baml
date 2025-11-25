@@ -71,8 +71,14 @@ defmodule AshBaml.BamlParser do
           function_exported?(client_module, :__baml_src_path__, 0) ->
         {:ok, client_module.__baml_src_path__()}
 
+      match?({:ok, _}, try_ensure_config_client(client_module)) ->
+        {:ok, client_module.__baml_src_path__()}
+
       path = extract_path_from_source(client_module) ->
         {:ok, path}
+
+      path = get_path_from_config(client_module) ->
+        {:ok, Path.expand(path, File.cwd!())}
 
       true ->
         {:error,
@@ -94,6 +100,44 @@ defmodule AshBaml.BamlParser do
 
          The __baml_src_path__/0 callback will be generated automatically.
          """}
+    end
+  end
+
+  defp try_ensure_config_client(client_module) do
+    clients = Application.get_env(:ash_baml, :clients, [])
+
+    case find_client_by_module(clients, client_module) do
+      {_identifier, {^client_module, _opts}} ->
+        AshBaml.ClientBuilder.ensure_configured_client_module(
+          find_identifier_by_module(clients, client_module),
+          clients
+        )
+
+      _ ->
+        {:error, :not_configured}
+    end
+  end
+
+  defp find_client_by_module(clients, module) do
+    Enum.find(clients, fn
+      {_id, {^module, _opts}} -> true
+      _ -> false
+    end)
+  end
+
+  defp find_identifier_by_module(clients, module) do
+    case find_client_by_module(clients, module) do
+      {identifier, _} -> identifier
+      nil -> nil
+    end
+  end
+
+  defp get_path_from_config(client_module) do
+    clients = Application.get_env(:ash_baml, :clients, [])
+
+    case find_client_by_module(clients, client_module) do
+      {_id, {^client_module, opts}} -> Keyword.get(opts, :baml_src)
+      _ -> nil
     end
   end
 
