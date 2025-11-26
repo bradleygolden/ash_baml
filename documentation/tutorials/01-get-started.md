@@ -17,15 +17,13 @@ In this tutorial, you'll create your first AI-powered Ash resource using BAML. B
 
 ## Installation
 
-> **Note**: AshBaml is not yet published to Hex. Use the GitHub repository as a dependency.
-
 Add ash_baml to your dependencies in `mix.exs`:
 
 ```elixir
 def deps do
   [
     {:ash, "~> 3.0"},
-    {:ash_baml, github: "bradleygolden/ash_baml"}
+    {:ash_baml, "~> 0.1"}
   ]
 end
 ```
