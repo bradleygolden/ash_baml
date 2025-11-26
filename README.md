@@ -427,45 +427,6 @@ function ExtractUser(text: string) -> User {
 
 No code changes needed. The same SAP algorithm works everywhere.
 
-## Comparison with Elixir Alternatives
-
-### vs langchain
-
-| Aspect | langchain | ash_baml |
-|--------|-----------|----------|
-| Agent loops | Pre-built (`:while_needs_response`) | **Custom implementation** (full control) |
-| Function calling | Behavior abstraction (8+ providers) | **SAP** (91-94% accuracy, any provider) |
-| Framework | Standalone | **Ash Framework** |
-
-**Choose langchain** for quick agent setup with pre-built loops.
-**Choose ash_baml** for custom orchestration with higher accuracy.
-
-### vs req_llm
-
-| Aspect | req_llm | ash_baml |
-|--------|---------|----------|
-| Provider support | 45 providers, 665+ models | Any provider (SAP-based) |
-| Function calling | Provider-native (variable) | **SAP** (91-94% consistent) |
-| Cost tracking | **Automatic USD** | Manual (telemetry available) |
-| Framework | None (Req plugin) | **Ash Framework** |
-
-**Choose req_llm** for automatic cost tracking and production streaming.
-**Choose ash_baml** for higher accuracy and schema-first prompts.
-
-### vs ash_ai
-
-| Aspect | ash_ai | ash_baml |
-|--------|--------|----------|
-| Agent loops | Uses LangChain (pre-built) | **Custom implementation** (full control) |
-| Function calling | LangChain models (variable) | **SAP** (91-94% consistent) |
-| Vector search | ✅ PostgreSQL | ❌ |
-| MCP server | ✅ IDE integration | ❌ |
-
-**Choose ash_ai** for vector search, RAG, and MCP server integration.
-**Choose ash_baml** for custom agentic loops and higher function calling accuracy.
-
-See [full comparison](documentation/topics/why-ash-baml.md#comparison-ash_baml-vs-elixir-alternatives) for detailed analysis.
-
 ## Deployment
 
 Deploying applications that use ash_baml is straightforward since `baml_elixir` comes with precompiled NIFs for common platforms (Linux, macOS, Windows). See the **[Deployment Guide](DEPLOYMENT.md)** for detailed instructions including:
