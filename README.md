@@ -505,6 +505,13 @@ Full documentation is available on [HexDocs](https://hexdocs.pm/ash_baml).
 - [Build Agentic Loop](documentation/how-to/build-agentic-loop.md)
 - [Customize Actions](documentation/how-to/customize-actions.md)
 
+## Related Packages
+
+AshBaml is part of the [AshAgent Stack](https://github.com/bradleygolden/ash_agent_stack) ecosystem:
+
+- [ash_agent](https://github.com/bradleygolden/ash_agent) - Core agent framework with declarative DSL
+- [ash_agent_tools](https://github.com/bradleygolden/ash_agent_tools) - Tool calling support
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
