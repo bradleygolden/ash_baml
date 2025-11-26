@@ -4,6 +4,8 @@
 [![Hexdocs.pm](https://img.shields.io/badge/docs-hexdocs-purple.svg)](https://hexdocs.pm/ash_baml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+> **Pre-1.0 Release** - API may change between minor versions. Pin to specific versions in production.
+
 Ash integration for [BAML](https://docs.boundaryml.com) (Boundary ML) functions, enabling type-safe LLM interactions with support for structured outputs, tool calling, and streaming.
 
 ## What is AshBaml?
@@ -29,7 +31,7 @@ You implement the agentic loop. You control state, termination, and error handli
 # 1. Add to mix.exs
 def deps do
   [
-    {:ash_baml, github: "bradleygolden/ash_baml"}
+    {:ash_baml, "~> 0.1"}
   ]
 end
 
@@ -77,14 +79,12 @@ IO.inspect(response.usage)  # Token usage: %{input_tokens: 10, output_tokens: 5,
 
 ## Installation
 
-> **Note**: AshBaml is not yet published to Hex. Use the GitHub repository as a dependency.
-
 Add `ash_baml` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
   [
-    {:ash_baml, github: "bradleygolden/ash_baml"}
+    {:ash_baml, "~> 0.1"}
   ]
 end
 ```

@@ -65,6 +65,7 @@ defmodule AshBaml.MixProject do
       extra_section: "GUIDES",
       extras: [
         {"README.md", title: "Home"},
+        {"CHANGELOG.md", title: "Changelog"},
         # DSL Documentation (auto-generated)
         {"documentation/dsls/DSL-AshBaml.Resource.md", title: "DSL: AshBaml.Resource"},
         # Tutorials
@@ -150,7 +151,7 @@ defmodule AshBaml.MixProject do
         "BAML Documentation" => "https://docs.boundaryml.com",
         "Ash Framework" => "https://hexdocs.pm/ash"
       },
-      files: ~w(lib .formatter.exs mix.exs README.md LICENSE)
+      files: ~w(lib .formatter.exs mix.exs README.md CHANGELOG.md LICENSE)
     ]
   end
 
