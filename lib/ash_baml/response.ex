@@ -187,8 +187,7 @@ defmodule AshBaml.Response do
       {:ok, %{"content" => content}} when is_list(content) ->
         content
         |> Enum.filter(&match?(%{"type" => "thinking"}, &1))
-        |> Enum.map(& &1["thinking"])
-        |> Enum.join("\n")
+        |> Enum.map_join("\n", & &1["thinking"])
         |> case do
           "" -> nil
           text -> text
