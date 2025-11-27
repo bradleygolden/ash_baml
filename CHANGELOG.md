@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add `http_response_body` field to `AshBaml.Response` struct
-- Add `thinking/1` function to extract Anthropic extended thinking content
+- Add `thinking/1` function to extract extended thinking content from response
 
 ## [0.1.0] - 2024-11-26
 

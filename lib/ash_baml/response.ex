@@ -170,7 +170,7 @@ defmodule AshBaml.Response do
   @doc """
   Extracts thinking content from the HTTP response body.
 
-  Anthropic extended thinking returns content blocks with type "thinking".
+  Extended thinking models return content blocks with type "thinking".
   This parses the http_response_body JSON to extract that content.
 
   ## Arguments
