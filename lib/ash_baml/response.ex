@@ -18,6 +18,7 @@ defmodule AshBaml.Response do
   - `:function_name` - BAML function name that was called
   - `:request_id` - Unique identifier for this request
   - `:raw_response` - Raw LLM text output before BAML parsing
+  - `:http_response_body` - Full HTTP response body JSON string (contains thinking blocks)
   - `:tags` - Custom metadata tags map
   - `:log_type` - Type of call: "call" or "stream"
 
@@ -50,6 +51,7 @@ defmodule AshBaml.Response do
     :function_name,
     :request_id,
     :raw_response,
+    :http_response_body,
     :tags,
     :log_type
   ]
@@ -78,6 +80,7 @@ defmodule AshBaml.Response do
           function_name: String.t() | nil,
           request_id: String.t() | nil,
           raw_response: String.t() | nil,
+          http_response_body: String.t() | nil,
           tags: map() | nil,
           log_type: String.t() | nil
         }
@@ -109,6 +112,7 @@ defmodule AshBaml.Response do
       function_name: extract_function_name(function_log),
       request_id: extract_request_id(function_log),
       raw_response: extract_raw_response(function_log),
+      http_response_body: extract_http_response_body(function_log),
       tags: extract_tags(function_log),
       log_type: extract_log_type(function_log)
     }
@@ -162,6 +166,39 @@ defmodule AshBaml.Response do
   """
   @spec usage(t()) :: map() | nil
   def usage(%__MODULE__{usage: usage}), do: usage
+
+  @doc """
+  Extracts thinking content from the HTTP response body.
+
+  Extended thinking models return content blocks with type "thinking".
+  This parses the http_response_body JSON to extract that content.
+
+  ## Arguments
+
+  - `response` - A `%AshBaml.Response{}` struct
+
+  ## Returns
+
+  Returns the thinking content as a string, or `nil` if no thinking content is present.
+  """
+  @spec thinking(t()) :: String.t() | nil
+  def thinking(%__MODULE__{http_response_body: body}) when is_binary(body) do
+    case Jason.decode(body) do
+      {:ok, %{"content" => content}} when is_list(content) ->
+        content
+        |> Enum.filter(&match?(%{"type" => "thinking"}, &1))
+        |> Enum.map_join("\n", & &1["thinking"])
+        |> case do
+          "" -> nil
+          text -> text
+        end
+
+      _ ->
+        nil
+    end
+  end
+
+  def thinking(_), do: nil
 
   defp extract_usage(nil), do: nil
 
@@ -313,6 +350,24 @@ defmodule AshBaml.Response do
   rescue
     exception ->
       Logger.debug("Failed to extract raw_response from function log: #{inspect(exception)}")
+      nil
+  end
+
+  defp extract_http_response_body(nil), do: nil
+
+  defp extract_http_response_body(function_log) do
+    call = get_selected_or_first_call(function_log)
+
+    case get_in(call, ["response", "body"]) do
+      body when is_binary(body) -> body
+      _ -> nil
+    end
+  rescue
+    exception ->
+      Logger.debug(
+        "Failed to extract http_response_body from function log: #{inspect(exception)}"
+      )
+
       nil
   end
 

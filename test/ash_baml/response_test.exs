@@ -21,6 +21,7 @@ defmodule AshBaml.ResponseTest do
       assert response.function_name == nil
       assert response.request_id == nil
       assert response.raw_response == nil
+      assert response.http_response_body == nil
       assert response.tags == nil
       assert response.log_type == nil
     end
@@ -41,6 +42,7 @@ defmodule AshBaml.ResponseTest do
       assert Map.has_key?(response, :function_name)
       assert Map.has_key?(response, :request_id)
       assert Map.has_key?(response, :raw_response)
+      assert Map.has_key?(response, :http_response_body)
       assert Map.has_key?(response, :tags)
       assert Map.has_key?(response, :log_type)
     end
@@ -82,6 +84,75 @@ defmodule AshBaml.ResponseTest do
     end
   end
 
+  describe "thinking/1" do
+    test "extracts thinking content from http_response_body with thinking blocks" do
+      http_body =
+        Jason.encode!(%{
+          "content" => [
+            %{"type" => "thinking", "thinking" => "Let me think about this..."},
+            %{"type" => "text", "text" => "The answer is 42"}
+          ]
+        })
+
+      response = %Response{http_response_body: http_body}
+
+      assert Response.thinking(response) == "Let me think about this..."
+    end
+
+    test "joins multiple thinking blocks with newline" do
+      http_body =
+        Jason.encode!(%{
+          "content" => [
+            %{"type" => "thinking", "thinking" => "First thought"},
+            %{"type" => "text", "text" => "Some text"},
+            %{"type" => "thinking", "thinking" => "Second thought"}
+          ]
+        })
+
+      response = %Response{http_response_body: http_body}
+
+      assert Response.thinking(response) == "First thought\nSecond thought"
+    end
+
+    test "returns nil if no thinking blocks present" do
+      http_body =
+        Jason.encode!(%{
+          "content" => [
+            %{"type" => "text", "text" => "Just regular text"}
+          ]
+        })
+
+      response = %Response{http_response_body: http_body}
+
+      assert Response.thinking(response) == nil
+    end
+
+    test "returns nil if http_response_body is nil" do
+      response = %Response{http_response_body: nil}
+
+      assert Response.thinking(response) == nil
+    end
+
+    test "returns nil if http_response_body is invalid JSON" do
+      response = %Response{http_response_body: "not valid json"}
+
+      assert Response.thinking(response) == nil
+    end
+
+    test "returns nil if http_response_body has no content array" do
+      http_body = Jason.encode!(%{"model" => "claude-3", "id" => "msg_123"})
+      response = %Response{http_response_body: http_body}
+
+      assert Response.thinking(response) == nil
+    end
+
+    test "returns nil for non-Response values" do
+      assert Response.thinking(nil) == nil
+      assert Response.thinking("string") == nil
+      assert Response.thinking(%{}) == nil
+    end
+  end
+
   describe "struct fields" do
     test "all observability fields accept nil values" do
       response = %Response{
@@ -96,6 +167,7 @@ defmodule AshBaml.ResponseTest do
         function_name: nil,
         request_id: nil,
         raw_response: nil,
+        http_response_body: nil,
         tags: nil,
         log_type: nil
       }
