@@ -170,7 +170,8 @@ defmodule AshBaml.MixProject do
         "credo --strict",
         "sobelow --exit",
         "deps.audit",
-        "dialyzer --format github",
+        "hex.audit",
+        "dialyzer",
         "docs --warnings-as-errors"
       ],
       docs: [
