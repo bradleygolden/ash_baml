@@ -4,7 +4,8 @@ defmodule AshBaml.TypeSystemIntegrationTest do
   @moduletag :integration
   @moduletag timeout: 60_000
 
-  alias AshBaml.Test.{BamlClient, TestResource}
+  alias AshBaml.Test.BamlClient.Types, as: BamlClient
+  alias AshBaml.Test.TestResource
 
   describe "type system validation with real API calls" do
     test "string fields receive string values (not nil, not other types)" do

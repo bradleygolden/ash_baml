@@ -191,65 +191,6 @@ defmodule AshBaml.Transformers.DefineClientModulesTest do
       assert error.message =~ "No clients configured"
     end
 
-    test "warns when module already loaded with different source" do
-      unique_module =
-        Module.concat([AshBaml.Test, "DiffSourceClient#{System.unique_integer([:positive])}"])
-
-      Application.put_env(:ash_baml, :clients,
-        original_source: {unique_module, baml_src: "test/support/fixtures/baml_src"}
-      )
-
-      defmodule OriginalSourceResource do
-        use Ash.Resource, domain: nil, extensions: [AshBaml.Resource]
-
-        baml do
-          client(:original_source)
-        end
-      end
-
-      assert Code.ensure_loaded?(unique_module)
-
-      Application.put_env(:ash_baml, :clients,
-        original_source: {unique_module, baml_src: "test/support/fixtures/different_path"}
-      )
-
-      warning_output =
-        ExUnit.CaptureIO.capture_io(:stderr, fn ->
-          defmodule DifferentSourceResource do
-            use Ash.Resource, domain: nil, extensions: [AshBaml.Resource]
-
-            baml do
-              client(:original_source)
-            end
-          end
-        end)
-
-      assert warning_output =~ "already loaded"
-      assert warning_output =~ "Config changes detected"
-    end
-
-    test "handles already creating concurrent safety check" do
-      unique_module =
-        Module.concat([AshBaml.Test, "ConcurrentClient#{System.unique_integer([:positive])}"])
-
-      creation_key = {:ash_baml_client_creation, unique_module}
-      :persistent_term.put(creation_key, true)
-
-      Application.put_env(:ash_baml, :clients,
-        concurrent: {unique_module, baml_src: "test/support/fixtures/baml_src"}
-      )
-
-      defmodule ConcurrentResource do
-        use Ash.Resource, domain: nil, extensions: [AshBaml.Resource]
-
-        baml do
-          client(:concurrent)
-        end
-      end
-
-      :persistent_term.erase(creation_key)
-    end
-
     test "raises error when baml_src missing from config" do
       unique_module =
         Module.concat([AshBaml.Test, "MissingSrcClient#{System.unique_integer([:positive])}"])

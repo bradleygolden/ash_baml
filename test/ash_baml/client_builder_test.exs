@@ -57,11 +57,26 @@ defmodule AshBaml.ClientBuilderTest do
                ClientBuilder.ensure_client_module(unique_name, "test/support/fixtures/baml_src")
     end
 
-    test "returns :ok and warns when module is already loaded" do
+    test "returns :ok when module is already loaded" do
       # Kernel is always loaded and doesn't have __baml_src_path__
-      # This should warn but still return :ok
       result = ClientBuilder.ensure_client_module(Kernel, "some/path")
       assert result == :ok
+    end
+
+    test "handles concurrent module creation safely" do
+      unique_module =
+        Module.concat([AshBaml.Test, "Concurrent#{System.unique_integer([:positive])}"])
+
+      baml_src = "test/support/fixtures/baml_src"
+
+      tasks =
+        for _ <- 1..10 do
+          Task.async(fn -> ClientBuilder.ensure_client_module(unique_module, baml_src) end)
+        end
+
+      results = Task.await_many(tasks, 10_000)
+      assert Enum.all?(results, &(&1 == :ok))
+      assert Code.ensure_loaded?(unique_module)
     end
   end
 end

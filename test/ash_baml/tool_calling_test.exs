@@ -2,7 +2,9 @@ defmodule AshBaml.ToolCallingTest do
   use ExUnit.Case, async: true
 
   alias Ash.Resource.Info
-  alias AshBaml.Test.{BamlClient, ToolTestResource}
+  alias AshBaml.Test.BamlClient
+  alias AshBaml.Test.BamlClient.Types
+  alias AshBaml.Test.ToolTestResource
 
   describe "union return type actions" do
     test "action can declare union return type with tool constraints" do
@@ -18,17 +20,17 @@ defmodule AshBaml.ToolCallingTest do
 
       weather_config = action.constraints[:types][:weather_tool]
       assert weather_config[:type] == Ash.Type.Struct
-      assert weather_config[:constraints][:instance_of] == BamlClient.WeatherTool
+      assert weather_config[:constraints][:instance_of] == Types.WeatherTool
 
       calculator_config = action.constraints[:types][:calculator_tool]
       assert calculator_config[:type] == Ash.Type.Struct
-      assert calculator_config[:constraints][:instance_of] == BamlClient.CalculatorTool
+      assert calculator_config[:constraints][:instance_of] == Types.CalculatorTool
     end
   end
 
   describe "tool execution pattern" do
     test "can dispatch weather tool to execution action" do
-      tool_result = %BamlClient.WeatherTool{
+      tool_result = %Types.WeatherTool{
         city: "San Francisco",
         units: "celsius"
       }
@@ -48,7 +50,7 @@ defmodule AshBaml.ToolCallingTest do
     end
 
     test "can dispatch calculator tool to execution action" do
-      tool_result = %BamlClient.CalculatorTool{
+      tool_result = %Types.CalculatorTool{
         operation: "add",
         numbers: [1.0, 2.0, 3.0]
       }
@@ -91,7 +93,7 @@ defmodule AshBaml.ToolCallingTest do
     # This avoids compiler warnings about unreachable clauses in individual tests
     defp dispatch_tool(tool_result) do
       case tool_result do
-        %BamlClient.WeatherTool{city: city, units: units} ->
+        %Types.WeatherTool{city: city, units: units} ->
           {:ok, data} =
             ToolTestResource
             |> Ash.ActionInput.for_action(:execute_weather, %{city: city, units: units})
@@ -99,7 +101,7 @@ defmodule AshBaml.ToolCallingTest do
 
           {:weather, data}
 
-        %BamlClient.CalculatorTool{operation: op, numbers: nums} ->
+        %Types.CalculatorTool{operation: op, numbers: nums} ->
           {:ok, result} =
             ToolTestResource
             |> Ash.ActionInput.for_action(:execute_calculator, %{
@@ -113,7 +115,7 @@ defmodule AshBaml.ToolCallingTest do
     end
 
     test "manual case-based dispatch works correctly for weather tool" do
-      tool_result = %BamlClient.WeatherTool{
+      tool_result = %Types.WeatherTool{
         city: "London",
         units: "fahrenheit"
       }
@@ -124,7 +126,7 @@ defmodule AshBaml.ToolCallingTest do
     end
 
     test "manual case-based dispatch works correctly for calculator tool" do
-      tool_result = %BamlClient.CalculatorTool{
+      tool_result = %Types.CalculatorTool{
         operation: "multiply",
         numbers: [5.0, 7.0]
       }
@@ -137,7 +139,7 @@ defmodule AshBaml.ToolCallingTest do
 
   describe "BAML-generated tool structs" do
     test "WeatherTool struct has correct fields" do
-      weather = %BamlClient.WeatherTool{
+      weather = %Types.WeatherTool{
         city: "Tokyo",
         units: "celsius"
       }
@@ -147,7 +149,7 @@ defmodule AshBaml.ToolCallingTest do
     end
 
     test "CalculatorTool struct has correct fields" do
-      calculator = %BamlClient.CalculatorTool{
+      calculator = %Types.CalculatorTool{
         operation: "add",
         numbers: [1.0, 2.0, 3.0]
       }
@@ -156,6 +158,7 @@ defmodule AshBaml.ToolCallingTest do
       assert calculator.numbers == [1.0, 2.0, 3.0]
     end
 
+    @tag :integration
     test "SelectTool function module exists" do
       assert Code.ensure_loaded?(BamlClient.SelectTool)
       assert function_exported?(BamlClient.SelectTool, :call, 2)

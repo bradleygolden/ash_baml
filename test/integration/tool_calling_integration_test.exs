@@ -4,7 +4,8 @@ defmodule AshBaml.ToolCallingIntegrationTest do
   @moduletag :integration
   @moduletag timeout: 60_000
 
-  alias AshBaml.Test.{BamlClient, ToolTestResource}
+  alias AshBaml.Test.BamlClient.Types, as: BamlClient
+  alias AshBaml.Test.ToolTestResource
 
   describe "complete tool calling workflow" do
     test "full workflow: select tool -> dispatch -> execute (weather)" do

@@ -169,7 +169,7 @@ defmodule AshBaml.MixProject do
         "format --check-formatted",
         "credo --strict",
         "sobelow --exit",
-        "hex.audit",
+        "deps.audit",
         "dialyzer --format github",
         "docs --warnings-as-errors"
       ],

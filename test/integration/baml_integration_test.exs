@@ -13,7 +13,7 @@ defmodule AshBaml.IntegrationTest do
 
       assert %AshBaml.Response{} = response
       result = response.data
-      assert %AshBaml.Test.BamlClient.Reply{} = result
+      assert %AshBaml.Test.BamlClient.Types.Reply{} = result
       assert is_binary(result.content)
       assert is_float(result.confidence)
     end
@@ -30,7 +30,7 @@ defmodule AshBaml.IntegrationTest do
 
       assert %AshBaml.Response{} = response
       result = response.data
-      assert %AshBaml.Test.BamlClient.MultiArgResponse{} = result
+      assert %AshBaml.Test.BamlClient.Types.MultiArgResponse{} = result
 
       assert is_binary(result.greeting)
       assert is_binary(result.description)
@@ -54,7 +54,7 @@ defmodule AshBaml.IntegrationTest do
 
       assert %AshBaml.Response{} = response_with_location
       result_with_location = response_with_location.data
-      assert %AshBaml.Test.BamlClient.ProfileResponse{} = result_with_location
+      assert %AshBaml.Test.BamlClient.Types.ProfileResponse{} = result_with_location
       assert is_binary(result_with_location.bio)
       assert is_list(result_with_location.interests)
       assert is_binary(result_with_location.location)
@@ -70,7 +70,7 @@ defmodule AshBaml.IntegrationTest do
 
       assert %AshBaml.Response{} = response_without_location
       result_without_location = response_without_location.data
-      assert %AshBaml.Test.BamlClient.ProfileResponse{} = result_without_location
+      assert %AshBaml.Test.BamlClient.Types.ProfileResponse{} = result_without_location
       assert is_binary(result_without_location.bio)
       assert is_list(result_without_location.interests)
       assert is_nil(result_without_location.location)
@@ -86,7 +86,7 @@ defmodule AshBaml.IntegrationTest do
 
       assert %AshBaml.Response{} = response
       result = response.data
-      assert %AshBaml.Test.BamlClient.TagAnalysisResponse{} = result
+      assert %AshBaml.Test.BamlClient.Types.TagAnalysisResponse{} = result
 
       assert is_binary(result.summary)
       assert is_integer(result.tag_count)
@@ -116,7 +116,7 @@ defmodule AshBaml.IntegrationTest do
 
       assert %AshBaml.Response{} = response
       result = response.data
-      assert %AshBaml.Test.BamlClient.NestedObjectResponse{} = result
+      assert %AshBaml.Test.BamlClient.Types.NestedObjectResponse{} = result
 
       assert is_binary(result.formatted_address)
       assert is_binary(result.distance_category)
@@ -181,7 +181,7 @@ defmodule AshBaml.IntegrationTest do
 
       assert %AshBaml.Response{} = response
       result = response.data
-      assert %AshBaml.Test.BamlClient.LongInputResponse{} = result
+      assert %AshBaml.Test.BamlClient.Types.LongInputResponse{} = result
 
       assert is_binary(result.summary)
       assert is_integer(result.word_count)
@@ -216,7 +216,7 @@ defmodule AshBaml.IntegrationTest do
 
       assert %AshBaml.Response{} = response
       result = response.data
-      assert %AshBaml.Test.BamlClient.SpecialCharsResponse{} = result
+      assert %AshBaml.Test.BamlClient.Types.SpecialCharsResponse{} = result
 
       assert is_binary(result.received_text)
       assert is_integer(result.char_count)
@@ -254,7 +254,7 @@ defmodule AshBaml.IntegrationTest do
       assert length(results) == 5
 
       Enum.each(results, fn {_i, result, _original_message} ->
-        assert %AshBaml.Test.BamlClient.Reply{} = result
+        assert %AshBaml.Test.BamlClient.Types.Reply{} = result
 
         assert is_binary(result.content)
         assert is_float(result.confidence)
@@ -283,7 +283,7 @@ defmodule AshBaml.IntegrationTest do
       assert length(results) == 3
 
       Enum.each(results, fn result ->
-        assert %AshBaml.Test.BamlClient.Reply{} = result
+        assert %AshBaml.Test.BamlClient.Types.Reply{} = result
 
         assert is_binary(result.content)
         assert is_float(result.confidence)

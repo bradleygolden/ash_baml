@@ -138,13 +138,7 @@ defmodule AshBaml.FunctionIntrospector do
   end
 
   defp module_file_exists?(module) do
-    source_paths =
-      with true <- Code.ensure_loaded?(Mix.Project),
-           config <- Mix.Project.config() do
-        config[:source_paths] || ["lib"]
-      else
-        _ -> ["lib"]
-      end
+    elixirc_paths = get_elixirc_paths()
 
     relative_path =
       module
@@ -153,10 +147,20 @@ defmodule AshBaml.FunctionIntrospector do
       |> Path.join()
       |> then(&"#{&1}.ex")
 
-    Enum.any?(source_paths, fn source_path ->
+    Enum.any?(elixirc_paths, fn source_path ->
       Path.join(source_path, relative_path)
       |> File.exists?()
     end)
+  end
+
+  defp get_elixirc_paths do
+    with true <- Code.ensure_loaded?(Mix.Project),
+         config <- Mix.Project.config(),
+         paths when is_list(paths) <- Keyword.get(config, :elixirc_paths) do
+      paths
+    else
+      _ -> ["lib"]
+    end
   end
 
   defp baml_type_to_ash_type({:primitive, :string}), do: :string

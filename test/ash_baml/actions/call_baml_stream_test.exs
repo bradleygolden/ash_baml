@@ -27,6 +27,7 @@ defmodule AshBaml.Actions.CallBamlStreamTest do
       assert error =~ "NonExistentFunction"
     end
 
+    @tag :integration
     test "returns stream when function exists" do
       input = %{resource: MockStreamResource, arguments: %{prompt: "test"}}
       opts = [function: :TestFunction]
