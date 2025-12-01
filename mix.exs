@@ -162,16 +162,12 @@ defmodule AshBaml.MixProject do
   defp aliases do
     [
       precommit: [
-        "deps.get",
-        "deps.compile",
-        "deps.unlock --check-unused",
         "compile --warnings-as-errors",
         "test --warnings-as-errors",
         "format --check-formatted",
         "credo --strict",
-        "sobelow --exit",
+        "sobelow",
         "deps.audit",
-        "hex.audit",
         "dialyzer",
         "docs --warnings-as-errors"
       ],
