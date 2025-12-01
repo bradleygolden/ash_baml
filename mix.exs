@@ -158,12 +158,17 @@ defmodule AshBaml.MixProject do
   defp aliases do
     [
       precommit: [
+        "deps.get",
+        "deps.compile",
+        "deps.unlock --check-unused",
         "compile --warnings-as-errors",
+        "test --warnings-as-errors",
         "format --check-formatted",
         "credo --strict",
-        "dialyzer --format github",
         "sobelow --exit",
-        "test --warnings-as-errors"
+        "hex.audit",
+        "dialyzer --format github",
+        "docs --warnings-as-errors"
       ],
       docs: [
         "spark.cheat_sheets --extensions AshBaml.Resource",
