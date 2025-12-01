@@ -10,7 +10,6 @@ defmodule AshBaml.MixProject do
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
       consolidate_protocols: Mix.env() != :test,
-      preferred_cli_env: [precommit: :test],
       deps: deps(),
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: dialyzer(),
@@ -20,6 +19,10 @@ defmodule AshBaml.MixProject do
       description:
         "Ash integration for BAML (Boundary ML) functions, enabling type-safe LLM interactions"
     ]
+  end
+
+  def cli do
+    [preferred_envs: [precommit: :test]]
   end
 
   # Specifies which paths to compile per environment
