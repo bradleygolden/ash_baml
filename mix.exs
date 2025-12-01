@@ -55,7 +55,8 @@ defmodule AshBaml.MixProject do
 
   defp dialyzer do
     [
-      plt_add_apps: [:mix]
+      plt_add_apps: [:mix],
+      list_unused_filters: true
     ]
   end
 
