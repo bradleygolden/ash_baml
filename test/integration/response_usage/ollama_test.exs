@@ -1,7 +1,6 @@
-defmodule AshBaml.ResponseUsageIntegrationTest do
-  use ExUnit.Case, async: false
+defmodule AshBaml.Integration.ResponseUsage.OllamaTest do
+  use AshBaml.IntegrationCase, provider: :ollama
 
-  @moduletag :integration
   @moduletag timeout: 60_000
 
   defmodule ResponseTestDomain do
@@ -9,7 +8,7 @@ defmodule AshBaml.ResponseUsageIntegrationTest do
     use Ash.Domain, validate_config_inclusion?: false
 
     resources do
-      resource(AshBaml.ResponseUsageIntegrationTest.ResponseTestResource)
+      resource(AshBaml.Integration.ResponseUsage.OllamaTest.ResponseTestResource)
     end
   end
 
@@ -17,7 +16,7 @@ defmodule AshBaml.ResponseUsageIntegrationTest do
     @moduledoc false
 
     use Ash.Resource,
-      domain: AshBaml.ResponseUsageIntegrationTest.ResponseTestDomain,
+      domain: AshBaml.Integration.ResponseUsage.OllamaTest.ResponseTestDomain,
       extensions: [AshBaml.Resource]
 
     baml do
