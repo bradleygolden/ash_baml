@@ -1,7 +1,6 @@
-defmodule AshBaml.IntegrationTest do
-  use ExUnit.Case, async: false
+defmodule AshBaml.Integration.Basic.OllamaTest do
+  use AshBaml.IntegrationCase, provider: :ollama
 
-  @moduletag :integration
   @moduletag timeout: 60_000
 
   describe "end-to-end BAML integration" do

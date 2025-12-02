@@ -1,7 +1,6 @@
-defmodule AshBaml.PerformanceIntegrationTest do
-  use ExUnit.Case, async: false
+defmodule AshBaml.Integration.Performance.OllamaTest do
+  use AshBaml.IntegrationCase, provider: :ollama
 
-  @moduletag :integration
   @moduletag timeout: 120_000
 
   alias AshBaml.Test.TestResource

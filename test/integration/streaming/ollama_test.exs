@@ -1,7 +1,6 @@
-defmodule AshBaml.StreamingIntegrationTest do
-  use ExUnit.Case, async: false
+defmodule AshBaml.Integration.Streaming.OllamaTest do
+  use AshBaml.IntegrationCase, provider: :ollama
 
-  @moduletag :integration
   @moduletag timeout: 60_000
 
   alias Ash.Resource.Info

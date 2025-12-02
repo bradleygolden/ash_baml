@@ -1,7 +1,6 @@
-defmodule AshBaml.TelemetryIntegrationTest do
-  use ExUnit.Case, async: false
+defmodule AshBaml.Integration.Telemetry.OllamaTest do
+  use AshBaml.IntegrationCase, provider: :ollama
 
-  @moduletag :integration
   @moduletag timeout: 60_000
 
   defmodule TelemetryTestDomain do
@@ -9,9 +8,9 @@ defmodule AshBaml.TelemetryIntegrationTest do
     use Ash.Domain, validate_config_inclusion?: false
 
     resources do
-      resource(AshBaml.TelemetryIntegrationTest.TelemetryTestResource)
-      resource(AshBaml.TelemetryIntegrationTest.TelemetryDisabledResource)
-      resource(AshBaml.TelemetryIntegrationTest.CustomPrefixResource)
+      resource(AshBaml.Integration.Telemetry.OllamaTest.TelemetryTestResource)
+      resource(AshBaml.Integration.Telemetry.OllamaTest.TelemetryDisabledResource)
+      resource(AshBaml.Integration.Telemetry.OllamaTest.CustomPrefixResource)
     end
   end
 
@@ -19,7 +18,7 @@ defmodule AshBaml.TelemetryIntegrationTest do
     @moduledoc false
 
     use Ash.Resource,
-      domain: AshBaml.TelemetryIntegrationTest.TelemetryTestDomain,
+      domain: AshBaml.Integration.Telemetry.OllamaTest.TelemetryTestDomain,
       extensions: [AshBaml.Resource]
 
     baml do
@@ -44,7 +43,7 @@ defmodule AshBaml.TelemetryIntegrationTest do
     @moduledoc false
 
     use Ash.Resource,
-      domain: AshBaml.TelemetryIntegrationTest.TelemetryTestDomain,
+      domain: AshBaml.Integration.Telemetry.OllamaTest.TelemetryTestDomain,
       extensions: [AshBaml.Resource]
 
     baml do
@@ -67,7 +66,7 @@ defmodule AshBaml.TelemetryIntegrationTest do
     @moduledoc false
 
     use Ash.Resource,
-      domain: AshBaml.TelemetryIntegrationTest.TelemetryTestDomain,
+      domain: AshBaml.Integration.Telemetry.OllamaTest.TelemetryTestDomain,
       extensions: [AshBaml.Resource]
 
     baml do

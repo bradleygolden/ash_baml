@@ -1,7 +1,6 @@
-defmodule AshBaml.TypeSystemIntegrationTest do
-  use ExUnit.Case, async: false
+defmodule AshBaml.Integration.TypeSystem.OllamaTest do
+  use AshBaml.IntegrationCase, provider: :ollama
 
-  @moduletag :integration
   @moduletag timeout: 60_000
 
   alias AshBaml.Test.BamlClient.Types, as: BamlClient

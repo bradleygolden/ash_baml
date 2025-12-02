@@ -56,7 +56,8 @@ defmodule AshBaml.MixProject do
   defp dialyzer do
     [
       plt_add_apps: [:mix],
-      list_unused_filters: true
+      list_unused_filters: true,
+      ignore_warnings: ".dialyzer_ignore.exs"
     ]
   end
 
@@ -175,7 +176,13 @@ defmodule AshBaml.MixProject do
         "spark.cheat_sheets --extensions AshBaml.Resource",
         "docs",
         "spark.replace_doc_links"
-      ]
+      ],
+      "test.integration": ["test --only integration"],
+      "test.integration.req_llm": ["test --only integration --only backend:req_llm"],
+      "test.integration.baml": ["test --only integration --only backend:baml"],
+      "test.integration.openai": ["test --only integration --only provider:openai"],
+      "test.integration.anthropic": ["test --only integration --only provider:anthropic"],
+      "test.integration.ollama": ["test --only integration --only provider:ollama"]
     ]
   end
 end
